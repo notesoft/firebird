@@ -1024,9 +1024,9 @@ void CCH_fetch_page(thread_db* tdbb, WIN* window, const bool read_shadow)
 		readFailed = !dbb->dbb_crypto_manager->read(tdbb, status, page, &io);
 		if (readFailed)
 		{
+			PAGE_LOCK_RELEASE(tdbb, bcb, bdb->bdb_lock);
 			if (read_shadow)
 			{
-				PAGE_LOCK_RELEASE(tdbb, bcb, bdb->bdb_lock);
 				CCH_unwind(tdbb, true);
 			}
 		}
@@ -1059,9 +1059,9 @@ void CCH_fetch_page(thread_db* tdbb, WIN* window, const bool read_shadow)
 			readFailed = !dbb->dbb_crypto_manager->read(tdbb, status, page, &io);
 			if (readFailed)
 			{
+				PAGE_LOCK_RELEASE(tdbb, bcb, bdb->bdb_lock);
 				if (read_shadow)
 				{
-					PAGE_LOCK_RELEASE(tdbb, bcb, bdb->bdb_lock);
 					CCH_unwind(tdbb, true);
 				}
 			}
