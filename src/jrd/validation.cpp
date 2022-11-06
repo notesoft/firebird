@@ -1582,11 +1582,6 @@ Validation::RTN Validation::walk_chain(jrd_rel* relation, const rhd* header,
 	while (page_number)
 	{
 		const bool delta_flag = (header->rhd_flags & rhd_delta) ? true : false;
-#ifdef DEBUG_VAL_VERBOSE
-		if (VAL_debug_level)
-			fprintf(stdout, "  BV %02d: ", ++counter);
-#endif
-		vdr_rel_chain_counter++;
 		data_page* page = 0;
 		if (fetch_page(true, page_number, pag_data, &window, &page) == fetch_io)
 			return corrupt(VAL_REC_CHAIN_BROKEN, relation, head_number.getValue());
@@ -1597,6 +1592,10 @@ Validation::RTN Validation::walk_chain(jrd_rel* relation, const rhd* header,
 			return corrupt(VAL_DATA_PAGE_CONFUSED, relation, page_number, page->dpg_sequence);
 		}
 
+#ifdef DEBUG_VAL_VERBOSE
+		if (VAL_debug_level)
+			fprintf(stdout, "  BV %02d: ", ++counter);
+#endif
 		vdr_rel_chain_counter++;
 		PBM_SET(vdr_tdbb->getDefaultPool(), &vdr_chain_pages, page_number);
 
@@ -3173,47 +3172,21 @@ Validation::RTN Validation::walk_relation(jrd_rel* relation)
 
 	lckGC.release();
 
-	// Compare backversion pages and chain pages
+	// Compare backversion pages visited via walk_data_page and chain pages visited via
 	if ((vdr_flags & VDR_records) &&
 		vdr_chain_pages && (vdr_rel_chain_counter > vdr_rel_backversion_counter))
 	{
-		if (vdr_backversion_pages)
+		auto pages = PageBitmap::bit_subtract(&vdr_chain_pages, &vdr_backversion_pages);
+		if (pages)
 		{
-			PageBitmap::Accessor c(vdr_chain_pages);
-			PageBitmap::Accessor b(vdr_backversion_pages);
-
-			if (c.getFirst() && b.getFirst())
-			{
-				while (true)
-				{
-					if (c.current() == b.current())
-						b.getNext();
-					else if ( ( c.current() < b.current() ) || !b.getNext() )
-					{
-						//fprintf(stdout, "chain page was visited not via data pages %d\n", c.current());
-						checkDPinPP(relation, c.current());
-						checkDPinPIP(relation, c.current());
-					}
-					else
-						continue;
-
-					if (!c.getNext())
-						break;
-				}
-			}
-		}
-		else
-		{
-			PageBitmap::Accessor c(vdr_chain_pages);
-
+			PageBitmap::Accessor c(*pages);
 			if (c.getFirst())
 			{
-				for (bool next = true; next; next = c.getNext())
+				do
 				{
-					//fprintf(stdout, "chain page was visited not via data pages %d\n", c.current());
 					checkDPinPP(relation, c.current());
 					checkDPinPIP(relation, c.current());
-				}
+				} while (c.getNext());
 			}
 		}
 	}
