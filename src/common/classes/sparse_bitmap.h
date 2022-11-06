@@ -856,7 +856,7 @@ SparseBitmap<T, InternalTypes>::bit_subtract(SparseBitmap<T, InternalTypes>** bi
 
 	bool map1Found = map1->tree.getFirst();
 	if (!map1Found)
-		return bitmap1;	// or NULL?
+		return NULL;
 
 	bool map2Found = map2->tree.getFirst();
 	if (!map2Found)

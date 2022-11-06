@@ -10,135 +10,91 @@ BOOST_AUTO_TEST_SUITE(CommonSuite)
 BOOST_AUTO_TEST_SUITE(SparseBitmapSuite)
 
 
+template<typename T>
+void initSparseBitmap(SparseBitmap<T>* bitmap, const std::vector<T>& values)
+{
+	for(auto v: values)
+		bitmap->set(v);
+}
+
+template<typename T>
+void testSparseBitmapValues(SparseBitmap<T>* bitmap, const std::vector<T>& values)
+{
+	for(auto v: values)
+		BOOST_TEST(bitmap->test(v));
+
+	size_t setCount = 0;
+	for (size_t i = 0; i <= 10100; i++)
+		if (bitmap->test(i))
+			setCount++;
+
+	BOOST_TEST(setCount == values.size());
+}
+
+template<typename T>
+using SparseBitmapOp = std::function<SparseBitmap<T>** (SparseBitmap<T>**, SparseBitmap<T>**)>;
+
+template<typename T>
+void testSparseBitmap(std::initializer_list<T> leftValues, std::initializer_list<T> rightValues,
+					  SparseBitmapOp<T> op, std::initializer_list<T> expectedValues)
+{
+	SparseBitmap<ULONG> A(*getDefaultMemoryPool());
+	SparseBitmap<ULONG> B(*getDefaultMemoryPool());
+
+	initSparseBitmap(&A, std::vector(leftValues));
+	initSparseBitmap(&B, std::vector(rightValues));
+
+	auto bitmapA = &A;
+	auto bitmapB = &B;
+
+	auto C = op(&bitmapA, &bitmapB);
+
+	if (C)
+		testSparseBitmapValues(*C, std::vector(expectedValues));
+	else
+		BOOST_TEST(expectedValues.size() == 0);
+}
+
+
 BOOST_AUTO_TEST_SUITE(SparseBitmapTests)
 
 BOOST_AUTO_TEST_CASE(ConstructionWithMemoryPool)
 {
 	SparseBitmap<ULONG> bitmap(*getDefaultMemoryPool());
-
-	bitmap.set(0);
-	bitmap.set(100);
-	bitmap.set(10000);
-
-	for (size_t i = 0; i <= 10100; i++)
-	{
-		switch (i)
-		{
-			case 0:
-			case 100:
-			case 10000:
-				BOOST_TEST(bitmap.test(i) == true);
-				break;
-			default:
-				BOOST_TEST(bitmap.test(i) == false);
-		}
-	}
+	initSparseBitmap(&bitmap, {0, 100, 10000});
+	testSparseBitmapValues(&bitmap, {0, 100, 10000});
 }
 
 BOOST_AUTO_TEST_CASE(bitOr)
 {
-	SparseBitmap<ULONG> A(*getDefaultMemoryPool());
-	SparseBitmap<ULONG> B(*getDefaultMemoryPool());
+	SparseBitmapOp<ULONG> opOr = [](SparseBitmap<ULONG>** left, SparseBitmap<ULONG>** right)
+						{ return SparseBitmap<ULONG>::bit_or(left, right); };
 
-	A.set(1);
-	A.set(100);
-	A.set(10000);
-
-	B.set(10);
-	B.set(100);
-	B.set(1000);
-
-
-	auto bitmapA = &A;
-	auto bitmapB = &B;
-
-	auto C = *SparseBitmap<ULONG>::bit_or(&bitmapA, &bitmapB);
-	BOOST_TEST(C != nullptr);
-
-	for (size_t i = 0; i <= 10100; i++)
-	{
-		switch (i)
-		{
-			case 1:
-			case 10:
-			case 100:
-			case 1000:
-			case 10000:
-				BOOST_TEST(C->test(i) == true);
-				break;
-			default:
-				BOOST_TEST(C->test(i) == false);
-		}
-	}
+	testSparseBitmap<ULONG>({1, 100, 10000}, {10, 100, 1000}, opOr, {1, 10, 100, 1000, 10000});
 }
 
 BOOST_AUTO_TEST_CASE(bitAnd)
 {
-	SparseBitmap<ULONG> A(*getDefaultMemoryPool());
-	SparseBitmap<ULONG> B(*getDefaultMemoryPool());
+	SparseBitmapOp<ULONG> opAnd = [](SparseBitmap<ULONG>** left, SparseBitmap<ULONG>** right)
+						{ return SparseBitmap<ULONG>::bit_and(left, right); };
 
-	A.set(1);
-	A.set(100);
-	A.set(10000);
-
-	B.set(10);
-	B.set(100);
-	B.set(1000);
-
-
-	auto bitmapA = &A;
-	auto bitmapB = &B;
-
-	auto C = *SparseBitmap<ULONG>::bit_and(&bitmapA, &bitmapB);
-	BOOST_TEST(C != nullptr);
-
-	for (size_t i = 0; i <= 10100; i++)
-	{
-		switch (i)
-		{
-			case 100:
-				BOOST_TEST(C->test(i) == true);
-				break;
-			default:
-				BOOST_TEST(C->test(i) == false);
-		}
-	}
+	testSparseBitmap<ULONG>({1, 100, 10000}, {10, 100, 1000}, opAnd, {100});
 }
 
 BOOST_AUTO_TEST_CASE(bitSubtract)
 {
-	SparseBitmap<ULONG> A(*getDefaultMemoryPool());
-	SparseBitmap<ULONG> B(*getDefaultMemoryPool());
+	SparseBitmapOp<ULONG> opSubtract = [](SparseBitmap<ULONG>** left, SparseBitmap<ULONG>** right)
+						{ return SparseBitmap<ULONG>::bit_subtract(left, right); };
 
-	A.set(1);
-	A.set(100);
-	A.set(101);
-	A.set(10000);
-
-	B.set(10);
-	B.set(100);
-	B.set(1000);
-
-
-	auto bitmapA = &A;
-	auto bitmapB = &B;
-
-	auto C = *SparseBitmap<ULONG>::bit_subtract(&bitmapA, &bitmapB);
-	BOOST_TEST(C != nullptr);
-
-	for (size_t i = 0; i <= 10100; i++)
-	{
-		switch (i)
-		{
-			case 1:
-			case 101:
-			case 10000:
-				BOOST_TEST(C->test(i) == true);
-				break;
-			default:
-				BOOST_TEST(C->test(i) == false);
-		}
-	}
+	testSparseBitmap<ULONG>({1, 100, 101, 10000}, {10, 100, 1000}, opSubtract, {1, 101, 10000});
+	testSparseBitmap<ULONG>({1, 100, 101, 10000}, {10}, opSubtract, {1, 100, 101, 10000});
+	testSparseBitmap<ULONG>({1, 100, 101, 10000}, {100}, opSubtract, {1, 101, 10000});
+	testSparseBitmap<ULONG>({1, 100, 101, 10000}, {}, opSubtract, {1, 100, 101, 10000});
+	testSparseBitmap<ULONG>({1}, {10}, opSubtract, {1});
+	testSparseBitmap<ULONG>({1}, {1}, opSubtract, {});
+	testSparseBitmap<ULONG>({1}, {1, 10}, opSubtract, {});
+	testSparseBitmap<ULONG>({}, {}, opSubtract, {});
+	testSparseBitmap<ULONG>({}, {1, 10, 100}, opSubtract, {});
 }
 
 
