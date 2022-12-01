@@ -689,6 +689,7 @@ using namespace Firebird;
 // tokens added for Firebird 5.0
 
 %token <metaNamePtr> LOCKED
+%token <metaNamePtr> OPTIMIZE
 %token <metaNamePtr> TARGET
 %token <metaNamePtr> TIMEZONE_NAME
 %token <metaNamePtr> UNICODE_CHAR
@@ -5763,13 +5764,14 @@ ddl_desc
 
 %type <selectNode> select
 select
-	: select_expr for_update_clause lock_clause
+	: select_expr for_update_clause lock_clause optimize_clause
 		{
 			SelectNode* node = newNode<SelectNode>();
 			node->dsqlExpr = $1;
 			node->dsqlForUpdate = $2;
 			node->dsqlWithLock = $3.first;
 			node->dsqlSkipLocked = $3.second;
+			node->dsqlOptimize = $4;
 			$$ = node;
 		}
 	;
@@ -5798,6 +5800,15 @@ skip_locked_clause_opt
 	| SKIP LOCKED			{ $$ = true; }
 	;
 
+%type <nullableBoolVal>	optimize_clause
+optimize_clause
+	: OPTIMIZE FOR FIRST ROWS
+		{ $$ = Nullable<bool>::val(true); }
+	| OPTIMIZE FOR ALL ROWS
+		{ $$ = Nullable<bool>::val(false); }
+	| // nothing
+		{ $$ = Nullable<bool>::empty(); }
+	;
 
 // SELECT expression
 
@@ -9180,6 +9191,7 @@ non_reserved_word
 	| BLOB_APPEND
 	// added in FB 5.0
 	| LOCKED
+	| OPTIMIZE
 	| TARGET
 	| TIMEZONE_NAME
 	| UNICODE_CHAR

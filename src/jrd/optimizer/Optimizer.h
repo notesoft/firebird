@@ -393,7 +393,10 @@ public:
 
 	static RecordSource* compile(thread_db* tdbb, CompilerScratch* csb, RseNode* rse)
 	{
-		return Optimizer(tdbb, csb, rse).compile(nullptr);
+		const auto dbb = tdbb->getDatabase();
+		const auto defaultFirstRows = dbb->dbb_config->getOptimizeForFirstRows();
+
+		return Optimizer(tdbb, csb, rse, defaultFirstRows).compile(nullptr);
 	}
 
 	~Optimizer();
@@ -439,7 +442,7 @@ public:
 
 	bool favorFirstRows() const
 	{
-		return (rse->flags & RseNode::FLAG_OPT_FIRST_ROWS) != 0;
+		return firstRows;
 	}
 
 	bool checkEquiJoin(BoolExprNode* boolean);
@@ -452,7 +455,7 @@ public:
 	void printf(const char* format, ...);
 
 private:
-	Optimizer(thread_db* aTdbb, CompilerScratch* aCsb, RseNode* aRse);
+	Optimizer(thread_db* aTdbb, CompilerScratch* aCsb, RseNode* aRse, bool parentFirstRows);
 
 	RecordSource* compile(BoolExprNodeStack* parentStack);
 
@@ -488,6 +491,8 @@ private:
 	thread_db* const tdbb;
 	CompilerScratch* const csb;
 	RseNode* const rse;
+
+	bool firstRows = false;					// optimize for first rows
 
 	FILE* debugFile = nullptr;
 	unsigned baseConjuncts = 0;				// number of conjuncts in our rse, next conjuncts are distributed parent

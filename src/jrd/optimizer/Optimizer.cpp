@@ -562,9 +562,10 @@ namespace
 // Constructor
 //
 
-Optimizer::Optimizer(thread_db* aTdbb, CompilerScratch* aCsb, RseNode* aRse)
+Optimizer::Optimizer(thread_db* aTdbb, CompilerScratch* aCsb, RseNode* aRse, bool parentFirstRows)
 	: PermanentStorage(*aTdbb->getDefaultPool()),
 	  tdbb(aTdbb), csb(aCsb), rse(aRse),
+	  firstRows(rse->firstRows.orElse(parentFirstRows)),
 	  compileStreams(getPool()),
 	  bedStreams(getPool()),
 	  keyStreams(getPool()),
@@ -599,7 +600,7 @@ Optimizer::~Optimizer()
 
 RecordSource* Optimizer::compile(RseNode* subRse, BoolExprNodeStack* parentStack)
 {
-	Optimizer subOpt(tdbb, csb, subRse);
+	Optimizer subOpt(tdbb, csb, subRse, firstRows);
 	const auto rsb = subOpt.compile(parentStack);
 
 	if (parentStack && subOpt.isInnerJoin())

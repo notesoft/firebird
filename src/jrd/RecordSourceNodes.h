@@ -722,31 +722,13 @@ public:
 	static const USHORT FLAG_WRITELOCK			= 0x04;	// locked for write
 	static const USHORT FLAG_SCROLLABLE			= 0x08;	// scrollable cursor
 	static const USHORT FLAG_DSQL_COMPARATIVE	= 0x10;	// transformed from DSQL ComparativeBoolNode
-	static const USHORT FLAG_OPT_FIRST_ROWS		= 0x20;	// optimize retrieval for first rows
-	static const USHORT FLAG_LATERAL			= 0x40;	// lateral derived table
-	static const USHORT FLAG_SKIP_LOCKED		= 0x80;	// skip locked
+	static const USHORT FLAG_LATERAL			= 0x20;	// lateral derived table
+	static const USHORT FLAG_SKIP_LOCKED		= 0x40;	// skip locked
 
 	explicit RseNode(MemoryPool& pool)
 		: TypedNode<RecordSourceNode, RecordSourceNode::TYPE_RSE>(pool),
-		  dsqlFirst(NULL),
-		  dsqlSkip(NULL),
-		  dsqlDistinct(NULL),
-		  dsqlSelectList(NULL),
-		  dsqlFrom(NULL),
-		  dsqlWhere(NULL),
-		  dsqlJoinUsing(NULL),
-		  dsqlGroup(NULL),
-		  dsqlHaving(NULL),
-		  dsqlNamedWindows(NULL),
-		  dsqlOrder(NULL),
-		  dsqlStreams(NULL),
-		  rse_invariants(NULL),
-		  rse_relations(pool),
-		  flags(0),
-		  rse_jointype(blr_inner),
-		  dsqlExplicitJoin(false)
-	{
-	}
+		  rse_relations(pool)
+	{}
 
 	RseNode* clone(MemoryPool& pool)
 	{
@@ -778,6 +760,7 @@ public:
 		obj->rse_invariants = rse_invariants;
 		obj->flags = flags;
 		obj->rse_relations = rse_relations;
+		obj->firstRows = firstRows;
 
 		return obj;
 	}
@@ -847,9 +830,10 @@ public:
 	NestConst<ValueListNode> dsqlJoinUsing;
 	NestConst<ValueListNode> dsqlGroup;
 	NestConst<BoolExprNode> dsqlHaving;
-	NamedWindowsClause* dsqlNamedWindows;
 	NestConst<ValueListNode> dsqlOrder;
 	NestConst<RecSourceListNode> dsqlStreams;
+	NamedWindowsClause* dsqlNamedWindows = nullptr;
+	bool dsqlExplicitJoin = false;
 	NestConst<ValueExprNode> rse_first;
 	NestConst<ValueExprNode> rse_skip;
 	NestConst<BoolExprNode> rse_boolean;
@@ -859,9 +843,9 @@ public:
 	NestConst<PlanNode> rse_plan;		// user-specified access plan
 	NestConst<VarInvariantArray> rse_invariants; // Invariant nodes bound to top-level RSE
 	Firebird::Array<NestConst<RecordSourceNode> > rse_relations;
-	USHORT flags;
-	USHORT rse_jointype;		// inner, left, full
-	bool dsqlExplicitJoin;
+	USHORT flags = 0;
+	USHORT rse_jointype = blr_inner;	// inner, left, full
+	TriState firstRows;					// optimize for first rows
 };
 
 class SelectExprNode final : public TypedNode<RecordSourceNode, RecordSourceNode::TYPE_SELECT_EXPR>
