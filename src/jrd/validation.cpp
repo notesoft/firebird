@@ -1053,7 +1053,7 @@ bool Validation::run(thread_db* tdbb, USHORT flags)
 		cleanup();
 
 		gds__log("Database: %s\n\tValidation finished: %d errors, %d warnings, %d fixed, %d ignored",
-			fileName.c_str(), vdr_errors, vdr_warns, vdr_fixed);
+			fileName.c_str(), vdr_errors, vdr_warns, vdr_fixed, vdr_ignored);
 	}	// try
 	catch (const Firebird::Exception& ex)
 	{
