@@ -4989,17 +4989,6 @@ DmlNode* DerivedExprNode::parse(thread_db* tdbb, MemoryPool& pool, CompilerScrat
 	return node;
 }
 
-void DerivedExprNode::collectStreams(SortedStreamList& streamList) const
-{
-	arg->collectStreams(streamList);
-
-	for (const auto i : internalStreamList)
-	{
-		if (!streamList.exist(i))
-			streamList.add(i);
-	}
-}
-
 bool DerivedExprNode::computable(CompilerScratch* csb, StreamType stream,
 	bool allowOnlyCurrentStream, ValueExprNode* /*value*/)
 {
@@ -9660,7 +9649,7 @@ ParameterNode* ParameterNode::copy(thread_db* tdbb, NodeCopier& copier) const
 	// in nod_argument. If it doesn't, it may be an input parameter cloned
 	// in RseBoolNode::convertNeqAllToNotAny - see CORE-3094.
 
-	if (copier.message && copier.message->messageNumber == message->messageNumber)
+	if (copier.message && copier.message->messageNumber == messageNumber)
 		node->message = copier.message;
 	else
 		node->message = message;
@@ -11091,7 +11080,7 @@ ValueExprNode* SubQueryNode::dsqlPass(DsqlCompilerScratch* dsqlScratch)
 
 	const DsqlContextStack::iterator base(*dsqlScratch->context);
 
-	RseNode* rse = PASS1_rse(dsqlScratch, nodeAs<SelectExprNode>(dsqlRse), false);
+	RseNode* rse = PASS1_rse(dsqlScratch, nodeAs<SelectExprNode>(dsqlRse), false, false);
 
 	SubQueryNode* node = FB_NEW_POOL(dsqlScratch->getPool()) SubQueryNode(dsqlScratch->getPool(), blrOp, rse,
 		rse->dsqlSelectList->items[0], NullNode::instance());

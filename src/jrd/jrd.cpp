@@ -384,6 +384,9 @@ static void threadDetach()
 {
 	ThreadSync* thd = ThreadSync::findThread();
 	delete thd;
+
+	if (cds::threading::Manager::isThreadAttached())
+		cds::threading::Manager::detachThread();
 }
 
 static void shutdownBeforeUnload()
@@ -6840,8 +6843,6 @@ void DatabaseOptions::get(const UCHAR* dpb, USHORT dpb_length, bool& invalid_cli
  *	Parse database parameter block picking up options and things.
  *
  **************************************/
-	SSHORT num_old_files = 0;
-
 	dpb_buffers = 0;
 	dpb_sweep_interval = -1;
 	dpb_overwrite = false;
@@ -6948,10 +6949,7 @@ void DatabaseOptions::get(const UCHAR* dpb, USHORT dpb_length, bool& invalid_cli
 			break;
 
 		case isc_dpb_old_file:
-			//if (num_old_files >= MAX_OLD_FILES) complain here, for now.
-				ERR_post(Arg::Gds(isc_num_old_files));
-			// following code is never executed now !
-			num_old_files++;
+			ERR_post(Arg::Gds(isc_num_old_files));
 			break;
 
 		case isc_dpb_wal_chkptlen:
@@ -7826,7 +7824,7 @@ static void setEngineReleaseDelay(Database* dbb)
 	if (!dbb->dbb_plugin_config)
 		return;
 
-	unsigned maxLinger = 0;
+	time_t maxLinger = 0;
 
 	{ // scope
 		MutexLockGuard listGuardForLinger(databases_mutex, FB_FUNCTION);
@@ -8697,7 +8695,27 @@ static void unwindAttach(thread_db* tdbb, const char* filename, const Exception&
 						traceManager->event_detach(&conn, false);
 
 					attachment->att_flags |= flags;
-					release_attachment(tdbb, attachment);
+					try
+					{
+						release_attachment(tdbb, attachment);
+					}
+					catch (const Exception&)
+					{
+						// Minimum cleanup instead is needed to avoid repeated call
+						// of release_attachment() when decrementing reference counter of jAtt.
+						try
+						{
+							Attachment::destroy(attachment);
+						}
+						catch (const Exception&)
+						{
+							// Let's be absolutely minimalistic though
+							// this will almost for sure cause assertion in DEV_BUILD.
+							sAtt->cancel();
+							attachment->setStable(NULL);
+							sAtt->manualUnlock(attachment->att_flags);
+						}
+					}
 				}
 				else
 				{
