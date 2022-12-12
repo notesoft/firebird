@@ -1,45 +1,37 @@
 # `RDB$BLOB_UTIL` package (FB 5.0)
 
-Before Firebird 5 BLOBs could be created appending data using the concatenate (`||`) operator with another BLOB.
+This package exists to manipulate BLOBs in a way that standard Firebird functions, like `BLOB_APPEND` and `SUBSTRING` cannot do it or is very slow.
 
-However there is two big problems with this approach:
-- BLOBs are always created in database page space, even if that is not required (not going to a persistent table).
-- Every time a concatenation happens, a new BLOB is created, filling the database with garbage.
+These routines operates on binary data directly, even for text BLOBs.
 
-`RDB$BLOB_UTIL` package now exists to fix that problems.
+## Function `NEW_BLOB`
 
-It allows BLOB creation in temporary page space (as well in the persistent page space) and has a workflow so that a BLOB is created and could have its data incrementally appended before it's closed and be available as a BLOB value. This is much like the BLOB client API works, but now available in PSQL.
+`RDB$BLOB_UTIL.NEW_BLOB` is used to create a new BLOB. It returns a BLOB suitable for data appending, like `BLOB_APPEND` does.
 
-## Function `NEW`
+The advantage over `BLOB_APPEND` is that it's possible to set custom `SEGMENTED` and `TEMP_STORAGE` options.
 
-`RDB$BLOB_UTIL.NEW` is used to create a new BLOB. It returns a handle (an integer bound to the transaction) that should be used with the others functions of the package.
+`BLOB_APPEND` always creates BLOB in temporary storage. That may not be the best approach if the created BLOB is going to be stored in a permanent table, as it will require copy.
+
+Returned BLOB from this function, even when `TEMP_STORAGE = FALSE` may be used with `BLOB_APPEND` for appending data.
 
 Input parameter:
  - `SEGMENTED` type `BOOLEAN NOT NULL`
  - `TEMP_STORAGE` type `BOOLEAN NOT NULL`
 
-Return type: `INTEGER NOT NULL`.
+Return type: `BLOB NOT NULL`.
 
 ## Function `OPEN_BLOB`
 
-`RDB$BLOB_UTIL.OPEN_BLOB` is used to open an existing BLOB for read. It returns a handle that should be used with the others functions of the package.
+`RDB$BLOB_UTIL.OPEN_BLOB` is used to open an existing BLOB for read. It returns a handle (an integer bound to the transaction) suitable for use with others functions of this package, like `SEEK`, `READ_DATA` and `CLOSE_HANDLE`.
 
 Input parameter:
  - `BLOB` type `BLOB NOT NULL`
 
 Return type: `INTEGER NOT NULL`.
 
-## Procedure `APPEND`
+## Function `READ_DATA`
 
-`RDB$BLOB_UTIL.APPEND` is used to append chunks of data to a BLOB handle created with `RDB$BLOB_UTIL.NEW`.
-
-Input parameters:
- - `HANDLE` type `INTEGER NOT NULL`
- - `DATA` type `VARBINARY(32767) NOT NULL`
-
-## Function `READ`
-
-`RDB$BLOB_UTIL.READ` is used to read chunks of data of a BLOB handle opened with `RDB$BLOB_UTIL.OPEN_BLOB`. When the BLOB is fully read and there is no more data, it returns `NULL`.
+`RDB$BLOB_UTIL.READ_DATA` is used to read chunks of data of a BLOB handle opened with `RDB$BLOB_UTIL.OPEN_BLOB`. When the BLOB is fully read and there is no more data, it returns `NULL`.
 
 If `LENGTH` is passed with a positive number, it returns a VARBINARY with its maximum length.
 
@@ -53,7 +45,7 @@ Return type: `VARBINARY(32767)`.
 
 ## Function `SEEK`
 
-`RDB$BLOB_UTIL.SEEK` is used to set the position for the next `READ`. It returns the new position.
+`RDB$BLOB_UTIL.SEEK` is used to set the position for the next `READ_DATA`. It returns the new position.
 
 `MODE` may be 0 (from the start), 1 (from current position) or 2 (from end).
 
@@ -66,40 +58,36 @@ Input parameter:
 
 Return type: `INTEGER NOT NULL`.
 
-## Procedure `CANCEL`
+## Procedure `CANCEL_BLOB`
 
-`RDB$BLOB_UTIL.CANCEL` is used to release a BLOB handle opened with `RDB$BLOB_UTIL.OPEN_BLOB` or discard one created with `RDB$BLOB_UTIL.NEW`.
+`RDB$BLOB_UTIL.CANCEL_BLOB` is used to immediately release a temporary BLOB, like one created with `BLOB_APPEND`.
+
+Note that if the same BLOB is used after cancel, using the same variable or another one with the same BLOB id reference, invalid blob id error will be raised.
+
+## Procedure `CLOSE_HANDLE`
+
+`RDB$BLOB_UTIL.CLOSE_HANDLE` is used to close a BLOB handle opened with `RDB$BLOB_UTIL.OPEN_BLOB`.
+
+Not closed handles are closed automatically only in the transaction end.
 
 Input parameter:
  - `HANDLE` type `INTEGER NOT NULL`
-
-## Function `MAKE_BLOB`
-
-`RDB$BLOB_UTIL.MAKE_BLOB` is used to create a BLOB from a BLOB handle created with `NEW` followed by its content added with `APPEND`. After `MAKE_BLOB` is called the handle is destroyed and should not be used with the others functions.
-
-Input parameter:
- - `HANDLE` type `INTEGER NOT NULL`
-
-Return type: `BLOB NOT NULL`.
 
 # Examples
 
-- Example 1: Create a BLOB and return it in `EXECUTE BLOCK`:
+- Example 1: Create a BLOB in temporary space and return it in `EXECUTE BLOCK`:
 
 ```
 execute block returns (b blob)
 as
-    declare bhandle integer;
 begin
     -- Create a BLOB handle in the temporary space.
-    bhandle = rdb$blob_util.new(false, true);
+    b = rdb$blob_util.new_blob(false, true);
 
     -- Add chunks of data.
-    execute procedure rdb$blob_util.append(bhandle, '12345');
-    execute procedure rdb$blob_util.append(bhandle, '67');
+    b = blob_append(b, '12345');
+    b = blob_append(b, '67');
 
-    -- Create the BLOB and return it.
-    b = rdb$blob_util.make_blob(bhandle);
     suspend;
 end
 ```
@@ -117,21 +105,21 @@ begin
 
     -- Get chunks of data as string and return.
 
-    s = rdb$blob_util.read(bhandle, 3);
+    s = rdb$blob_util.read_data(bhandle, 3);
     suspend;
 
-    s = rdb$blob_util.read(bhandle, 3);
+    s = rdb$blob_util.read_data(bhandle, 3);
     suspend;
 
-    s = rdb$blob_util.read(bhandle, 3);
+    s = rdb$blob_util.read_data(bhandle, 3);
     suspend;
 
     -- Here EOF is found, so it returns NULL.
-    s = rdb$blob_util.read(bhandle, 3);
+    s = rdb$blob_util.read_data(bhandle, 3);
     suspend;
 
     -- Close the BLOB handle.
-    execute procedure rdb$blob_util.cancel(bhandle);
+    execute procedure rdb$blob_util.close_handle(bhandle);
 end
 ```
 
@@ -144,39 +132,38 @@ set term !;
 
 execute block returns (s varchar(10))
 as
-    declare bhandle integer;
     declare b blob;
 begin
     -- Create a stream BLOB handle.
-    bhandle = rdb$blob_util.new(false, true);
+    b = rdb$blob_util.new_blob(false, true);
 
     -- Add data.
-    execute procedure rdb$blob_util.append(bhandle, '0123456789');
+    b = blob_append(b, '0123456789');
 
-    -- Create the BLOB.
-    insert into t (b) values (rdb$blob_util.make_blob(:bhandle)) returning b into b;
+    -- Materialize the BLOB.
+    insert into t (b) values (:b);
 
     -- Open the BLOB.
-    bhandle = rdb$blob_util.open_blob(b);
+    b = rdb$blob_util.open_blob(b);
 
     -- Seek to 5 since the start.
-    rdb$blob_util.seek(bhandle, 0, 5);
-    s = rdb$blob_util.read(bhandle, 3);
+    rdb$blob_util.seek(b, 0, 5);
+    s = rdb$blob_util.read_data(b, 3);
     suspend;
 
     -- Seek to 2 since the start.
-    rdb$blob_util.seek(bhandle, 0, 2);
-    s = rdb$blob_util.read(bhandle, 3);
+    rdb$blob_util.seek(b, 0, 2);
+    s = rdb$blob_util.read_data(b, 3);
     suspend;
 
     -- Advance 2.
-    rdb$blob_util.seek(bhandle, 1, 2);
-    s = rdb$blob_util.read(bhandle, 3);
+    rdb$blob_util.seek(b, 1, 2);
+    s = rdb$blob_util.read_data(b, 3);
     suspend;
 
     -- Seek to -1 since the end.
-    rdb$blob_util.seek(bhandle, 2, -1);
-    s = rdb$blob_util.read(bhandle, 3);
+    rdb$blob_util.seek(b, 2, -1);
+    s = rdb$blob_util.read_data(b, 3);
     suspend;
 end!
 

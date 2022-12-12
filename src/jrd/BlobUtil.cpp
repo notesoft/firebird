@@ -39,10 +39,7 @@ namespace
 		if (transaction->tra_blob_util_map.get(handle, blob))
 			return blob;
 		else
-		{
 			status_exception::raise(Arg::Gds(isc_invalid_blob_util_handle));
-			return nullptr;
-		}
 	}
 }
 
@@ -50,21 +47,36 @@ namespace Jrd {
 
 //--------------------------------------
 
-IExternalResultSet* BlobUtilPackage::appendProcedure(ThrowStatusExceptionWrapper* status,
-	IExternalContext* context, const AppendInput::Type* in, void*)
+IExternalResultSet* BlobUtilPackage::cancelBlobProcedure(ThrowStatusExceptionWrapper* status,
+	IExternalContext* context, const BlobMessage::Type* in, void*)
 {
 	const auto tdbb = JRD_get_thread_data();
-	const auto blob = getBlobFromHandle(tdbb, in->handle);
+	const auto transaction = tdbb->getTransaction();
 
-	if (in->data.length > 0)
-		blob->BLB_put_data(tdbb, (const UCHAR*) in->data.str, in->data.length);
-	else if (in->data.length == 0 && !(blob->blb_flags & BLB_stream))
-		blob->BLB_put_segment(tdbb, (const UCHAR*) in->data.str, 0);
+	const auto blobId = *(bid*) &in->blob;
 
-	return nullptr;
+	if (!blobId.bid_internal.bid_relation_id)
+	{
+		if (transaction->tra_blobs->locate(blobId.bid_temp_id()))
+		{
+			const auto blobIdx = transaction->tra_blobs->current();
+
+			if (!blobIdx.bli_materialized)
+			{
+				const auto blob = blobIdx.bli_blob_object;
+				fb_assert(blob);
+				blob->BLB_cancel(tdbb);
+				return nullptr;
+			}
+		}
+
+		status_exception::raise(Arg::Gds(isc_bad_segstr_id));
+	}
+	else
+		status_exception::raise(Arg::Gds(isc_bad_temp_blob_id));
 }
 
-IExternalResultSet* BlobUtilPackage::cancelProcedure(ThrowStatusExceptionWrapper* status,
+IExternalResultSet* BlobUtilPackage::closeHandleProcedure(ThrowStatusExceptionWrapper* status,
 	IExternalContext* context, const HandleMessage::Type* in, void*)
 {
 	const auto tdbb = JRD_get_thread_data();
@@ -72,13 +84,13 @@ IExternalResultSet* BlobUtilPackage::cancelProcedure(ThrowStatusExceptionWrapper
 	const auto blob = getBlobFromHandle(tdbb, in->handle);
 
 	transaction->tra_blob_util_map.remove(in->handle);
-	blob->BLB_cancel(tdbb);
+	blob->BLB_close(tdbb);
 
 	return nullptr;
 }
 
-void BlobUtilPackage::newFunction(ThrowStatusExceptionWrapper* status,
-	IExternalContext* context, const NewInput::Type* in, HandleMessage::Type* out)
+void BlobUtilPackage::newBlobFunction(ThrowStatusExceptionWrapper* status,
+	IExternalContext* context, const NewBlobInput::Type* in, BlobMessage::Type* out)
 {
 	thread_db* tdbb = JRD_get_thread_data();
 	const auto transaction = tdbb->getTransaction();
@@ -90,12 +102,13 @@ void BlobUtilPackage::newFunction(ThrowStatusExceptionWrapper* status,
 	};
 
 	bid id;
-	blb* newBlob = blb::create2(tdbb, transaction, &id, sizeof(bpb), bpb);
+	blb* blob = blb::create2(tdbb, transaction, &id, sizeof(bpb), bpb);
 
-	transaction->tra_blob_util_map.put(++transaction->tra_blob_util_next, newBlob);
+	blob->blb_flags |= BLB_close_on_read;
 
-	out->handleNull = FB_FALSE;
-	out->handle = transaction->tra_blob_util_next;
+	out->blobNull = FB_FALSE;
+	out->blob.gds_quad_low = (ULONG) blob->getTempId();
+	out->blob.gds_quad_high = ((FB_UINT64) blob->getTempId()) >> 32;
 }
 
 void BlobUtilPackage::openBlobFunction(ThrowStatusExceptionWrapper* status,
@@ -104,8 +117,8 @@ void BlobUtilPackage::openBlobFunction(ThrowStatusExceptionWrapper* status,
 	const auto tdbb = JRD_get_thread_data();
 	const auto transaction = tdbb->getTransaction();
 
-	bid blobId = *(bid*) &in->blob;
-	blb* blob = blb::open(tdbb, transaction, &blobId);
+	const auto blobId = *(bid*) &in->blob;
+	const auto blob = blb::open(tdbb, transaction, &blobId);
 
 	transaction->tra_blob_util_map.put(++transaction->tra_blob_util_next, blob);
 
@@ -134,8 +147,8 @@ void BlobUtilPackage::seekFunction(ThrowStatusExceptionWrapper* status,
 	out->offset = blob->BLB_lseek(in->mode, in->offset);
 }
 
-void BlobUtilPackage::readFunction(ThrowStatusExceptionWrapper* status,
-	IExternalContext* context, const ReadInput::Type* in, BinaryMessage::Type* out)
+void BlobUtilPackage::readDataFunction(ThrowStatusExceptionWrapper* status,
+	IExternalContext* context, const ReadDataInput::Type* in, BinaryMessage::Type* out)
 {
 	if (!in->lengthNull && in->length <= 0)
 		status_exception::raise(Arg::Gds(isc_random) << "Length must be NULL or greater than 0");
@@ -155,25 +168,6 @@ void BlobUtilPackage::readFunction(ThrowStatusExceptionWrapper* status,
 	out->dataNull = out->data.length == 0 && (blob->blb_flags & BLB_eof) ? FB_TRUE : FB_FALSE;
 }
 
-void BlobUtilPackage::makeBlobFunction(ThrowStatusExceptionWrapper* status,
-	IExternalContext* context, const HandleMessage::Type* in, BlobMessage::Type* out)
-{
-	const auto tdbb = JRD_get_thread_data();
-	const auto transaction = tdbb->getTransaction();
-
-	const auto blob = getBlobFromHandle(tdbb, in->handle);
-
-	if (!(blob->blb_flags & BLB_temporary))
-		ERR_post(Arg::Gds(isc_cannot_make_blob_opened_handle));
-
-	out->blobNull = FB_FALSE;
-	out->blob.gds_quad_low = (ULONG) blob->getTempId();
-	out->blob.gds_quad_high = ((FB_UINT64) blob->getTempId()) >> 32;
-
-	transaction->tra_blob_util_map.remove(in->handle);
-	blob->BLB_close(tdbb);
-}
-
 //--------------------------------------
 
 
@@ -181,26 +175,25 @@ BlobUtilPackage::BlobUtilPackage(Firebird::MemoryPool& pool)
 	: SystemPackage(
 		pool,
 		"RDB$BLOB_UTIL",
-		ODS_13_0,	//// TODO: adjust
+		ODS_13_1,
 		// procedures
 		{
 			SystemProcedure(
 				pool,
-				"APPEND",
-				SystemProcedureFactory<AppendInput, VoidMessage, appendProcedure>(),
+				"CANCEL_BLOB",
+				SystemProcedureFactory<BlobMessage, VoidMessage, cancelBlobProcedure>(),
 				prc_executable,
 				// input parameters
 				{
-					{"HANDLE", fld_long_number, false},
-					{"DATA", fld_varybinary_max, false}
+					{"BLOB", fld_blob, false}
 				},
 				// output parameters
 				{}
 			),
 			SystemProcedure(
 				pool,
-				"CANCEL",
-				SystemProcedureFactory<HandleMessage, VoidMessage, cancelProcedure>(),
+				"CLOSE_HANDLE",
+				SystemProcedureFactory<HandleMessage, VoidMessage, closeHandleProcedure>(),
 				prc_executable,
 				// input parameters
 				{
@@ -214,14 +207,14 @@ BlobUtilPackage::BlobUtilPackage(Firebird::MemoryPool& pool)
 		{
 			SystemFunction(
 				pool,
-				"NEW",
-				SystemFunctionFactory<NewInput, HandleMessage, newFunction>(),
+				"NEW_BLOB",
+				SystemFunctionFactory<NewBlobInput, BlobMessage, newBlobFunction>(),
 				// parameters
 				{
 					{"SEGMENTED", fld_bool, false},
 					{"TEMP_STORAGE", fld_bool, false}
 				},
-				{fld_long_number, false}
+				{fld_blob, false}
 			),
 			SystemFunction(
 				pool,
@@ -247,24 +240,14 @@ BlobUtilPackage::BlobUtilPackage(Firebird::MemoryPool& pool)
 			),
 			SystemFunction(
 				pool,
-				"READ",
-				SystemFunctionFactory<ReadInput, BinaryMessage, readFunction>(),
+				"READ_DATA",
+				SystemFunctionFactory<ReadDataInput, BinaryMessage, readDataFunction>(),
 				// parameters
 				{
 					{"HANDLE", fld_long_number, false},
 					{"LENGTH", fld_long_number, true}
 				},
 				{fld_varybinary_max, true}
-			),
-			SystemFunction(
-				pool,
-				"MAKE_BLOB",
-				SystemFunctionFactory<HandleMessage, BlobMessage, makeBlobFunction>(),
-				// parameters
-				{
-					{"HANDLE", fld_long_number, false}
-				},
-				{fld_blob, false}
 			)
 		}
 	)

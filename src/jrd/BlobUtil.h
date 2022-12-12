@@ -53,29 +53,24 @@ private:
 
 	//----------
 
-	FB_MESSAGE(AppendInput, Firebird::ThrowStatusExceptionWrapper,
-		(FB_INTEGER, handle)
-		(FB_INTL_VARCHAR(MAX_VARY_COLUMN_SIZE, 0), data)
-	);
-
-	static Firebird::IExternalResultSet* appendProcedure(Firebird::ThrowStatusExceptionWrapper* status,
-		Firebird::IExternalContext* context, const AppendInput::Type* in, void* out);
+	static Firebird::IExternalResultSet* cancelBlobProcedure(Firebird::ThrowStatusExceptionWrapper* status,
+		Firebird::IExternalContext* context, const BlobMessage::Type* in, void* out);
 
 	//----------
 
-	static Firebird::IExternalResultSet* cancelProcedure(Firebird::ThrowStatusExceptionWrapper* status,
+	static Firebird::IExternalResultSet* closeHandleProcedure(Firebird::ThrowStatusExceptionWrapper* status,
 		Firebird::IExternalContext* context, const HandleMessage::Type* in, void* out);
 
 	//----------
 
-	FB_MESSAGE(NewInput, Firebird::ThrowStatusExceptionWrapper,
+	FB_MESSAGE(NewBlobInput, Firebird::ThrowStatusExceptionWrapper,
 		(FB_BOOLEAN, segmented)
 		(FB_BOOLEAN, tempStorage)
 	);
 
-	static void newFunction(Firebird::ThrowStatusExceptionWrapper* status,
+	static void newBlobFunction(Firebird::ThrowStatusExceptionWrapper* status,
 		Firebird::IExternalContext* context,
-		const NewInput::Type* in, HandleMessage::Type* out);
+		const NewBlobInput::Type* in, BlobMessage::Type* out);
 
 	//----------
 
@@ -100,14 +95,14 @@ private:
 
 	//----------
 
-	FB_MESSAGE(ReadInput, Firebird::ThrowStatusExceptionWrapper,
+	FB_MESSAGE(ReadDataInput, Firebird::ThrowStatusExceptionWrapper,
 		(FB_INTEGER, handle)
 		(FB_INTEGER, length)
 	);
 
-	static void readFunction(Firebird::ThrowStatusExceptionWrapper* status,
+	static void readDataFunction(Firebird::ThrowStatusExceptionWrapper* status,
 		Firebird::IExternalContext* context,
-		const ReadInput::Type* in, BinaryMessage::Type* out);
+		const ReadDataInput::Type* in, BinaryMessage::Type* out);
 
 	//----------
 
