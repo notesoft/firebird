@@ -51,6 +51,10 @@ private:
 		(FB_INTEGER, handle)
 	);
 
+	FB_MESSAGE(BooleanMessage, Firebird::ThrowStatusExceptionWrapper,
+		(FB_BOOLEAN, boolean)
+	);
+
 	//----------
 
 	static Firebird::IExternalResultSet* cancelBlobProcedure(Firebird::ThrowStatusExceptionWrapper* status,
@@ -60,6 +64,12 @@ private:
 
 	static Firebird::IExternalResultSet* closeHandleProcedure(Firebird::ThrowStatusExceptionWrapper* status,
 		Firebird::IExternalContext* context, const HandleMessage::Type* in, void* out);
+
+	//----------
+
+	static void isWritableFunction(Firebird::ThrowStatusExceptionWrapper* status,
+		Firebird::IExternalContext* context,
+		const BlobMessage::Type* in, BooleanMessage::Type* out);
 
 	//----------
 

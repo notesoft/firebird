@@ -29,6 +29,15 @@ Input parameter:
 
 Return type: `INTEGER NOT NULL`.
 
+## Function `IS_WRITABLE`
+
+`RDB$BLOB_UTIL.IS_WRITABLE` returns `TRUE` when BLOB is suitable for data appending without copying using `BLOB_APPEND`.
+
+Input parameter:
+ - `BLOB` type `BLOB NOT NULL`
+
+Return type: `BOOLEAN NOT NULL`.
+
 ## Function `READ_DATA`
 
 `RDB$BLOB_UTIL.READ_DATA` is used to read chunks of data of a BLOB handle opened with `RDB$BLOB_UTIL.OPEN_BLOB`. When the BLOB is fully read and there is no more data, it returns `NULL`.
@@ -164,6 +173,29 @@ begin
     -- Seek to -1 since the end.
     rdb$blob_util.seek(b, 2, -1);
     s = rdb$blob_util.read_data(b, 3);
+    suspend;
+end!
+
+set term ;!
+```
+
+- Example 4: Check if blobs are writable:
+
+```
+create table t(b blob);
+
+set term !;
+
+execute block returns (bool boolean)
+as
+    declare b blob;
+begin
+    b = blob_append(null, 'writable');
+    bool = rdb$blob_util.is_writable(b);
+    suspend;
+
+    insert into t (b) values ('not writable') returning b into b;
+    bool = rdb$blob_util.is_writable(b);
     suspend;
 end!
 

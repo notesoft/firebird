@@ -89,6 +89,33 @@ IExternalResultSet* BlobUtilPackage::closeHandleProcedure(ThrowStatusExceptionWr
 	return nullptr;
 }
 
+void BlobUtilPackage::isWritableFunction(ThrowStatusExceptionWrapper* status,
+	IExternalContext* context, const BlobMessage::Type* in, BooleanMessage::Type* out)
+{
+	const auto tdbb = JRD_get_thread_data();
+	const auto transaction = tdbb->getTransaction();
+
+	const auto blobId = *(bid*) &in->blob;
+
+	out->booleanNull = FB_FALSE;
+
+	if (!blobId.bid_internal.bid_relation_id)
+	{
+		if (!transaction->tra_blobs->locate(blobId.bid_temp_id()))
+			status_exception::raise(Arg::Gds(isc_bad_segstr_id));
+
+		const auto blobIdx = transaction->tra_blobs->current();
+
+		if (!blobIdx.bli_materialized && (blobIdx.bli_blob_object->blb_flags & BLB_close_on_read))
+		{
+			out->boolean = FB_TRUE;
+			return;
+		}
+	}
+
+	out->boolean = FB_FALSE;
+}
+
 void BlobUtilPackage::newBlobFunction(ThrowStatusExceptionWrapper* status,
 	IExternalContext* context, const NewBlobInput::Type* in, BlobMessage::Type* out)
 {
@@ -205,6 +232,16 @@ BlobUtilPackage::BlobUtilPackage(Firebird::MemoryPool& pool)
 		},
 		// functions
 		{
+			SystemFunction(
+				pool,
+				"IS_WRITABLE",
+				SystemFunctionFactory<BlobMessage, BooleanMessage, isWritableFunction>(),
+				// parameters
+				{
+					{"BLOB", fld_blob, false}
+				},
+				{fld_bool, false}
+			),
 			SystemFunction(
 				pool,
 				"NEW_BLOB",
