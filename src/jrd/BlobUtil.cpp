@@ -41,6 +41,22 @@ namespace
 		else
 			status_exception::raise(Arg::Gds(isc_invalid_blob_util_handle));
 	}
+
+	BlobIndex* getTempBlobIndexFromId(thread_db* tdbb, const bid& blobId)
+	{
+		if (blobId.bid_internal.bid_relation_id)
+			return nullptr;
+
+		const auto transaction = tdbb->getTransaction();
+
+		if (!transaction->tra_blobs->locate(blobId.bid_temp_id()))
+			status_exception::raise(Arg::Gds(isc_bad_segstr_id));
+
+		const auto blobIndex = &transaction->tra_blobs->current();
+		fb_assert(blobIndex->bli_blob_object);
+
+		return blobIndex;
+	}
 }
 
 namespace Jrd {
@@ -55,22 +71,15 @@ IExternalResultSet* BlobUtilPackage::cancelBlobProcedure(ThrowStatusExceptionWra
 
 	const auto blobId = *(bid*) &in->blob;
 
-	if (!blobId.bid_internal.bid_relation_id)
+	if (const auto blobIdx = getTempBlobIndexFromId(tdbb, blobId))
 	{
-		if (transaction->tra_blobs->locate(blobId.bid_temp_id()))
-		{
-			const auto blobIdx = transaction->tra_blobs->current();
+		if (blobIdx->bli_materialized)
+			status_exception::raise(Arg::Gds(isc_bad_segstr_id));
 
-			if (!blobIdx.bli_materialized)
-			{
-				const auto blob = blobIdx.bli_blob_object;
-				fb_assert(blob);
-				blob->BLB_cancel(tdbb);
-				return nullptr;
-			}
-		}
+		const auto blob = blobIdx->bli_blob_object;
+		blob->BLB_cancel(tdbb);
 
-		status_exception::raise(Arg::Gds(isc_bad_segstr_id));
+		return nullptr;
 	}
 	else
 		status_exception::raise(Arg::Gds(isc_bad_temp_blob_id));
@@ -99,14 +108,9 @@ void BlobUtilPackage::isWritableFunction(ThrowStatusExceptionWrapper* status,
 
 	out->booleanNull = FB_FALSE;
 
-	if (!blobId.bid_internal.bid_relation_id)
+	if (const auto blobIdx = getTempBlobIndexFromId(tdbb, blobId))
 	{
-		if (!transaction->tra_blobs->locate(blobId.bid_temp_id()))
-			status_exception::raise(Arg::Gds(isc_bad_segstr_id));
-
-		const auto blobIdx = transaction->tra_blobs->current();
-
-		if (!blobIdx.bli_materialized && (blobIdx.bli_blob_object->blb_flags & BLB_close_on_read))
+		if (!blobIdx->bli_materialized && (blobIdx->bli_blob_object->blb_flags & BLB_close_on_read))
 		{
 			out->boolean = FB_TRUE;
 			return;
