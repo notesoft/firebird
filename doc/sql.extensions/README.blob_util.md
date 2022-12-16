@@ -135,13 +135,12 @@ end
 - Example 3: Seek in a blob.
 
 ```
-create table t(b blob);
-
 set term !;
 
 execute block returns (s varchar(10))
 as
     declare b blob;
+    declare bhandle integer;
 begin
     -- Create a stream BLOB handle.
     b = rdb$blob_util.new_blob(false, true);
@@ -149,30 +148,27 @@ begin
     -- Add data.
     b = blob_append(b, '0123456789');
 
-    -- Materialize the BLOB.
-    insert into t (b) values (:b);
-
     -- Open the BLOB.
-    b = rdb$blob_util.open_blob(b);
+    bhandle = rdb$blob_util.open_blob(b);
 
     -- Seek to 5 since the start.
-    rdb$blob_util.seek(b, 0, 5);
-    s = rdb$blob_util.read_data(b, 3);
+    rdb$blob_util.seek(bhandle, 0, 5);
+    s = rdb$blob_util.read_data(bhandle, 3);
     suspend;
 
     -- Seek to 2 since the start.
-    rdb$blob_util.seek(b, 0, 2);
-    s = rdb$blob_util.read_data(b, 3);
+    rdb$blob_util.seek(bhandle, 0, 2);
+    s = rdb$blob_util.read_data(bhandle, 3);
     suspend;
 
     -- Advance 2.
-    rdb$blob_util.seek(b, 1, 2);
-    s = rdb$blob_util.read_data(b, 3);
+    rdb$blob_util.seek(bhandle, 1, 2);
+    s = rdb$blob_util.read_data(bhandle, 3);
     suspend;
 
     -- Seek to -1 since the end.
-    rdb$blob_util.seek(b, 2, -1);
-    s = rdb$blob_util.read_data(b, 3);
+    rdb$blob_util.seek(bhandle, 2, -1);
+    s = rdb$blob_util.read_data(bhandle, 3);
     suspend;
 end!
 
