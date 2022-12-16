@@ -274,10 +274,10 @@ BlobUtilPackage::BlobUtilPackage(Firebird::MemoryPool& pool)
 				// parameters
 				{
 					{"HANDLE", fld_butil_handle, false},
-					{"MODE", fld_long_number, false},
-					{"OFFSET", fld_long_number, false}
+					{"MODE", fld_integer, false},
+					{"OFFSET", fld_integer, false}
 				},
-				{fld_long_number, false}
+				{fld_integer, false}
 			),
 			SystemFunction(
 				pool,
@@ -286,7 +286,7 @@ BlobUtilPackage::BlobUtilPackage(Firebird::MemoryPool& pool)
 				// parameters
 				{
 					{"HANDLE", fld_butil_handle, false},
-					{"LENGTH", fld_long_number, true}
+					{"LENGTH", fld_integer, true}
 				},
 				{fld_varybinary_max, true}
 			)
