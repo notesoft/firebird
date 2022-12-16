@@ -228,7 +228,7 @@ BlobUtilPackage::BlobUtilPackage(Firebird::MemoryPool& pool)
 				prc_executable,
 				// input parameters
 				{
-					{"HANDLE", fld_long_number, false},
+					{"HANDLE", fld_butil_handle, false},
 				},
 				// output parameters
 				{}
@@ -265,7 +265,7 @@ BlobUtilPackage::BlobUtilPackage(Firebird::MemoryPool& pool)
 				{
 					{"BLOB", fld_blob, false}
 				},
-				{fld_long_number, false}
+				{fld_butil_handle, false}
 			),
 			SystemFunction(
 				pool,
@@ -273,7 +273,7 @@ BlobUtilPackage::BlobUtilPackage(Firebird::MemoryPool& pool)
 				SystemFunctionFactory<SeekInput, SeekOutput, seekFunction>(),
 				// parameters
 				{
-					{"HANDLE", fld_long_number, false},
+					{"HANDLE", fld_butil_handle, false},
 					{"MODE", fld_long_number, false},
 					{"OFFSET", fld_long_number, false}
 				},
@@ -285,7 +285,7 @@ BlobUtilPackage::BlobUtilPackage(Firebird::MemoryPool& pool)
 				SystemFunctionFactory<ReadDataInput, BinaryMessage, readDataFunction>(),
 				// parameters
 				{
-					{"HANDLE", fld_long_number, false},
+					{"HANDLE", fld_butil_handle, false},
 					{"LENGTH", fld_long_number, true}
 				},
 				{fld_varybinary_max, true}
