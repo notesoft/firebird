@@ -40,9 +40,9 @@
 # MOD 07-Oct-2002
 
 # This rule creates parse.cpp from parse.y
-
-$(OBJ)/dsql/parse.cpp: $(SRC_ROOT)/include/gen/parse.h
-$(OBJ)/dsql/parse.cpp $(SRC_ROOT)/include/gen/parse.h: $(SRC_ROOT)/dsql/parse.y $(SRC_ROOT)/dsql/btyacc_fb.ske
+# Use percent so make understand that the command generates both files.
+# With make 4.3 this can be replaced by group target (&:) feature.
+$(OBJ)/dsql/parse%cpp $(SRC_ROOT)/include/gen/parse%h: $(SRC_ROOT)/dsql/parse.y $(SRC_ROOT)/dsql/btyacc_fb.ske
 	sed -n '/%type .*/p' < $< > $(GEN_ROOT)/types.y
 	sed 's/%type .*//' < $< > $(GEN_ROOT)/y.y
 	($(BTYACC) -l -d -S $(SRC_ROOT)/dsql/btyacc_fb.ske $(GEN_ROOT)/y.y; echo $$? > $(GEN_ROOT)/y.status) 2>&1 | tee $(GEN_ROOT)/y.txt
@@ -62,7 +62,7 @@ $(SRC_ROOT)/gpre/gpre_meta.cpp:  $(SRC_ROOT)/gpre/gpre_meta.epp
 
 
 # Explicit dependence on generated header (parser)
-$(OBJ)/dsql/Parser.o $(OBJ)/common/keywords.o $(OBJ)/dsql/dsql.o:	$(SRC_ROOT)/include/gen/parse.h
+$(OBJ)/dsql/Parser.o $(OBJ)/dsql/Keywords.o $(OBJ)/dsql/dsql.o:	$(SRC_ROOT)/include/gen/parse.h
 
 # Special cases for building cpp from epp
 $(OBJ)/dsql/metd.cpp: $(SRC_ROOT)/dsql/metd.epp
