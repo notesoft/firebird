@@ -481,9 +481,12 @@ void TracePluginImpl::logRecordTrig(const char* action, ITraceDatabaseConnection
 			break;
 	}
 
-	record.printf(NEWLINE "%s (%s):", name.c_str(), extras.c_str());
+	string temp;
+	temp.printf(NEWLINE "%s (%s):", name.c_str(), extras.c_str());
 
-	record += (stmt_id && !checkRoutine(stmt_id)) ? getPlan(trigger) : NEWLINE;
+	temp += (stmt_id && !checkRoutine(stmt_id)) ? getPlan(trigger) : NEWLINE;
+
+	record.insert(0, temp);
 
 	if (!transaction) {
 		logRecordConn(action, connection);
