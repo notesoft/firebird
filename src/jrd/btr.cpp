@@ -341,6 +341,171 @@ void IndexErrorContext::raise(thread_db* tdbb, idx_e result, Record* record)
 	ERR_punt();
 }
 
+// IndexCondition class
+
+IndexCondition::IndexCondition(thread_db* tdbb, index_desc* idx)
+	: m_tdbb(tdbb)
+{
+	if (!(idx->idx_flags & idx_condition))
+		return;
+
+	fb_assert(idx->idx_condition);
+	m_condition = idx->idx_condition;
+
+	fb_assert(idx->idx_condition_statement);
+	const auto orgRequest = tdbb->getRequest();
+	m_request = idx->idx_condition_statement->findRequest(tdbb);
+
+	fb_assert(m_request != orgRequest);
+
+	fb_assert(!m_request->req_caller);
+	m_request->req_caller = orgRequest;
+
+	m_request->req_flags &= req_in_use;
+	m_request->req_flags |= req_active;
+
+	TRA_attach_request(tdbb->getTransaction(), m_request);
+	fb_assert(m_request->req_transaction);
+
+	if (orgRequest)
+		m_request->setGmtTimeStamp(orgRequest->getGmtTimeStamp());
+	else
+		m_request->validateTimeStamp();
+
+	m_request->req_rpb[0].rpb_number.setValue(BOF_NUMBER);
+	m_request->req_rpb[0].rpb_number.setValid(true);
+}
+
+IndexCondition::~IndexCondition()
+{
+	if (m_request)
+	{
+		EXE_unwind(m_tdbb, m_request);
+
+		m_request->req_flags &= ~req_in_use;
+		m_request->req_attachment = nullptr;
+	}
+}
+
+bool IndexCondition::evaluate(Record* record) const
+{
+	if (!m_request)
+		return true;
+
+	const auto orgRequest = m_tdbb->getRequest();
+	m_tdbb->setRequest(m_request);
+
+	m_request->req_rpb[0].rpb_record = record;
+	m_request->req_flags &= ~req_null;
+
+	FbLocalStatus status;
+	bool result = false;
+
+	try
+	{
+		Jrd::ContextPoolHolder context(m_tdbb, m_request->req_pool);
+
+		result = m_condition->execute(m_tdbb, m_request);
+	}
+	catch (const Exception& ex)
+	{
+		ex.stuffException(&status);
+	}
+
+	m_tdbb->setRequest(orgRequest);
+
+	status.check();
+
+	return result;
+}
+
+// IndexExpression class
+
+IndexExpression::IndexExpression(thread_db* tdbb, index_desc* idx)
+	: m_tdbb(tdbb)
+{
+	if (!(idx->idx_flags & idx_expression))
+		return;
+
+	fb_assert(idx->idx_expression);
+	m_expression = idx->idx_expression;
+
+	fb_assert(!idx->idx_expression_desc.isUnknown());
+	m_desc = &idx->idx_expression_desc;
+
+	fb_assert(idx->idx_expression_statement);
+	const auto orgRequest = tdbb->getRequest();
+	m_request = idx->idx_expression_statement->findRequest(tdbb, true);
+
+	if (!m_request)
+		ERR_post(Arg::Gds(isc_random) << "Attempt to evaluate index expression recursively");
+
+	fb_assert(m_request != orgRequest);
+
+	fb_assert(!m_request->req_caller);
+	m_request->req_caller = orgRequest;
+
+	m_request->req_flags &= req_in_use;
+	m_request->req_flags |= req_active;
+
+	TRA_attach_request(tdbb->getTransaction(), m_request);
+	fb_assert(m_request->req_transaction);
+	TRA_setup_request_snapshot(tdbb, m_request);
+
+	if (orgRequest)
+		m_request->setGmtTimeStamp(orgRequest->getGmtTimeStamp());
+	else
+		m_request->validateTimeStamp();
+
+	m_request->req_rpb[0].rpb_number.setValue(BOF_NUMBER);
+	m_request->req_rpb[0].rpb_number.setValid(true);
+}
+
+IndexExpression::~IndexExpression()
+{
+	if (m_request)
+	{
+		EXE_unwind(m_tdbb, m_request);
+
+		m_request->req_flags &= ~req_in_use;
+		m_request->req_attachment = nullptr;
+	}
+}
+
+dsc* IndexExpression::evaluate(Record* record, bool& notNull) const
+{
+	fb_assert(m_request);
+
+	const auto orgRequest = m_tdbb->getRequest();
+	m_tdbb->setRequest(m_request);
+
+	m_request->req_rpb[0].rpb_record = record;
+	m_request->req_flags &= ~req_null;
+
+	FbLocalStatus status;
+	dsc* result = NULL;
+
+	try
+	{
+		Jrd::ContextPoolHolder context(m_tdbb, m_request->req_pool);
+
+		if (!(result = EVL_expr(m_tdbb, m_request, m_expression)))
+			result = m_desc;
+
+		notNull = !(m_request->req_flags & req_null);
+	}
+	catch (const Exception& ex)
+	{
+		ex.stuffException(&status);
+	}
+
+	m_tdbb->setRequest(orgRequest);
+
+	status.check();
+
+	return result;
+}
+
 
 void BTR_all(thread_db* tdbb, jrd_rel* relation, IndexDescList& idxList, RelationPages* relPages)
 {
@@ -551,130 +716,13 @@ bool BTR_description(thread_db* tdbb, jrd_rel* relation, index_root_page* root, 
 
 bool BTR_check_condition(Jrd::thread_db* tdbb, Jrd::index_desc* idx, Jrd::Record* record)
 {
-	if (!(idx->idx_flags & idx_condition))
-		return true;
-
-	fb_assert(idx->idx_condition);
-
-	Request* const orgRequest = tdbb->getRequest();
-	Request* const conditionRequest = idx->idx_condition_statement->findRequest(tdbb);
-
-	fb_assert(conditionRequest != orgRequest);
-
-	fb_assert(!conditionRequest->req_caller);
-	conditionRequest->req_caller = orgRequest;
-
-	conditionRequest->req_flags &= req_in_use;
-	conditionRequest->req_flags |= req_active;
-	TRA_attach_request(tdbb->getTransaction(), conditionRequest);
-	tdbb->setRequest(conditionRequest);
-
-	fb_assert(conditionRequest->req_transaction);
-
-	conditionRequest->req_rpb[0].rpb_record = record;
-	conditionRequest->req_rpb[0].rpb_number.setValue(BOF_NUMBER);
-	conditionRequest->req_rpb[0].rpb_number.setValid(true);
-	conditionRequest->req_flags &= ~req_null;
-
-	FbLocalStatus status;
-	bool result = false;
-
-	try
-	{
-		Jrd::ContextPoolHolder context(tdbb, conditionRequest->req_pool);
-
-		if (orgRequest)
-			conditionRequest->setGmtTimeStamp(orgRequest->getGmtTimeStamp());
-		else
-			conditionRequest->validateTimeStamp();
-
-		result = idx->idx_condition->execute(tdbb, conditionRequest);
-	}
-	catch (const Exception& ex)
-	{
-		ex.stuffException(&status);
-	}
-
-	EXE_unwind(tdbb, conditionRequest);
-	conditionRequest->req_flags &= ~req_in_use;
-	conditionRequest->req_attachment = nullptr;
-
-	tdbb->setRequest(orgRequest);
-
-	status.check();
-
-	return result;
+	return IndexCondition(tdbb, idx).evaluate(record);
 }
 
 
-DSC* BTR_eval_expression(thread_db* tdbb, index_desc* idx, Record* record, bool& notNull)
+dsc* BTR_eval_expression(thread_db* tdbb, index_desc* idx, Record* record, bool& notNull)
 {
-	SET_TDBB(tdbb);
-	fb_assert(idx->idx_expression);
-
-	// check for recursive expression evaluation
-	Request* const org_request = tdbb->getRequest();
-	Request* const expr_request = idx->idx_expression_statement->findRequest(tdbb, true);
-
-	if (!expr_request)
-		ERR_post(Arg::Gds(isc_random) << "Attempt to evaluate index expression recursively");
-
-	fb_assert(expr_request != org_request);
-
-	fb_assert(!expr_request->req_caller);
-	expr_request->req_caller = org_request;
-
-	expr_request->req_flags &= req_in_use;
-	expr_request->req_flags |= req_active;
-	TRA_attach_request(tdbb->getTransaction(), expr_request);
-	TRA_setup_request_snapshot(tdbb, expr_request);
-	tdbb->setRequest(expr_request);
-
-	fb_assert(expr_request->req_transaction);
-
-	expr_request->req_rpb[0].rpb_record = record;
-	expr_request->req_rpb[0].rpb_number.setValue(BOF_NUMBER);
-	expr_request->req_rpb[0].rpb_number.setValid(true);
-	expr_request->req_flags &= ~req_null;
-
-	DSC* result = NULL;
-
-	try
-	{
-		Jrd::ContextPoolHolder context(tdbb, expr_request->req_pool);
-
-		if (org_request)
-			expr_request->setGmtTimeStamp(org_request->getGmtTimeStamp());
-		else
-			expr_request->validateTimeStamp();
-
-		if (!(result = EVL_expr(tdbb, expr_request, idx->idx_expression)))
-			result = &idx->idx_expression_desc;
-
-		notNull = !(expr_request->req_flags & req_null);
-	}
-	catch (const Exception&)
-	{
-		EXE_unwind(tdbb, expr_request);
-		tdbb->setRequest(org_request);
-
-		expr_request->req_caller = NULL;
-		expr_request->req_flags &= ~req_in_use;
-		expr_request->req_attachment = NULL;
-		expr_request->invalidateTimeStamp();
-
-		throw;
-	}
-
-	EXE_unwind(tdbb, expr_request);
-	tdbb->setRequest(org_request);
-
-	expr_request->req_caller = NULL;
-	expr_request->req_flags &= ~req_in_use;
-	expr_request->req_attachment = NULL;
-	expr_request->invalidateTimeStamp();
-
-	return result;
+	return IndexExpression(tdbb, idx).evaluate(record, notNull);
 }
 
 

@@ -327,6 +327,36 @@ private:
 	bool isLocationDefined;
 };
 
+// Helper classes to allow efficient evaluation of index conditions/expressions
+
+class IndexCondition
+{
+public:
+	IndexCondition(thread_db* tdbb, index_desc* idx);
+	~IndexCondition();
+
+	bool evaluate(Record* record) const;
+
+private:
+	thread_db* const m_tdbb;
+	BoolExprNode* m_condition = nullptr;
+	Request* m_request = nullptr;
+};
+
+class IndexExpression
+{
+public:
+	IndexExpression(thread_db* tdbb, index_desc* idx);
+	~IndexExpression();
+
+	dsc* evaluate(Record* record, bool& notNull) const;
+
+private:
+	thread_db* const m_tdbb;
+	dsc* m_desc = nullptr;
+	ValueExprNode* m_expression = nullptr;
+	Request* m_request = nullptr;
+};
 
 } //namespace Jrd
 

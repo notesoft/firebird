@@ -585,6 +585,8 @@ bool IndexCreateTask::handler(WorkItem& _item)
 	lastRecNo.compose(dbb->dbb_max_records, dbb->dbb_dp_per_pp, 0, 0, item->m_ppSequence + 1);
 	lastRecNo.decrement();
 
+	IndexCondition condition(tdbb, idx);
+
 	// Loop thru the relation computing index keys.  If there are old versions, find them, too.
 	temporary_key key;
 	while (DPM_next(tdbb, &primary, LCK_read, DPM_next_pointer_page))
@@ -637,7 +639,7 @@ bool IndexCreateTask::handler(WorkItem& _item)
 		{
 			Record* record = stack.pop();
 
-			if (!BTR_check_condition(tdbb, idx, record))
+			if (!condition.evaluate(record))
 				continue;
 
 			result = BTR_key(tdbb, relation, record, idx, &key,
@@ -1172,12 +1174,13 @@ void IDX_garbage_collect(thread_db* tdbb, record_param* rpb, RecordStack& going,
 		if (BTR_description(tdbb, rpb->rpb_relation, root, &idx, i))
 		{
 			IndexErrorContext context(rpb->rpb_relation, &idx);
+			IndexCondition condition(tdbb, &idx);
 
 			for (RecordStack::iterator stack1(going); stack1.hasData(); ++stack1)
 			{
 				Record* const rec1 = stack1.object();
 
-				if (!BTR_check_condition(tdbb, &idx, rec1))
+				if (!condition.evaluate(rec1))
 					continue;
 
 				idx_e result = BTR_key(tdbb, rpb->rpb_relation, rec1, &idx, &key1,
