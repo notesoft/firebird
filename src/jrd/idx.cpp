@@ -1563,44 +1563,48 @@ static bool cmpRecordKeys(thread_db* tdbb,
  *  relations but set of indexed fields to compare should be equal.
  *
  **************************************/
-	SET_TDBB(tdbb);
-
-	HalfStaticArray<UCHAR, 256> tmp;
-	DSC desc1, desc2;
-
 	if (idx2->idx_flags & idx_expression)
 	{
 		// Remove assertion below if\when expression index will participate in FK,
 		// currently it is impossible.
 		fb_assert(idx1->idx_flags & idx_expression);
 
-		bool flag_idx;
-		const dsc* desc_idx = BTR_eval_expression(tdbb, idx2, rec2, flag_idx);
+		if (auto idxDesc = BTR_eval_expression(tdbb, idx2, rec2))
+		{
+			HalfStaticArray<UCHAR, 256> tmp;
+			dsc tempDesc;
 
-		// hvlad: BTR_eval_expression call EVL_expr which returns impure->vlu_desc.
-		// Since idx2 and idx1 are the same indexes second call to
-		// BTR_eval_expression will overwrite value from first call. So we must
-		// save first result into another dsc
+			if (idx1 == idx2)
+			{
+				// hvlad: BTR_eval_expression call EVL_expr which returns impure->vlu_desc.
+				// If idx2 and idx1 are the same indexes then the second call to
+				// BTR_eval_expression will overwrite value from the first call.
+				// So we must save the first result into another dsc.
 
-		desc1 = *desc_idx;
-		const USHORT idx_dsc_length = idx2->idx_expression_desc.dsc_length;
-		desc1.dsc_address = tmp.getBuffer(idx_dsc_length + FB_DOUBLE_ALIGN);
-		desc1.dsc_address = FB_ALIGN(desc1.dsc_address, FB_DOUBLE_ALIGN);
-		fb_assert(desc_idx->dsc_length <= idx_dsc_length);
-		memmove(desc1.dsc_address, desc_idx->dsc_address, desc_idx->dsc_length);
+				tempDesc = *idxDesc;
+				const auto idxDscLength = idx2->idx_expression_desc.dsc_length;
+				tempDesc.dsc_address = tmp.getBuffer(idxDscLength + FB_DOUBLE_ALIGN);
+				tempDesc.dsc_address = FB_ALIGN(tempDesc.dsc_address, FB_DOUBLE_ALIGN);
+				fb_assert(idxDesc->dsc_length <= idxDscLength);
+				memmove(tempDesc.dsc_address, idxDesc->dsc_address, idxDesc->dsc_length);
+				idxDesc = &tempDesc;
+			}
 
-		bool flag_rec = false;
-		const dsc* desc_rec = BTR_eval_expression(tdbb, idx1, rec1, flag_rec);
-
-		if (flag_rec && flag_idx && !MOV_compare(tdbb, desc_rec, &desc1))
-			return true;
+			if (const auto recDesc = BTR_eval_expression(tdbb, idx1, rec1))
+			{
+				if (!MOV_compare(tdbb, recDesc, idxDesc))
+					return true;
+			}
+		}
 	}
 	else
 	{
 		fb_assert(idx1->idx_count == idx2->idx_count);
 
+		dsc desc1, desc2;
 		bool all_nulls = true;
 		USHORT i;
+
 		for (i = 0; i < idx1->idx_count; i++)
 		{
 			USHORT field_id = idx1->idx_rpt[i].idx_field;

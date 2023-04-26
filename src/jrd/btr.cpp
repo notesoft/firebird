@@ -188,12 +188,11 @@ namespace
 
 static ULONG add_node(thread_db*, WIN*, index_insertion*, temporary_key*, RecordNumber*,
 					  ULONG*, ULONG*);
-static void compress(thread_db*, const dsc*, temporary_key*, USHORT, bool, bool, USHORT);
+static void compress(thread_db*, const dsc*, temporary_key*, USHORT, bool, USHORT);
 static USHORT compress_root(thread_db*, index_root_page*);
 static void copy_key(const temporary_key*, temporary_key*);
 static contents delete_node(thread_db*, WIN*, UCHAR*);
 static void delete_tree(thread_db*, USHORT, USHORT, PageNumber, PageNumber);
-static DSC* eval(thread_db*, const ValueExprNode*, DSC*, bool*);
 static ULONG fast_load(thread_db*, IndexCreation&, SelectivityList&);
 
 static index_root_page* fetch_root(thread_db*, WIN*, const jrd_rel*, const RelationPages*);
@@ -430,9 +429,6 @@ IndexExpression::IndexExpression(thread_db* tdbb, index_desc* idx)
 	fb_assert(idx->idx_expression);
 	m_expression = idx->idx_expression;
 
-	fb_assert(!idx->idx_expression_desc.isUnknown());
-	m_desc = &idx->idx_expression_desc;
-
 	fb_assert(idx->idx_expression_statement);
 	const auto orgRequest = tdbb->getRequest();
 	m_request = idx->idx_expression_statement->findRequest(tdbb, true);
@@ -472,7 +468,7 @@ IndexExpression::~IndexExpression()
 	}
 }
 
-dsc* IndexExpression::evaluate(Record* record, bool& notNull) const
+dsc* IndexExpression::evaluate(Record* record) const
 {
 	fb_assert(m_request);
 
@@ -483,16 +479,13 @@ dsc* IndexExpression::evaluate(Record* record, bool& notNull) const
 	m_request->req_flags &= ~req_null;
 
 	FbLocalStatus status;
-	dsc* result = NULL;
+	dsc* result = nullptr;
 
 	try
 	{
 		Jrd::ContextPoolHolder context(m_tdbb, m_request->req_pool);
 
-		if (!(result = EVL_expr(m_tdbb, m_request, m_expression)))
-			result = m_desc;
-
-		notNull = !(m_request->req_flags & req_null);
+		result = EVL_expr(m_tdbb, m_request, m_expression);
 	}
 	catch (const Exception& ex)
 	{
@@ -714,15 +707,15 @@ bool BTR_description(thread_db* tdbb, jrd_rel* relation, index_root_page* root, 
 }
 
 
-bool BTR_check_condition(Jrd::thread_db* tdbb, Jrd::index_desc* idx, Jrd::Record* record)
+bool BTR_check_condition(thread_db* tdbb, index_desc* idx, Record* record)
 {
 	return IndexCondition(tdbb, idx).evaluate(record);
 }
 
 
-dsc* BTR_eval_expression(thread_db* tdbb, index_desc* idx, Record* record, bool& notNull)
+dsc* BTR_eval_expression(thread_db* tdbb, index_desc* idx, Record* record)
 {
-	return IndexExpression(tdbb, idx).evaluate(record, notNull);
+	return IndexExpression(tdbb, idx).evaluate(record);
 }
 
 
@@ -1334,14 +1327,11 @@ idx_e BTR_key(thread_db* tdbb, jrd_rel* relation, Record* record, index_desc* id
 
 		if (idx->idx_count == 1)
 		{
-			bool isNull;
 			// for expression indices, compute the value of the expression
 			if (idx->idx_flags & idx_expression)
 			{
-				bool notNull;
-				desc_ptr = BTR_eval_expression(tdbb, idx, record, notNull);
+				desc_ptr = BTR_eval_expression(tdbb, idx, record);
 				// Multi-byte text descriptor is returned already adjusted.
-				isNull = !notNull;
 			}
 			else
 			{
@@ -1350,28 +1340,32 @@ idx_e BTR_key(thread_db* tdbb, jrd_rel* relation, Record* record, index_desc* id
 				// the relation block is referenced.
 				// Reference: Bug 10116, 10424
 				//
-				isNull = !EVL_field(relation, record, tail->idx_field, desc_ptr);
-
-				if (!isNull && desc_ptr->dsc_dtype == dtype_text &&
-					tail->idx_field < record->getFormat()->fmt_desc.getCount())
+				if (EVL_field(relation, record, tail->idx_field, desc_ptr))
 				{
-					// That's necessary for NO-PAD collations.
-					INTL_adjust_text_descriptor(tdbb, desc_ptr);
+					if (desc_ptr->dsc_dtype == dtype_text &&
+						tail->idx_field < record->getFormat()->fmt_desc.getCount())
+					{
+						// That's necessary for NO-PAD collations.
+						INTL_adjust_text_descriptor(tdbb, desc_ptr);
+					}
+				}
+				else
+				{
+					desc_ptr = nullptr;
+					key->key_nulls = 1;
 				}
 			}
 
-			if (isNull)
-				key->key_nulls = 1;
-
 			key->key_flags |= key_empty;
 
-			compress(tdbb, desc_ptr, key, tail->idx_itype, isNull, descending, keyType);
+			compress(tdbb, desc_ptr, key, tail->idx_itype, descending, keyType);
 		}
 		else
 		{
 			UCHAR* p = key->key_data;
 			SSHORT stuff_count = 0;
 			temp.key_flags |= key_empty;
+
 			for (USHORT n = 0; n < count; n++, tail++)
 			{
 				for (; stuff_count; --stuff_count)
@@ -1386,11 +1380,7 @@ idx_e BTR_key(thread_db* tdbb, jrd_rel* relation, Record* record, index_desc* id
 				// In order to "map a null to a default" value (in EVL_field()),
 				// the relation block is referenced.
 				// Reference: Bug 10116, 10424
-				const bool isNull = !EVL_field(relation, record, tail->idx_field, desc_ptr);
-
-				if (isNull)
-					key->key_nulls |= 1 << n;
-				else
+				if (EVL_field(relation, record, tail->idx_field, desc_ptr))
 				{
 					if (desc_ptr->dsc_dtype == dtype_text &&
 						tail->idx_field < record->getFormat()->fmt_desc.getCount())
@@ -1399,8 +1389,13 @@ idx_e BTR_key(thread_db* tdbb, jrd_rel* relation, Record* record, index_desc* id
 						INTL_adjust_text_descriptor(tdbb, desc_ptr);
 					}
 				}
+				else
+				{
+					desc_ptr = nullptr;
+					key->key_nulls |= 1 << n;
+				}
 
-				compress(tdbb, desc_ptr, &temp, tail->idx_itype, isNull, descending, keyType);
+				compress(tdbb, desc_ptr, &temp, tail->idx_itype, descending, keyType);
 
 				const UCHAR* q = temp.key_data;
 				for (USHORT l = temp.key_length; l; --l, --stuff_count)
@@ -1652,13 +1647,12 @@ idx_e BTR_make_key(thread_db* tdbb,
  *	a vector of value expressions, and a place to put the key.
  *
  **************************************/
-	DSC temp_desc;
+	const auto dbb = tdbb->getDatabase();
+	const auto request = tdbb->getRequest();
+
 	temporary_key temp;
 	temp.key_flags = 0;
 	temp.key_length = 0;
-
-	SET_TDBB(tdbb);
-	const Database* dbb = tdbb->getDatabase();
 
 	fb_assert(count > 0);
 	fb_assert(idx != NULL);
@@ -1678,14 +1672,14 @@ idx_e BTR_make_key(thread_db* tdbb,
 	// If the index is a single segment index, don't sweat the compound stuff
 	if (idx->idx_count == 1)
 	{
-		bool isNull;
-		const dsc* desc = eval(tdbb, *exprs, &temp_desc, &isNull);
-		key->key_flags |= key_empty;
+		const auto desc = EVL_expr(tdbb, request, *exprs);
 
-		if (isNull)
+		if (!desc)
 			key->key_nulls = 1;
 
-		compress(tdbb, desc, key, tail->idx_itype, isNull, descending, keyType);
+		key->key_flags |= key_empty;
+
+		compress(tdbb, desc, key, tail->idx_itype, descending, keyType);
 
 		if (fuzzy && (key->key_flags & key_empty))
 		{
@@ -1711,15 +1705,14 @@ idx_e BTR_make_key(thread_db* tdbb,
 					return idx_e_keytoobig;
 			}
 
-			bool isNull;
-			const dsc* desc = eval(tdbb, *exprs++, &temp_desc, &isNull);
+			const auto desc = EVL_expr(tdbb, request, *exprs++);
 
-			if (isNull)
+			if (!desc)
 				key->key_nulls |= 1 << n;
 
 			temp.key_flags |= key_empty;
 
-			compress(tdbb, desc, &temp, tail->idx_itype, isNull, descending,
+			compress(tdbb, desc, &temp, tail->idx_itype, descending,
 				(n == count - 1 ?
 					keyType : ((idx->idx_flags & idx_unique) ? INTL_KEY_UNIQUE : INTL_KEY_SORT)));
 
@@ -1825,15 +1818,6 @@ void BTR_make_null_key(thread_db* tdbb, const index_desc* idx, temporary_key* ke
  *  all null values. This is worked only for ODS11 and later
  *
  **************************************/
-	dsc null_desc;
-	null_desc.dsc_dtype = dtype_text;
-	null_desc.dsc_flags = 0;
-	null_desc.dsc_sub_type = 0;
-	null_desc.dsc_scale = 0;
-	null_desc.dsc_length = 1;
-	null_desc.dsc_ttype() = ttype_ascii;
-	null_desc.dsc_address = (UCHAR*) " ";
-
 	temporary_key temp;
 	temp.key_flags = 0;
 	temp.key_length = 0;
@@ -1853,7 +1837,7 @@ void BTR_make_null_key(thread_db* tdbb, const index_desc* idx, temporary_key* ke
 	// If the index is a single segment index, don't sweat the compound stuff
 	if ((idx->idx_count == 1) || (idx->idx_flags & idx_expression))
 	{
-		compress(tdbb, &null_desc, key, tail->idx_itype, true, descending, INTL_KEY_SORT);
+		compress(tdbb, nullptr, key, tail->idx_itype, descending, INTL_KEY_SORT);
 	}
 	else
 	{
@@ -1867,7 +1851,7 @@ void BTR_make_null_key(thread_db* tdbb, const index_desc* idx, temporary_key* ke
 			for (; stuff_count; --stuff_count)
 				*p++ = 0;
 
-			compress(tdbb, &null_desc, &temp, tail->idx_itype, true, descending, INTL_KEY_SORT);
+			compress(tdbb, nullptr, &temp, tail->idx_itype, descending, INTL_KEY_SORT);
 
 			const UCHAR* q = temp.key_data;
 			for (USHORT l = temp.key_length; l; --l, --stuff_count)
@@ -2559,7 +2543,7 @@ static void compress(thread_db* tdbb,
 					 const dsc* desc,
 					 temporary_key* key,
 					 USHORT itype,
-					 bool isNull, bool descending, USHORT key_type)
+					 bool descending, USHORT key_type)
 {
 /**************************************
  *
@@ -2571,7 +2555,7 @@ static void compress(thread_db* tdbb,
  *	Compress a data value into an index key.
  *
  **************************************/
-	if (isNull)
+	if (!desc) // this indicates NULL
 	{
 		const UCHAR pad = 0;
 		key->key_flags &= ~key_empty;
@@ -3481,43 +3465,6 @@ static void delete_tree(thread_db* tdbb,
 		if (!next.getPageNum())
 			next = down;
 	}
-}
-
-
-static DSC* eval(thread_db* tdbb, const ValueExprNode* node, DSC* temp, bool* isNull)
-{
-/**************************************
- *
- *	e v a l
- *
- **************************************
- *
- * Functional description
- *	Evaluate an expression returning a descriptor, and
- *	a flag to indicate a null value.
- *
- **************************************/
-	SET_TDBB(tdbb);
-
-	Request* request = tdbb->getRequest();
-
-	dsc* desc = EVL_expr(tdbb, request, node);
-	*isNull = false;
-
-	if (desc && !(request->req_flags & req_null))
-		return desc;
-
-	*isNull = true;
-
-	temp->dsc_dtype = dtype_text;
-	temp->dsc_flags = 0;
-	temp->dsc_sub_type = 0;
-	temp->dsc_scale = 0;
-	temp->dsc_length = 1;
-	temp->dsc_ttype() = ttype_ascii;
-	temp->dsc_address = (UCHAR*) " ";
-
-	return temp;
 }
 
 
@@ -6263,9 +6210,8 @@ string print_key(thread_db* tdbb, jrd_rel* relation, index_desc* idx, Record* re
 	{
 		if (idx->idx_flags & idx_expression)
 		{
-			bool notNull = false;
-			const dsc* const desc = BTR_eval_expression(tdbb, idx, record, notNull);
-			value = DescPrinter(tdbb, notNull ? desc : NULL, MAX_KEY_STRING_LEN, CS_METADATA).get();
+			const auto desc = BTR_eval_expression(tdbb, idx, record);
+			value = DescPrinter(tdbb, desc, MAX_KEY_STRING_LEN, CS_METADATA).get();
 			key += "<expression> = " + value;
 		}
 		else

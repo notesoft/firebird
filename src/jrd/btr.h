@@ -349,11 +349,10 @@ public:
 	IndexExpression(thread_db* tdbb, index_desc* idx);
 	~IndexExpression();
 
-	dsc* evaluate(Record* record, bool& notNull) const;
+	dsc* evaluate(Record* record) const;
 
 private:
 	thread_db* const m_tdbb;
-	dsc* m_desc = nullptr;
 	ValueExprNode* m_expression = nullptr;
 	Request* m_request = nullptr;
 };
