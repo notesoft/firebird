@@ -51,6 +51,7 @@ static const TOK tokens[] =
 	{TOK_LEQ, "<=", false},
 	{TOK_NEQ, "<>", false},	// Alias of !=
 	{'=', "=", false},
+	{TOK_NAMED_ARG_ASSIGN, "=>", false},
 	{'>', ">", false},
 	{TOK_GEQ, ">=", false},
 	{TOK_BIND_PARAM, ":=", false},

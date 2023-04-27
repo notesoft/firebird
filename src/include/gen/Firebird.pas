@@ -5313,6 +5313,9 @@ const
 	 isc_bad_temp_blob_id = 335545284;
 	 isc_ods_upgrade_err = 335545285;
 	 isc_bad_par_workers = 335545286;
+	 isc_param_not_exist = 335545287;
+	 isc_param_no_default_not_specified = 335545288;
+	 isc_param_multiple_assignments = 335545289;
 	 isc_gfix_db_name = 335740929;
 	 isc_gfix_invalid_sw = 335740930;
 	 isc_gfix_incmp_sw = 335740932;
