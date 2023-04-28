@@ -41,8 +41,6 @@ UCHAR*	BTR_find_leaf(Ods::btree_page*, Jrd::temporary_key*, UCHAR*, USHORT*, boo
 Ods::btree_page*	BTR_find_page(Jrd::thread_db*, const Jrd::IndexRetrieval*, Jrd::win*, Jrd::index_desc*,
 								 Jrd::temporary_key*, Jrd::temporary_key*, bool = true);
 void	BTR_insert(Jrd::thread_db*, Jrd::win*, Jrd::index_insertion*);
-Jrd::idx_e	BTR_key(Jrd::thread_db*, Jrd::jrd_rel*, Jrd::Record*, Jrd::index_desc*, Jrd::temporary_key*,
-					const USHORT, USHORT = 0);
 USHORT	BTR_key_length(Jrd::thread_db*, Jrd::jrd_rel*, Jrd::index_desc*);
 Ods::btree_page*	BTR_left_handoff(Jrd::thread_db*, Jrd::win*, Ods::btree_page*, SSHORT);
 bool	BTR_lookup(Jrd::thread_db*, Jrd::jrd_rel*, USHORT, Jrd::index_desc*, Jrd::RelationPages*);

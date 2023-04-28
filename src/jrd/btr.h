@@ -357,6 +357,69 @@ private:
 	Request* m_request = nullptr;
 };
 
+// Index key wrapper
+
+class IndexKey
+{
+public:
+	IndexKey(thread_db* tdbb, jrd_rel* relation, index_desc* idx);
+	IndexKey(thread_db* tdbb, jrd_rel* relation, index_desc* idx,
+			 USHORT type, USHORT segments);
+
+	idx_e compose(Record* record);
+
+	operator temporary_key*()
+	{
+		return &m_key;
+	}
+
+	temporary_key* operator->()
+	{
+		return &m_key;
+	}
+
+	bool operator==(const IndexKey& other) const
+	{
+		if (m_key.key_length != other.m_key.key_length)
+			return false;
+
+		return !memcmp(m_key.key_data, other.m_key.key_data, m_key.key_length);
+	}
+
+	bool operator!=(const IndexKey& other) const
+	{
+		if (m_key.key_length != other.m_key.key_length)
+			return true;
+
+		return memcmp(m_key.key_data, other.m_key.key_data, m_key.key_length);
+	}
+
+	// Return ordinal number of the first NULL segment
+	USHORT getNullSegment() const
+	{
+		USHORT nulls = m_key.key_nulls;
+
+		for (USHORT i = 0; nulls; i++)
+		{
+			if (nulls & 1)
+				return i;
+
+			nulls >>= 1;
+		}
+
+		return MAX_USHORT;
+	}
+
+private:
+	thread_db* const m_tdbb;
+	jrd_rel* const m_relation;
+	index_desc* const m_index;
+	const USHORT m_type;
+	const USHORT m_segments;
+	temporary_key m_key;
+	Firebird::AutoPtr<IndexExpression> m_expression;
+};
+
 } //namespace Jrd
 
 #endif // JRD_BTR_H

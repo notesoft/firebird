@@ -500,6 +500,191 @@ dsc* IndexExpression::evaluate(Record* record) const
 }
 
 
+IndexKey::IndexKey(thread_db* tdbb, jrd_rel* relation, index_desc* idx)
+	: m_tdbb(tdbb), m_relation(relation), m_index(idx),
+	  m_type((idx->idx_flags & idx_unique) ? INTL_KEY_UNIQUE : INTL_KEY_SORT),
+	  m_segments(idx->idx_count)
+{
+	if (m_index->idx_flags & idx_expression)
+		m_expression = FB_NEW_POOL(*tdbb->getDefaultPool()) IndexExpression(tdbb, idx);
+}
+
+IndexKey::IndexKey(thread_db* tdbb, jrd_rel* relation, index_desc* idx,
+				   USHORT keyType, USHORT segments)
+	: m_tdbb(tdbb), m_relation(relation), m_index(idx),
+	  m_type(keyType), m_segments(segments)
+{
+	fb_assert(m_segments);
+
+	if (m_index->idx_flags & idx_expression)
+		m_expression = FB_NEW_POOL(*tdbb->getDefaultPool()) IndexExpression(tdbb, idx);
+}
+
+idx_e IndexKey::compose(Record* record)
+{
+	// Compute a key from a record and an index descriptor.
+	// Note that compound keys are expanded by 25%.
+	// If this changes, both BTR_key_length and GDEF exe.e have to change.
+
+	const auto dbb = m_tdbb->getDatabase();
+	const auto maxKeyLength = dbb->getMaxIndexKeyLength();
+
+	temporary_key temp;
+	temp.key_flags = 0;
+	temp.key_length = 0;
+
+	dsc desc;
+	dsc* desc_ptr;
+
+	auto tail = m_index->idx_rpt;
+	m_key.key_flags = 0;
+	m_key.key_nulls = 0;
+
+	const bool descending = (m_index->idx_flags & idx_descending);
+
+	try
+	{
+		if (m_index->idx_count == 1)
+		{
+			// For expression indices, compute the value of the expression
+
+			if (m_expression)
+			{
+				desc_ptr = m_expression->evaluate(record);
+				// Multi-byte text descriptor is returned already adjusted.
+			}
+			else
+			{
+				desc_ptr = &desc;
+
+				// In order to "map a null to a default" value (in EVL_field()),
+				// the relation block is referenced.
+				// Reference: Bug 10116, 10424
+
+				if (EVL_field(m_relation, record, tail->idx_field, desc_ptr))
+				{
+					if (desc_ptr->dsc_dtype == dtype_text &&
+						tail->idx_field < record->getFormat()->fmt_desc.getCount())
+					{
+						// That's necessary for NO-PAD collations.
+						INTL_adjust_text_descriptor(m_tdbb, desc_ptr);
+					}
+				}
+				else
+				{
+					desc_ptr = nullptr;
+					m_key.key_nulls = 1;
+				}
+			}
+
+			m_key.key_flags |= key_empty;
+
+			compress(m_tdbb, desc_ptr, &m_key, tail->idx_itype, descending, m_type);
+		}
+		else
+		{
+			UCHAR* p = m_key.key_data;
+			SSHORT stuff_count = 0;
+			temp.key_flags |= key_empty;
+
+			for (USHORT n = 0; n < m_segments; n++, tail++)
+			{
+				for (; stuff_count; --stuff_count)
+				{
+					*p++ = 0;
+
+					if (p - m_key.key_data >= maxKeyLength)
+						return idx_e_keytoobig;
+				}
+
+				desc_ptr = &desc;
+
+				// In order to "map a null to a default" value (in EVL_field()),
+				// the relation block is referenced.
+				// Reference: Bug 10116, 10424
+
+				if (EVL_field(m_relation, record, tail->idx_field, desc_ptr))
+				{
+					if (desc_ptr->dsc_dtype == dtype_text &&
+						tail->idx_field < record->getFormat()->fmt_desc.getCount())
+					{
+						// That's necessary for NO-PAD collations.
+						INTL_adjust_text_descriptor(m_tdbb, desc_ptr);
+					}
+				}
+				else
+				{
+					desc_ptr = nullptr;
+					m_key.key_nulls |= 1 << n;
+				}
+
+				compress(m_tdbb, desc_ptr, &temp, tail->idx_itype, descending, m_type);
+
+				const UCHAR* q = temp.key_data;
+				for (USHORT l = temp.key_length; l; --l, --stuff_count)
+				{
+					if (stuff_count == 0)
+					{
+						*p++ = m_index->idx_count - n;
+						stuff_count = STUFF_COUNT;
+
+						if (p - m_key.key_data >= maxKeyLength)
+							return idx_e_keytoobig;
+					}
+
+					*p++ = *q++;
+
+					if (p - m_key.key_data >= maxKeyLength)
+						return idx_e_keytoobig;
+				}
+			}
+
+			m_key.key_length = (p - m_key.key_data);
+
+			if (temp.key_flags & key_empty)
+				m_key.key_flags |= key_empty;
+		}
+
+		if (m_key.key_length >= maxKeyLength)
+			return idx_e_keytoobig;
+
+		if (descending)
+			BTR_complement_key(&m_key);
+	}
+	catch (const Exception& ex)
+	{
+		if (!(m_tdbb->tdbb_flags & TDBB_sys_error))
+		{
+			Arg::StatusVector error(ex);
+
+			if (!(error.length() > 1 &&
+				  error.value()[0] == isc_arg_gds &&
+				  error.value()[1] == isc_expression_eval_index))
+			{
+				MetaName indexName;
+				MET_lookup_index(m_tdbb, indexName, m_relation->rel_name, m_index->idx_id + 1);
+
+				if (indexName.isEmpty())
+					indexName = "***unknown***";
+
+				error.prepend(Arg::Gds(isc_expression_eval_index) <<
+					Arg::Str(indexName) <<
+					Arg::Str(m_relation->rel_name));
+			}
+
+			error.copyTo(m_tdbb->tdbb_status_vector);
+		}
+		else
+			ex.stuffException(m_tdbb->tdbb_status_vector);
+
+		m_key.key_length = 0;
+
+		return (m_tdbb->tdbb_flags & TDBB_sys_error) ? idx_e_interrupt : idx_e_conversion;
+	}
+
+	return idx_e_ok;
+}
+
 void BTR_all(thread_db* tdbb, jrd_rel* relation, IndexDescList& idxList, RelationPages* relPages)
 {
 /**************************************
@@ -1282,185 +1467,6 @@ void BTR_insert(thread_db* tdbb, WIN* root_window, index_insertion* insertion)
 	CCH_MARK(tdbb, root_window);
 	root->irt_rpt[idx->idx_id].setRoot(new_window.win_page.getPageNum());
 	CCH_RELEASE(tdbb, root_window);
-}
-
-
-idx_e BTR_key(thread_db* tdbb, jrd_rel* relation, Record* record, index_desc* idx,
-			  temporary_key* key, const USHORT keyType, USHORT count)
-{
-/**************************************
- *
- *	B T R _ k e y
- *
- **************************************
- *
- * Functional description
- *	Compute a key from a record and an index descriptor.
- *	Note that compound keys are expanded by 25%.  If this
- *	changes, both BTR_key_length and GDEF exe.e have to
- *	change.
- *
- **************************************/
-	temporary_key temp;
-	temp.key_flags = 0;
-	temp.key_length = 0;
-	DSC desc;
-	DSC* desc_ptr;
-
-	SET_TDBB(tdbb);
-	const Database* dbb = tdbb->getDatabase();
-	CHECK_DBB(dbb);
-
-	index_desc::idx_repeat* tail = idx->idx_rpt;
-	key->key_flags = 0;
-	key->key_nulls = 0;
-
-	const bool descending = (idx->idx_flags & idx_descending);
-
-	if (!count)
-		count = idx->idx_count;
-
-	const USHORT maxKeyLength = dbb->getMaxIndexKeyLength();
-
-	try {
-		// Special case single segment indices
-
-		if (idx->idx_count == 1)
-		{
-			// for expression indices, compute the value of the expression
-			if (idx->idx_flags & idx_expression)
-			{
-				desc_ptr = BTR_eval_expression(tdbb, idx, record);
-				// Multi-byte text descriptor is returned already adjusted.
-			}
-			else
-			{
-				desc_ptr = &desc;
-				// In order to "map a null to a default" value (in EVL_field()),
-				// the relation block is referenced.
-				// Reference: Bug 10116, 10424
-				//
-				if (EVL_field(relation, record, tail->idx_field, desc_ptr))
-				{
-					if (desc_ptr->dsc_dtype == dtype_text &&
-						tail->idx_field < record->getFormat()->fmt_desc.getCount())
-					{
-						// That's necessary for NO-PAD collations.
-						INTL_adjust_text_descriptor(tdbb, desc_ptr);
-					}
-				}
-				else
-				{
-					desc_ptr = nullptr;
-					key->key_nulls = 1;
-				}
-			}
-
-			key->key_flags |= key_empty;
-
-			compress(tdbb, desc_ptr, key, tail->idx_itype, descending, keyType);
-		}
-		else
-		{
-			UCHAR* p = key->key_data;
-			SSHORT stuff_count = 0;
-			temp.key_flags |= key_empty;
-
-			for (USHORT n = 0; n < count; n++, tail++)
-			{
-				for (; stuff_count; --stuff_count)
-				{
-					*p++ = 0;
-
-					if (p - key->key_data >= maxKeyLength)
-						return idx_e_keytoobig;
-				}
-
-				desc_ptr = &desc;
-				// In order to "map a null to a default" value (in EVL_field()),
-				// the relation block is referenced.
-				// Reference: Bug 10116, 10424
-				if (EVL_field(relation, record, tail->idx_field, desc_ptr))
-				{
-					if (desc_ptr->dsc_dtype == dtype_text &&
-						tail->idx_field < record->getFormat()->fmt_desc.getCount())
-					{
-						// That's necessary for NO-PAD collations.
-						INTL_adjust_text_descriptor(tdbb, desc_ptr);
-					}
-				}
-				else
-				{
-					desc_ptr = nullptr;
-					key->key_nulls |= 1 << n;
-				}
-
-				compress(tdbb, desc_ptr, &temp, tail->idx_itype, descending, keyType);
-
-				const UCHAR* q = temp.key_data;
-				for (USHORT l = temp.key_length; l; --l, --stuff_count)
-				{
-					if (stuff_count == 0)
-					{
-						*p++ = idx->idx_count - n;
-						stuff_count = STUFF_COUNT;
-
-						if (p - key->key_data >= maxKeyLength)
-							return idx_e_keytoobig;
-					}
-
-					*p++ = *q++;
-
-					if (p - key->key_data >= maxKeyLength)
-						return idx_e_keytoobig;
-				}
-			}
-
-			key->key_length = (p - key->key_data);
-
-			if (temp.key_flags & key_empty)
-				key->key_flags |= key_empty;
-		}
-
-		if (key->key_length >= maxKeyLength)
-			return idx_e_keytoobig;
-
-		if (descending)
-			BTR_complement_key(key);
-
-	}	// try
-	catch (const Exception& ex)
-	{
-		if (!(tdbb->tdbb_flags & TDBB_sys_error))
-		{
-			Arg::StatusVector error(ex);
-
-			if (!(error.length() > 1 &&
-				  error.value()[0] == isc_arg_gds &&
-				  error.value()[1] == isc_expression_eval_index))
-			{
-				MetaName indexName;
-				MET_lookup_index(tdbb, indexName, relation->rel_name, idx->idx_id + 1);
-
-				if (indexName.isEmpty())
-					indexName = "***unknown***";
-
-				error.prepend(Arg::Gds(isc_expression_eval_index) <<
-					Arg::Str(indexName) <<
-					Arg::Str(relation->rel_name));
-			}
-
-			error.copyTo(tdbb->tdbb_status_vector);
-		}
-		else
-			ex.stuffException(tdbb->tdbb_status_vector);
-
-		key->key_length = 0;
-
-		return (tdbb->tdbb_flags & TDBB_sys_error) ? idx_e_interrupt : idx_e_conversion;
-	}
-
-	return idx_e_ok;
 }
 
 
