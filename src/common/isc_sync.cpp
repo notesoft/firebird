@@ -2518,7 +2518,7 @@ bool SharedMemoryBase::remapFile(CheckStatusWrapper* statusVector, ULONG new_len
 
 #ifdef WIN_NT
 #define ISC_REMAP_FILE_DEFINED
-bool SharedMemoryBase::remapFile(CheckStatusWrapper* statusVector,
+MemoryHeader* const SharedMemoryBase::remapFile(CheckStatusWrapper* statusVector,
 								 ULONG new_length, bool flag)
 {
 /**************************************

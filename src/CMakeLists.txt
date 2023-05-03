@@ -128,11 +128,11 @@ add_custom_command(
     OUTPUT metadata.fdb
     DEPENDS
         boot_gbak
-        ${CMAKE_SOURCE_DIR}/builds/misc/metadata.gbak
+        ${CMAKE_CURRENT_SOURCE_DIR}/builds/misc/metadata.gbak
     #
     COMMAND ${CMAKE_COMMAND} -E remove metadata.fdb
     COMMAND ${CMAKE_COMMAND} -E remove metadata_.fdb
-    COMMAND ${BOOT_GBAK_CMD} -r ${CMAKE_SOURCE_DIR}/builds/misc/metadata.gbak metadata_.fdb
+    COMMAND ${BOOT_GBAK_CMD} -r ${CMAKE_CURRENT_SOURCE_DIR}/builds/misc/metadata.gbak metadata_.fdb
     COMMAND ${CMAKE_COMMAND} -E copy_if_different metadata_.fdb metadata.fdb
 )
 add_custom_command(
@@ -140,11 +140,11 @@ add_custom_command(
     DEPENDS
         boot_gbak
         metadata.fdb
-        ${CMAKE_SOURCE_DIR}/builds/misc/help.gbak
+        ${CMAKE_CURRENT_SOURCE_DIR}/builds/misc/help.gbak
     #
     COMMAND ${CMAKE_COMMAND} -E remove help.fdb
     COMMAND ${CMAKE_COMMAND} -E remove help_.fdb
-    COMMAND ${BOOT_GBAK_CMD} -r ${CMAKE_SOURCE_DIR}/builds/misc/help.gbak help_.fdb
+    COMMAND ${BOOT_GBAK_CMD} -r ${CMAKE_CURRENT_SOURCE_DIR}/builds/misc/help.gbak help_.fdb
     COMMAND ${CMAKE_COMMAND} -E copy_if_different help_.fdb help.fdb
 )
 add_custom_target(databases
@@ -184,7 +184,7 @@ add_custom_command(
     #
     COMMAND ${CMAKE_COMMAND} -E echo "" > codes_headers.dummy
     COMMAND ${CMAKE_COMMAND} -E echo Building codes header...
-    COMMAND ${CODES_CMD} ${CMAKE_CURRENT_SOURCE_DIR}/include/gen ${CMAKE_SOURCE_DIR}/lang_helpers
+    COMMAND ${CODES_CMD} ${CMAKE_CURRENT_SOURCE_DIR}/include/gen ${CMAKE_CURRENT_SOURCE_DIR}/lang_helpers
 )
 add_custom_target(messages ALL DEPENDS firebird.msg codes_headers.dummy)
 project_group(messages "Boot/Custom build steps")
@@ -419,6 +419,7 @@ add_library                 (boot_yvalve SHARED $<TARGET_OBJECTS:yvalve_common> 
 target_link_libraries       (boot_yvalve
     PRIVATE remote
     PRIVATE common
+    PRIVATE ${LIB_clang_rt_builtins_x86_64}
     PUBLIC ${LIB_Ws2_32}
     PUBLIC ${LIB_readline}
     PUBLIC ${LIB_dl}
@@ -829,10 +830,10 @@ if (WIN32)
         TARGET boot_isql
         POST_BUILD
         #
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/extern/icu/icudt${ICU_VERSION}l.dat ${output_dir}/icudt${ICU_VERSION}l.dat
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/../extern/icu/icudt${ICU_VERSION}l.dat ${output_dir}/icudt${ICU_VERSION}l.dat
         #
         # one copy to boot directory
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/extern/icu/icudt${ICU_VERSION}l.dat $<TARGET_FILE_DIR:boot_isql>/icudt${ICU_VERSION}l.dat
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/../extern/icu/icudt${ICU_VERSION}l.dat $<TARGET_FILE_DIR:boot_isql>/icudt${ICU_VERSION}l.dat
     )
 
     string(FIND "${CMAKE_EXE_LINKER_FLAGS}" "/machine:x64" arch)
@@ -845,19 +846,19 @@ if (WIN32)
         TARGET boot_isql
         POST_BUILD
         # icu
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/extern/icu/${arch}/Release/bin/icudt${ICU_VERSION}.dll ${output_dir}/icudt${ICU_VERSION}.dll
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/extern/icu/${arch}/Release/bin/icuin${ICU_VERSION}.dll ${output_dir}/icuin${ICU_VERSION}.dll
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/extern/icu/${arch}/Release/bin/icuuc${ICU_VERSION}.dll ${output_dir}/icuuc${ICU_VERSION}.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/../extern/icu/${arch}/Release/bin/icudt${ICU_VERSION}.dll ${output_dir}/icudt${ICU_VERSION}.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/../extern/icu/${arch}/Release/bin/icuin${ICU_VERSION}.dll ${output_dir}/icuin${ICU_VERSION}.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/../extern/icu/${arch}/Release/bin/icuuc${ICU_VERSION}.dll ${output_dir}/icuuc${ICU_VERSION}.dll
         # zlib
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/extern/zlib/${arch}/zlib1.dll ${output_dir}/zlib1.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/../extern/zlib/${arch}/zlib1.dll ${output_dir}/zlib1.dll
         #
         # one copy to boot directory
         # icu
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/extern/icu/${arch}/Release/bin/icudt${ICU_VERSION}.dll $<TARGET_FILE_DIR:boot_isql>/icudt${ICU_VERSION}.dll
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/extern/icu/${arch}/Release/bin/icuin${ICU_VERSION}.dll $<TARGET_FILE_DIR:boot_isql>/icuin${ICU_VERSION}.dll
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/extern/icu/${arch}/Release/bin/icuuc${ICU_VERSION}.dll $<TARGET_FILE_DIR:boot_isql>/icuuc${ICU_VERSION}.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/../extern/icu/${arch}/Release/bin/icudt${ICU_VERSION}.dll $<TARGET_FILE_DIR:boot_isql>/icudt${ICU_VERSION}.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/../extern/icu/${arch}/Release/bin/icuin${ICU_VERSION}.dll $<TARGET_FILE_DIR:boot_isql>/icuin${ICU_VERSION}.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/../extern/icu/${arch}/Release/bin/icuuc${ICU_VERSION}.dll $<TARGET_FILE_DIR:boot_isql>/icuuc${ICU_VERSION}.dll
         # zlib
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/extern/zlib/${arch}/zlib1.dll $<TARGET_FILE_DIR:boot_isql>/zlib1.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/../extern/zlib/${arch}/zlib1.dll $<TARGET_FILE_DIR:boot_isql>/zlib1.dll
     )
 endif()
 
@@ -909,41 +910,41 @@ add_custom_target(copy_files
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GENERATED_DIR}/security.fdb ${output_dir}/security4.fdb
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${GENERATED_DIR}/help.fdb ${output_dir}/help/help.fdb
     # configs, text files
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/builds/install/misc/firebird.conf ${output_dir}/firebird.conf
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/builds/install/misc/databases.conf ${output_dir}/databases.conf
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/builds/install/misc/fbintl.conf ${output_dir}/intl/fbintl.conf
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/builds/install/misc/plugins.conf ${output_dir}/plugins.conf
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/builds/install/misc/IPLicense.txt ${output_dir}/IPLicense.txt
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/builds/install/misc/IDPLicense.txt ${output_dir}/IDPLicense.txt
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/src/utilities/ntrace/fbtrace.conf ${output_dir}/fbtrace.conf
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/src/plugins/udr_engine/udr_engine.conf ${output_dir}/plugins/udr_engine.conf
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/builds/install/misc/firebird.conf ${output_dir}/firebird.conf
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/builds/install/misc/databases.conf ${output_dir}/databases.conf
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/builds/install/misc/fbintl.conf ${output_dir}/intl/fbintl.conf
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/builds/install/misc/plugins.conf ${output_dir}/plugins.conf
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/builds/install/misc/IPLicense.txt ${output_dir}/IPLicense.txt
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/builds/install/misc/IDPLicense.txt ${output_dir}/IDPLicense.txt
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/src/utilities/ntrace/fbtrace.conf ${output_dir}/fbtrace.conf
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/src/plugins/udr_engine/udr_engine.conf ${output_dir}/plugins/udr_engine.conf
     # docs
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/CHANGELOG.md ${output_dir}/doc/CHANGELOG.md
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/README.md ${output_dir}/doc/README.md
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/CHANGELOG.md ${output_dir}/doc/CHANGELOG.md
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/README.md ${output_dir}/doc/README.md
     # examples
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/examples/api ${output_dir}/examples/api
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/examples/dbcrypt ${output_dir}/examples/dbcrypt
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/examples/empbuild/employe2.sql ${output_dir}/examples/empbuild/employe2.sql
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/examples/api ${output_dir}/examples/api
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/examples/dbcrypt ${output_dir}/examples/dbcrypt
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/examples/empbuild/employe2.sql ${output_dir}/examples/empbuild/employe2.sql
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${NATIVE_BUILD_DIR}/examples/employe2.fdb ${output_dir}/examples/empbuild/employee.fdb
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/examples/include ${output_dir}/examples/include
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/examples/interfaces ${output_dir}/examples/interfaces
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/examples/package ${output_dir}/examples/package
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/examples/stat ${output_dir}/examples/stat
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/examples/udf ${output_dir}/examples/udf
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/examples/udr ${output_dir}/examples/udr
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/examples/stat ${output_dir}/examples/stat
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/examples/functions.c ${output_dir}/examples/functions.c
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/examples/include ${output_dir}/examples/include
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/examples/interfaces ${output_dir}/examples/interfaces
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/examples/package ${output_dir}/examples/package
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/examples/stat ${output_dir}/examples/stat
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/examples/udf ${output_dir}/examples/udf
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/examples/udr ${output_dir}/examples/udr
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/examples/stat ${output_dir}/examples/stat
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/examples/functions.c ${output_dir}/examples/functions.c
     # headers
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/src/extlib/ib_util.h ${output_dir}/include/ib_util.h
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/src/include/gen/iberror.h ${output_dir}/include/iberror.h
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/src/yvalve/perf.h ${output_dir}/include/perf.h
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/src/extlib/ib_util.h ${output_dir}/include/ib_util.h
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/src/include/gen/iberror.h ${output_dir}/include/iberror.h
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/src/yvalve/perf.h ${output_dir}/include/perf.h
 )
 add_dependencies_cc     (copy_files databases)
 add_dependencies_unix_cc(copy_files makeHeader)
 project_group(copy_files "Custom build steps")
 
 # headers
-file(GLOB files "${CMAKE_SOURCE_DIR}/src/include/firebird/*.h")
+file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/src/include/firebird/*.h")
 foreach(F ${files})
     get_filename_component(name ${F} NAME)
     add_custom_command(TARGET copy_files POST_BUILD
@@ -951,14 +952,14 @@ foreach(F ${files})
 endforeach()
 
 # docs
-file(GLOB files "${CMAKE_SOURCE_DIR}/doc/README.*")
+file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/doc/README.*")
 foreach(F ${files})
     get_filename_component(name ${F} NAME)
     add_custom_command(TARGET copy_files POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${F} ${output_dir}/doc/${name})
 endforeach()
 
-file(GLOB files "${CMAKE_SOURCE_DIR}/doc/sql.extensions/README.*")
+file(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/doc/sql.extensions/README.*")
 foreach(F ${files})
     get_filename_component(name ${F} NAME)
     add_custom_command(TARGET copy_files POST_BUILD
@@ -983,26 +984,26 @@ if (WIN32)
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${fbclient_lib_src} ${output_dir}/lib/${fbclient_lib_dst}
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ib_util_lib_src} ${output_dir}/lib/${ib_util_lib_dst}
         # installers
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/builds/install/arch-specific/win32/install_service.bat ${output_dir}/install_service.bat
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/builds/install/arch-specific/win32/uninstall_service.bat ${output_dir}/uninstall_service.bat
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/builds/install/arch-specific/win32/install_service.bat ${output_dir}/install_service.bat
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/builds/install/arch-specific/win32/uninstall_service.bat ${output_dir}/uninstall_service.bat
         # examples
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/examples/build_unix ${output_dir}/examples/build_unix
-        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/examples/build_win32 ${output_dir}/examples/build_win32
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/examples/readme ${output_dir}/examples/readme.txt
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/examples/build_unix ${output_dir}/examples/build_unix
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/examples/build_win32 ${output_dir}/examples/build_win32
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/examples/readme ${output_dir}/examples/readme.txt
         # headers
         COMMAND echo "#pragma message(\"Non-production version of ibase.h.\")" > ${output_dir}/include/ibase.tmp
         COMMAND echo "#pragma message(\"Using raw, unprocessed concatenation of header files.\")" >> ${output_dir}/include/ibase.tmp
     )
     set(files
-        ${CMAKE_SOURCE_DIR}/src/misc/ibase_header.txt
-        ${CMAKE_SOURCE_DIR}/src/include/types_pub.h
-        ${CMAKE_SOURCE_DIR}/src/common/dsc_pub.h
-        ${CMAKE_SOURCE_DIR}/src/dsql/sqlda_pub.h
-        ${CMAKE_SOURCE_DIR}/src/jrd/ibase.h
-        ${CMAKE_SOURCE_DIR}/src/jrd/inf_pub.h
-        ${CMAKE_SOURCE_DIR}/src/include/consts_pub.h
-        ${CMAKE_SOURCE_DIR}/src/jrd/blr.h
-        ${CMAKE_SOURCE_DIR}/src/include/gen/iberror.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/misc/ibase_header.txt
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/types_pub.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/common/dsc_pub.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/dsql/sqlda_pub.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/jrd/ibase.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/jrd/inf_pub.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/consts_pub.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/jrd/blr.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/gen/iberror.h
     )
     foreach(F ${files})
         string(REPLACE "/" "\\" f ${F})
@@ -1012,7 +1013,7 @@ if (WIN32)
     add_custom_command(
         TARGET copy_files
         POST_BUILD
-        COMMAND sed -f ${CMAKE_SOURCE_DIR}/src/misc/headers.sed < ${output_dir}/include/ibase.tmp > ${output_dir}/include/ibase.h
+        COMMAND sed -f ${CMAKE_CURRENT_SOURCE_DIR}/src/misc/headers.sed < ${output_dir}/include/ibase.tmp > ${output_dir}/include/ibase.h
         COMMAND ${CMAKE_COMMAND} -E remove ${output_dir}/include/ibase.tmp
     )
 endif()
@@ -1021,7 +1022,7 @@ endif()
 if (UNIX)
     add_custom_command(TARGET copy_files POST_BUILD
         # examples
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/examples/readme ${output_dir}/examples/README
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/examples/readme ${output_dir}/examples/README
     )
 
     if (NOT CMAKE_CROSSCOMPILING)
@@ -1029,14 +1030,14 @@ if (UNIX)
     add_executable          (makeHeader misc/makeHeader.cpp)
     set_output_directory    (makeHeader . CURRENT_DIR)
     set(files
-        ${CMAKE_SOURCE_DIR}/src/include/types_pub.h
-        ${CMAKE_SOURCE_DIR}/src/include/consts_pub.h
-        ${CMAKE_SOURCE_DIR}/src/dsql/sqlda_pub.h
-        ${CMAKE_SOURCE_DIR}/src/common/dsc_pub.h
-        ${CMAKE_SOURCE_DIR}/src/jrd/ibase.h
-        ${CMAKE_SOURCE_DIR}/src/jrd/inf_pub.h
-        ${CMAKE_SOURCE_DIR}/src/jrd/blr.h
-        ${CMAKE_SOURCE_DIR}/src/include/gen/iberror.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/types_pub.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/consts_pub.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/dsql/sqlda_pub.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/common/dsc_pub.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/jrd/ibase.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/jrd/inf_pub.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/jrd/blr.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/include/gen/iberror.h
     )
     foreach(F ${files})
         get_filename_component(name ${F} NAME)

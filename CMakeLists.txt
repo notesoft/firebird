@@ -20,7 +20,7 @@
 cmake_minimum_required(VERSION 2.8.12)
 
 # In-source builds are not possible and so disabled.
-if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
     message(FATAL_ERROR
         "CMake generation for Firebird is not possible within the source directory!"
         "\n Remove the CMakeCache.txt file and try again from another folder, e.g.:"
@@ -32,7 +32,7 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
     )
 endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/builds/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/builds/cmake)
 
 if (NATIVE_BUILD_DIR)
     get_filename_component(NATIVE_BUILD_DIR ${NATIVE_BUILD_DIR} ABSOLUTE)
@@ -164,7 +164,7 @@ if (WIN32)
     set(FB_IPC_NAME "FIREBIRD")
 endif()
 
-set(AUTOCONFIG_SRC ${CMAKE_SOURCE_DIR}/src/include/gen/autoconfig.h.in)
+set(AUTOCONFIG_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/include/gen/autoconfig.h.in)
 set(AUTOCONFIG ${CMAKE_BINARY_DIR}/src/include/gen/autoconfig.h)
 configure_file(${AUTOCONFIG_SRC} ${AUTOCONFIG} @ONLY)
 
@@ -178,7 +178,7 @@ add_definitions(-DDEV_BUILD)
 
 if (WIN32)
     set(OS_DIR win32)
-    set(VERSION_RC ${CMAKE_SOURCE_DIR}/src/jrd/version.rc)
+    set(VERSION_RC ${CMAKE_CURRENT_SOURCE_DIR}/src/jrd/version.rc)
 
     if (MSVC)
         set(disable_msvc_warnings "/wd4996")
@@ -278,7 +278,7 @@ if (WIN32)
 endif()
 
 if (UNIX)
-    file(GLOB vers_src "${CMAKE_SOURCE_DIR}/builds/posix/*.vers")
+    file(GLOB vers_src "${CMAKE_CURRENT_SOURCE_DIR}/builds/posix/*.vers")
     foreach(f ${vers_src})
         get_filename_component(name ${f} NAME)
         set(name ${CMAKE_BINARY_DIR}/builds/posix/${name})
