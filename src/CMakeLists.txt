@@ -128,11 +128,11 @@ add_custom_command(
     OUTPUT metadata.fdb
     DEPENDS
         boot_gbak
-        ${CMAKE_CURRENT_SOURCE_DIR}/builds/misc/metadata.gbak
+        ${CMAKE_CURRENT_SOURCE_DIR}/../builds/misc/metadata.gbak
     #
     COMMAND ${CMAKE_COMMAND} -E remove metadata.fdb
     COMMAND ${CMAKE_COMMAND} -E remove metadata_.fdb
-    COMMAND ${BOOT_GBAK_CMD} -r ${CMAKE_CURRENT_SOURCE_DIR}/builds/misc/metadata.gbak metadata_.fdb
+    COMMAND ${BOOT_GBAK_CMD} -r ${CMAKE_CURRENT_SOURCE_DIR}/../builds/misc/metadata.gbak metadata_.fdb
     COMMAND ${CMAKE_COMMAND} -E copy_if_different metadata_.fdb metadata.fdb
 )
 add_custom_command(
@@ -140,11 +140,11 @@ add_custom_command(
     DEPENDS
         boot_gbak
         metadata.fdb
-        ${CMAKE_CURRENT_SOURCE_DIR}/builds/misc/help.gbak
+        ${CMAKE_CURRENT_SOURCE_DIR}/../builds/misc/help.gbak
     #
     COMMAND ${CMAKE_COMMAND} -E remove help.fdb
     COMMAND ${CMAKE_COMMAND} -E remove help_.fdb
-    COMMAND ${BOOT_GBAK_CMD} -r ${CMAKE_CURRENT_SOURCE_DIR}/builds/misc/help.gbak help_.fdb
+    COMMAND ${BOOT_GBAK_CMD} -r ${CMAKE_CURRENT_SOURCE_DIR}/../builds/misc/help.gbak help_.fdb
     COMMAND ${CMAKE_COMMAND} -E copy_if_different help_.fdb help.fdb
 )
 add_custom_target(databases
@@ -442,6 +442,7 @@ add_library                 (yvalve SHARED $<TARGET_OBJECTS:yvalve_common> ${yva
 target_link_libraries       (yvalve
     PRIVATE remote
     PRIVATE common
+    PRIVATE ${LIB_clang_rt_builtins_x86_64}
     PUBLIC ${LIB_Ws2_32}
     PUBLIC ${LIB_readline}
     PUBLIC ${LIB_dl}
@@ -504,7 +505,7 @@ add_dependencies_cc         (engine_common parse UpdateCloopInterfaces)
 if (NOT CMAKE_CROSSCOMPILING)
 
 add_library                 (boot_engine SHARED ${engine_generated_src_boot} ${VERSION_RC})
-target_link_libraries       (boot_engine engine_common boot_alice boot_burp common boot_yvalve)
+target_link_libraries       (boot_engine engine_common boot_alice boot_burp common boot_yvalve re2 ${LIB_clang_rt_builtins_x86_64})
 set_output_directory        (boot_engine plugins CURRENT_DIR)
 set_exported_symbols        (boot_engine fbplugin)
 copy_and_rename_lib         (boot_engine Engine13)
@@ -579,7 +580,7 @@ set_exported_symbols        (udr_engine fbplugin)
 ########################################
 
 add_library                 (srp SHARED auth/SecureRemotePassword/manage/SrpManagement.cpp ${VERSION_RC})
-target_link_libraries       (srp remote common yvalve)
+target_link_libraries       (srp remote common yvalve ${LIB_clang_rt_builtins_x86_64})
 set_target_properties       (srp PROPERTIES OUTPUT_NAME Srp)
 set_output_directory        (srp plugins)
 set_exported_symbols        (srp fbplugin)
@@ -779,7 +780,7 @@ file(GLOB gbak_include "burp/*.h")
 if (NOT CMAKE_CROSSCOMPILING)
 
 add_executable              (boot_gbak burp/main/burpMain.cpp ${gbak_include} ${VERSION_RC})
-target_link_libraries       (boot_gbak boot_burp common boot_yvalve)
+target_link_libraries       (boot_gbak boot_burp common boot_yvalve re2)
 set_output_directory        (boot_gbak . CURRENT_DIR)
 project_group               (boot_gbak Boot)
 
