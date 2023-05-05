@@ -69,7 +69,7 @@ public:
 
 	// ITimer implementation
 	void handler();
-	void close();
+ NM_EXPORT	void close();
 
 	Firebird::Mutex mutex;
 	Firebird::AutoPtr<VSecDb> secDb;
@@ -125,8 +125,8 @@ private:
 	Firebird::Mutex arrayMutex;
 
 public:
-	void getInstance(Firebird::IPluginConfig* pluginConfig, CachedSecurityDatabase::Instance& instance);
-	int shutdown();
+ NM_EXPORT	void getInstance(Firebird::IPluginConfig* pluginConfig, CachedSecurityDatabase::Instance& instance);
+ NM_EXPORT	int shutdown();
 	void handler(CachedSecurityDatabase* tgt);
 };
 

@@ -62,5 +62,5 @@ add_src_unix(fbserver_src
 )
 
 add_executable              (fbserver WIN32 ${fbserver_src})
-target_link_libraries       (fbserver remote common yvalve engine_common ${LIB_comctl32})
+target_link_libraries       (fbserver remote common yvalve engine_common ${LIB_comctl32} ${LIB_clang_rt_builtins_x86_64})
 set_target_properties       (fbserver PROPERTIES OUTPUT_NAME firebird)

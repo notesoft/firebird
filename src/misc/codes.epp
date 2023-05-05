@@ -924,7 +924,7 @@ static void move_if_not_identical(const char* original, const char* new_file, co
 {
 	char origName[1000];
 	char buffer[1400];
-#if defined(WIN_NT) && !defined(__GNUC__)
+#if defined(WIN_NT) && !defined(__GNUC__) && !defined(__CLANG__)
 	if ( directory != NULL) {
 		sprintf(origName, "%s\\%s", directory, original);
 	}
@@ -956,7 +956,7 @@ static void move_if_not_identical(const char* original, const char* new_file, co
 	else
 	{
 		// Original file is missing or different
-#if defined(WIN_NT) && !defined(__GNUC__)
+#if defined(WIN_NT) && !defined(__GNUC__) && !defined(__CLANG__)
 		sprintf(buffer, "move %s %s > nul", new_file, origName);
 #else
 		sprintf(buffer, "mv -f %s %s", new_file, origName);

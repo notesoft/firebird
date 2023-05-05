@@ -184,7 +184,7 @@ add_custom_command(
     #
     COMMAND ${CMAKE_COMMAND} -E echo "" > codes_headers.dummy
     COMMAND ${CMAKE_COMMAND} -E echo Building codes header...
-    COMMAND ${CODES_CMD} ${CMAKE_CURRENT_SOURCE_DIR}/include/gen ${CMAKE_CURRENT_SOURCE_DIR}/lang_helpers
+    COMMAND ${CODES_CMD} ${CMAKE_CURRENT_SOURCE_DIR}/include/gen ${CMAKE_CURRENT_SOURCE_DIR}/../lang_helpers
 )
 add_custom_target(messages ALL DEPENDS firebird.msg codes_headers.dummy)
 project_group(messages "Boot/Custom build steps")
@@ -373,7 +373,7 @@ if (APPLE)
 endif()
 
 add_library                 (common ${common_src} ${common_os_src} ${common_include})
-target_link_libraries       (common ${LIB_mpr} libtommath libtomcrypt decNumber)
+target_link_libraries       (common ${LIB_mpr} libtommath libtomcrypt decNumber re2)
 add_dependencies_cc         (common UpdateCloopInterfaces)
 if (UNIX)
 target_link_libraries       (common dl)
@@ -396,6 +396,7 @@ file(GLOB_RECURSE yvalve_include "yvalve/*.h")
 set(yvalve_src ${yvalve_src}
     auth/SecureRemotePassword/client/SrpClient.cpp
     auth/SecurityDatabase/LegacyClient.cpp
+    auth/SecDbCache.cpp
     plugins/crypt/arc4/Arc4.cpp
     remote/client/BlrFromMessage.cpp
     remote/client/interface.cpp
@@ -519,7 +520,7 @@ endif() # if (NOT CMAKE_CROSSCOMPILING)
 ########################################
 
 add_library                 (engine SHARED ${engine_generated_src_master} ${VERSION_RC})
-target_link_libraries       (engine engine_common alice burp common yvalve)
+target_link_libraries       (engine engine_common alice burp common yvalve ${LIB_clang_rt_builtins_x86_64})
 set_target_properties       (engine PROPERTIES OUTPUT_NAME Engine13)
 set_output_directory        (engine plugins)
 set_exported_symbols        (engine fbplugin)
