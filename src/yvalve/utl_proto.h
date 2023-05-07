@@ -86,7 +86,7 @@ void makePermanentVector(ISC_STATUS* v) throw();
 
 namespace Why
 {
-NM_EXPORT	void threadCleanup();
+NM_EXPORT void threadCleanup();
 }
 
 #endif // JRD_UTL_PROTO_H

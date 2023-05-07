@@ -248,6 +248,15 @@ set(parse_src
     ${CMAKE_CURRENT_SOURCE_DIR}/dsql/parse.y
     ${CMAKE_CURRENT_SOURCE_DIR}/dsql/btyacc_fb.ske
 )
+
+if(APPLE)
+    set(sed_delim "|")
+    set(sed_param "\"\"")
+else()
+    set(sed_delim "/")
+    set(sed_param "")
+endif()
+
 add_custom_command(
     OUTPUT y_tab.h y_tab.c
     DEPENDS
@@ -257,8 +266,11 @@ add_custom_command(
     COMMAND sed "s/%type .*//" ${CMAKE_CURRENT_SOURCE_DIR}/dsql/parse.y > y.y
     COMMAND btyacc -l -d -S ${CMAKE_CURRENT_SOURCE_DIR}/dsql/btyacc_fb.ske y.y
 
-    COMMAND sed -i "s/#define \\([A-Z].*\\)/#define TOK_\\1/g" y_tab.h
-    COMMAND sed -i "s/#define TOK_YY\\(.*\\)/#define YY\\1/g" y_tab.h
+    COMMAND sed -i ${sed_param} "s${sed_delim}#define \\([A-Z].*\\)${sed_delim}#define TOK_\\1${sed_delim}g" y_tab.h
+    COMMAND sed -i ${sed_param} "s${sed_delim}#define TOK_YY\\(.*\\)${sed_delim}#define YY\\1${sed_delim}g" y_tab.h
+
+#    COMMAND sed -i "s/#define \\([A-Z].*\\)/#define TOK_\\1/g" y_tab.h
+#    COMMAND sed -i "s/#define TOK_YY\\(.*\\)/#define YY\\1/g" y_tab.h
 
     COMMAND ${CMAKE_COMMAND} -E copy_if_different y_tab.h include/gen/parse.h
     COMMAND ${CMAKE_COMMAND} -E copy_if_different y_tab.c dsql/parse.cpp
@@ -1029,8 +1041,8 @@ if (UNIX)
 
     if (NOT CMAKE_CROSSCOMPILING)
 
-    add_executable          (makeHeader misc/makeHeader.cpp)
-    set_output_directory    (makeHeader . CURRENT_DIR)
+    # add_executable          (makeHeader misc/makeHeader.cpp)
+    # set_output_directory    (makeHeader . CURRENT_DIR)
     set(files
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/types_pub.h
         ${CMAKE_CURRENT_SOURCE_DIR}/src/include/consts_pub.h
@@ -1046,10 +1058,10 @@ if (UNIX)
         add_custom_command(TARGET copy_files POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${F} ${name})
     endforeach()
-    add_custom_command(TARGET copy_files POST_BUILD
-        # include
-        COMMAND makeHeader < ibase.h > ${output_dir}/include/ibase.h
-    )
+    # add_custom_command(TARGET copy_files POST_BUILD
+    #     # include
+    #     COMMAND makeHeader < ibase.h > ${output_dir}/include/ibase.h
+    # )
 
     endif() # if (NOT CMAKE_CROSSCOMPILING)
 endif()

@@ -256,7 +256,7 @@ check_library_exists(dl dladdr "${CMAKE_LIBRARY_PREFIX}" HAVE_DLADDR)
 check_library_exists(m fegetenv "${CMAKE_LIBRARY_PREFIX}" HAVE_FEGETENV)
 check_library_exists(m llrint "${CMAKE_LIBRARY_PREFIX}" HAVE_LLRINT)
 check_library_exists(pthread sem_init "${CMAKE_LIBRARY_PREFIX}" HAVE_SEM_INIT)
-check_library_exists(pthread sem_timedwait "${CMAKE_LIBRARY_PREFIX}" HAVE_SEM_TIMEDWAIT)  
+check_library_exists(pthread sem_timedwait "${CMAKE_LIBRARY_PREFIX}" HAVE_SEM_TIMEDWAIT)
 
 check_type_size(caddr_t HAVE_CADDR_T)
 check_c_source_compiles("#include <sys/sem.h>\nmain(){union semun s;return 0;}" HAVE_SEMUN)
@@ -347,6 +347,7 @@ endif(WIN32)
 
 if (APPLE)
     set(ENABLE_BINRELOC 0)
+    set(SUPPORT_RAW_DEVICES 0)
     set(CASE_SENSITIVITY "false")
 endif()
 

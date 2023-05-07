@@ -71,7 +71,7 @@
 #define FB_PLUGDIR ""
 
 /* tzdata DIR (PREFIX) */
-#define FB_TZDATADIR ""
+#define
 
 /* Installation path prefix */
 #define FB_PREFIX "/opt/firebird"

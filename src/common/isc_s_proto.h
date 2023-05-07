@@ -250,7 +250,7 @@ public:
 	UCHAR* mapObject(Firebird::CheckStatusWrapper* status, ULONG offset, ULONG size);
 	void unmapObject(Firebird::CheckStatusWrapper* status, UCHAR** object, ULONG size);
 #endif
-	MemoryHeader* const remapFile(Firebird::CheckStatusWrapper* status, ULONG newSize, bool truncateFlag);
+	bool remapFile(Firebird::CheckStatusWrapper* status, ULONG newSize, bool truncateFlag);
 	void removeMapFile();
 	static void unlinkFile(const TEXT* expanded_filename) noexcept;
 	Firebird::PathName getMapFileName();

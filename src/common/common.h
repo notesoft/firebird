@@ -231,8 +231,9 @@
 #define FB_CPU CpuArm
 #endif /* ARM */
 #ifdef ARM64
-#define DARWIN64
-#define FB_CPU CpuArm64
+	#undef FB_CPU
+	#define DARWIN64
+	#define FB_CPU CpuArm64
 #endif /* ARM64 */
 #ifdef __ppc__
 #define powerpc

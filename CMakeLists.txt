@@ -56,18 +56,42 @@ project("firebird" C CXX)
 # build type settings
 ########################################
 
-set(CLANG ON)
-set(enLLNM_DIR "C:/TOOLSET/LLVM")
-include_directories("D:/source/contribution/Envelope-for-GoogleRE2/native")
-link_directories("C:/TOOLSET/COMMON")
-link_directories("${enLLNM_DIR}/lib/clang/16/lib/windows")
-link_directories("D:/source/contribution/Envelope-for-GoogleRE2/build/native")
-add_definitions( "-mcrc32")
-add_definitions( "-DNM_EXPORT=__declspec(dllexport)")
-add_definitions( "-D__CLANG__")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/extern/re2")
 
-# set(enFirebirdDLLExportDEF "-Wl,/DEF:${CMAKE_CURRENT_SOURCE_DIR}/native/builds/win32/defs/firebird.def")
-set(LIB_clang_rt_builtins_x86_64 "${enLLNM_DIR}/lib/clang/16/lib/windows/clang_rt.builtins-x86_64.lib")
+if (WIN32)
+    set(CLANG ON)
+    set(enLLNM_DIR "C:/TOOLSET/LLVM")
+    include_directories("D:/source/contribution/Envelope-for-GoogleRE2/native")
+    link_directories("C:/TOOLSET/COMMON")
+    link_directories("${enLLNM_DIR}/lib/clang/16/lib/windows")
+    link_directories("D:/source/contribution/Envelope-for-GoogleRE2/build/native")
+    add_definitions( "-mcrc32")
+    add_definitions( "-DNM_EXPORT=__declspec(dllexport)")
+    add_definitions( "-D__CLANG__")
+  # set(enFirebirdDLLExportDEF "-Wl,/DEF:${CMAKE_CURRENT_SOURCE_DIR}/native/builds/win32/defs/firebird.def")
+    set(LIB_clang_rt_builtins_x86_64 "${enLLNM_DIR}/lib/clang/16/lib/windows/clang_rt.builtins-x86_64.lib")
+endif()
+if (APPLE)
+# brew install icu4c
+
+#add_definitions( "-DNM_EXPORT=/* */" )
+add_definitions( "-DNM_EXPORT=__attribute__\(\(visibility\(\"default\"\)\)\)" )
+add_definitions( "-DFB_TZDATADIR=\"\"" )
+
+# brew install icu4c
+# If you need to have icu4c first in your PATH, run:
+#   echo 'export PATH="/opt/homebrew/opt/icu4c/bin:$PATH"' >> ~/.zshrc
+#   echo 'export PATH="/opt/homebrew/opt/icu4c/sbin:$PATH"' >> ~/.zshrc
+
+# For compilers to find icu4c you may need to set:
+#   export LDFLAGS="-L/opt/homebrew/opt/icu4c/lib"
+#   export CPPFLAGS="-I/opt/homebrew/opt/icu4c/include"
+
+
+endif()
+message("@@@@@@@@@@@@@@@@@@  UNIX=${UNIX}  APPLE=${APPLE} ")
+
+
 
 
 
@@ -137,6 +161,7 @@ if (UNIX)
                 /usr/local/include
                 /opt/local/include
                 /usr/local/opt/icu4c/include
+                /opt/homebrew/opt/icu4c/include
             CMAKE_FIND_ROOT_PATH_BOTH
         )
         if ("${ICU_INCLUDE_DIR}" STREQUAL "ICU_INCLUDE_DIR-NOTFOUND")

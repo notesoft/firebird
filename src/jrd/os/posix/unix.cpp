@@ -515,7 +515,7 @@ ULONG PIO_get_number_of_pages(const jrd_file* file, const USHORT pagesize)
 #endif /*LINUX*/
 
 #ifndef HAS_RAW_SIZE
-error: Raw device support for your OS is missing. Fix it or turn off raw device support.
+#error: "Raw device support for your OS is missing. Fix it or turn off raw device support."
 #endif
 #undef HAS_RAW_SIZE
 	}
