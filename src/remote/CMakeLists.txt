@@ -51,6 +51,8 @@ add_src_win32(fbserver_src
 )
 add_src_unix(fbserver_src
     ../auth/SecureRemotePassword/srp.cpp
+    ../auth/SecDbCache.cpp
+    server/ReplServer.cpp
     server/os/posix/inet_server.cpp
     server/server.cpp
 

@@ -56,6 +56,26 @@ project("firebird" C CXX)
 # build type settings
 ########################################
 
+# NOTECORE ###########################
+
+# Include project but remove all tartgets
+ADD_SUBDIRECTORY(${CMAKE_CURRENT_SOURCE_DIR}/extern/re2 EXCLUDE_FROM_ALL)
+
+# # Use only specific one target
+#ADD_DEPENDENCIES("firebird" re2)
+
+# Include dirs from zlib source directory and from output directory becuse it generates some headers
+#TARGET_INCLUDE_DIRECTORIES("firebird" PRIVATE
+#     ${CMAKE_CURRENT_SOURCE_DIR}/extern/re2
+#)
+
+# Just to create beautiful structure in project tree
+SET_PROPERTY(TARGET re2 PROPERTY FOLDER Deps)
+
+# # Link after all
+# TARGET_LINK_LIBRARIES(MyProject zlibstatic)
+
+
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/extern/re2")
 
 if (WIN32)
@@ -74,9 +94,11 @@ endif()
 if (APPLE)
 # brew install icu4c
 
-#add_definitions( "-DNM_EXPORT=/* */" )
-add_definitions( "-DNM_EXPORT=__attribute__\(\(visibility\(\"default\"\)\)\)" )
+add_definitions( "-DNM_EXPORT=" )
+
+#add_definitions( "-DNM_EXPORT=__attribute__\(\(visibility\(\"default\"\)\)\)" )
 add_definitions( "-DFB_TZDATADIR=\"\"" )
+link_directories("/opt/homebrew/opt/icu4c")
 
 # brew install icu4c
 # If you need to have icu4c first in your PATH, run:
@@ -84,15 +106,18 @@ add_definitions( "-DFB_TZDATADIR=\"\"" )
 #   echo 'export PATH="/opt/homebrew/opt/icu4c/sbin:$PATH"' >> ~/.zshrc
 
 # For compilers to find icu4c you may need to set:
-#   export LDFLAGS="-L/opt/homebrew/opt/icu4c/lib"
-#   export CPPFLAGS="-I/opt/homebrew/opt/icu4c/include"
-
+#    export  LDFLAGS=-L/opt/homebrew/opt/icu4c/lib
+#    export CPPFLAGS=-I/opt/homebrew/opt/icu4c/include
+#    export   CFLAGS=-I/opt/homebrew/opt/icu4c/include
+#    export LD_LIBRARY_PATH="/opt/homebrew/opt/icu4c/lib:$LD_LIBRARY_PATH"
+#    export LIBTOOLIZE=glibtoolize
+#    export LIBTOOL=glibtool
+# brew link icu4c --force
+# export LD_LIBRARY_PATH=/opt/homebrew/opt/icu4c/lib
 
 endif()
-message("@@@@@@@@@@@@@@@@@@  UNIX=${UNIX}  APPLE=${APPLE} ")
 
-
-
+# NOTECORE ###########################
 
 
 # Define build mode

@@ -376,7 +376,7 @@ add_library                 (burp ${burp_src} ${burp_generated_src_master})
 # LIBRARY common
 ########################################
 
-file(GLOB common_src "common/*.cpp" "common/classes/*.cpp" "common/config/*.cpp" "common/os/${OS_DIR}/*.cpp" "common/sha2/*.cpp")
+file(GLOB common_src "common/*.cpp" "common/classes/*.cpp" "common/config/*.cpp" "common/os/${OS_DIR}/*.cpp" "common/os/${OS_DIR}/*.m" "common/sha2/*.cpp")
 file(GLOB_RECURSE common_include "common/*.h")
 
 if (APPLE)
@@ -389,6 +389,16 @@ target_link_libraries       (common ${LIB_mpr} libtommath libtomcrypt decNumber 
 add_dependencies_cc         (common UpdateCloopInterfaces)
 if (UNIX)
 target_link_libraries       (common dl)
+endif()
+
+if (APPLE)
+    target_link_libraries(common "-framework CoreFoundation")
+    target_link_libraries(common "-framework AppKit")
+    target_link_libraries(common "-framework Security")
+
+#    target_link_libraries(common "-framework Carbon")
+#    target_link_libraries(common "-framework IOKit")
+#    target_link_libraries(common "-framework QuartzCore")
 endif()
 
 
@@ -603,7 +613,7 @@ set_exported_symbols        (srp fbplugin)
 # SHARED LIBRARY legacy_auth
 ########################################
 
-add_library                 (legacy_auth SHARED auth/SecurityDatabase/LegacyServer.cpp ${VERSION_RC})
+add_library                 (legacy_auth SHARED auth/SecurityDatabase/LegacyServer.cpp auth/SecDbCache.cpp ${VERSION_RC})
 target_link_libraries       (legacy_auth common yvalve)
 set_target_properties       (legacy_auth PROPERTIES OUTPUT_NAME Legacy_Auth)
 set_output_directory        (legacy_auth plugins)
