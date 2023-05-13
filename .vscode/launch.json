@@ -3,6 +3,31 @@
 	"version": "0.2.0",
 	"configurations": [
 
+
+		{
+            "name": "nix c++",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${command:cmake.launchTargetPath}",
+ //           "additionalSOLibSearchPath": "${workspaceFolder}/build/RESULT",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Включить автоматическое форматирование для gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+
+
+
 		{
 			"name": "Launch lldb-vscode",
 			"type": "lldb-vscode",
