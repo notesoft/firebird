@@ -40,6 +40,12 @@
 #define S_IWRITE S_IWUSR
 #endif
 
+// #if defined(UNIX) && defined(__clang__)
+// 	#include <bits/types/struct_tm.h>
+// 	#include <time.h>
+// #endif
+
+
 using namespace Firebird;
 
 // seems to only be Solaris 9 that doesn't have strerror_r,

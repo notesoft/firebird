@@ -288,7 +288,7 @@ check_type_size("char[MAX_PATH]" MAXPATHLEN)
 set(CMAKE_EXTRA_INCLUDE_FILES)
 
 set(TIMEZONE_TYPE "struct timezone")
-if (APPLE OR MINGW)
+if (APPLE OR MINGW OR UNIX)
     set(TIMEZONE_TYPE "void")
 endif()
 check_prototype_definition(

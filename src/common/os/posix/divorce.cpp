@@ -139,7 +139,7 @@ void divorce_terminal(int mask)
 #ifdef SETPGRP_VOID
 	setpgrp();
 #else
-	#if __DARWIN_UNIX03
+	#if defined(__DARWIN_UNIX03) || defined(UNIX)
 		setpgrp();
 	#else
 		setpgrp(0, 0);

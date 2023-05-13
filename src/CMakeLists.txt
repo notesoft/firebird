@@ -964,7 +964,7 @@ add_custom_target(copy_files
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/src/yvalve/perf.h ${output_dir}/include/perf.h
 )
 add_dependencies_cc     (copy_files databases)
-add_dependencies_unix_cc(copy_files makeHeader)
+# add_dependencies_unix_cc(copy_files makeHeader)
 project_group(copy_files "Custom build steps")
 
 # headers

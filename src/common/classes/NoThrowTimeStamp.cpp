@@ -38,6 +38,7 @@
 #include <windows.h>
 #endif
 
+
 #include "../common/classes/NoThrowTimeStamp.h"
 
 namespace Firebird {

@@ -42,6 +42,13 @@
 #endif
 #endif
 
+
+#if defined(UNIX) && defined(__clang__)
+	#include <bits/types/struct_tm.h>
+	#include <time.h>
+#endif
+
+
 namespace Firebird {
 
 // Wrapper class for ISC_TIMESTAMP supposed to implement date/time conversions

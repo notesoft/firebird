@@ -1,11 +1,27 @@
+
 {
 	"version": "0.2.0",
 	"configurations": [
+
 		{
-			"name": "isql - launch",
+			"name": "Launch lldb-vscode",
+			"type": "lldb-vscode",
+			"request": "launch",
+			"program": "${command:cmake.launchTargetPath}",
+			"args": [],
+			"env": [],
+			"cwd": "${workspaceFolder}",
+			"stopOnEntry": false,
+			"sourceMap": [["/path/a/", "/path/b"]]
+		}
+
+
+
+		{
+			"name": "launch",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceRoot}/gen/Debug/firebird/bin/isql",
+			"program": "${command:cmake.launchTargetPath}",
 			"args": [],
 			"stopAtEntry": false,
 			"cwd": "${workspaceRoot}",
@@ -22,10 +38,10 @@
 			}
 		},
 		{
-			"name": "isql - attach",
+			"name": "attach",
 			"type": "cppdbg",
 			"request": "attach",
-			"program": "${workspaceRoot}/gen/Debug/firebird/bin/isql",
+			"program": "${command:cmake.launchTargetPath}",
 			"processId": "${command.pickProcess}",
 			"linux": {
 				"MIMode": "gdb"

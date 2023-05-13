@@ -78,6 +78,7 @@ SET_PROPERTY(TARGET re2 PROPERTY FOLDER Deps)
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/extern/re2")
 
+
 if (WIN32)
     set(CLANG ON)
     set(enLLNM_DIR "C:/TOOLSET/LLVM")
@@ -90,14 +91,26 @@ if (WIN32)
     add_definitions( "-D__CLANG__")
   # set(enFirebirdDLLExportDEF "-Wl,/DEF:${CMAKE_CURRENT_SOURCE_DIR}/native/builds/win32/defs/firebird.def")
     set(LIB_clang_rt_builtins_x86_64 "${enLLNM_DIR}/lib/clang/16/lib/windows/clang_rt.builtins-x86_64.lib")
+else()
+    add_definitions( "-DNM_EXPORT=" )
+    add_definitions( "-DFB_TZDATADIR=\"\"" )
 endif()
+
+if (UNIX)
+#    ln -s /lib64/libhistory.so.7 /lib64/libhistory.so
+#    ln -s /lib64/libreadline.so.7 /lib64/libreadline.so
+
+#    add_definitions( "-I/usr/include/bits/types/struct_tm.h" )
+#    set(LIB_tomcript "libtomcrypt libtommath")
+
+#    link_directories("/lib64")
+
+endif()
+
+
 if (APPLE)
 # brew install icu4c
-
-add_definitions( "-DNM_EXPORT=" )
-
 #add_definitions( "-DNM_EXPORT=__attribute__\(\(visibility\(\"default\"\)\)\)" )
-add_definitions( "-DFB_TZDATADIR=\"\"" )
 link_directories("/opt/homebrew/opt/icu4c")
 
 # brew install icu4c
@@ -425,6 +438,7 @@ list(FILTER libtomcrypt_src EXCLUDE REGEX ".*whirltab.c")
 list(FILTER libtomcrypt_src EXCLUDE REGEX ".*sober128tab.c")
 
 add_library                 (libtomcrypt ${libtomcrypt_src})
+target_link_libraries       (libtomcrypt libtommath atomic)
 target_compile_definitions  (libtomcrypt PRIVATE LTC_NO_ROLC LTC_SOURCE)
 project_group               (libtomcrypt Extern)
 
