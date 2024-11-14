@@ -35,6 +35,7 @@
 #include "../common/ThreadStart.h"
 #include "../common/Auth.h"
 #include "../common/classes/objects_array.h"
+#include "../common/classes/tree.h"
 #include "../common/classes/fb_string.h"
 #include "../common/classes/ClumpletWriter.h"
 #include "../common/classes/RefMutex.h"
@@ -192,23 +193,42 @@ public:
 };
 
 
+const SQUAD NULL_BLOB = {0, 0};
+
+inline bool operator==(const SQUAD& s1, const SQUAD& s2)
+{
+	return s1.gds_quad_high == s2.gds_quad_high &&
+		s2.gds_quad_low == s1.gds_quad_low;
+}
+
+inline bool operator>(const SQUAD& s1, const SQUAD& s2)
+{
+	return s1.gds_quad_high > s2.gds_quad_high ||
+		s1.gds_quad_high == s2.gds_quad_high &&
+		s1.gds_quad_low > s2.gds_quad_low;
+}
+
 struct Rtr : public Firebird::GlobalStorage, public TypedHandle<rem_type_rtr>
 {
+	using BlobsTree = Firebird::BePlusTree<struct Rbl*, SQUAD, MemoryPool, struct Rbl>;
+
 	Rdb*			rtr_rdb;
 	Rtr*			rtr_next;
-	struct Rbl*		rtr_blobs;
+	BlobsTree		rtr_blobs;
 	ServTransaction	rtr_iface;
 	USHORT			rtr_id;
 	bool			rtr_limbo;
 
 	Firebird::Array<Rsr*> rtr_cursors;
 	Rtr**			rtr_self;
+	Rbl*			rtr_inline_blob;
 
 public:
 	Rtr() :
-		rtr_rdb(0), rtr_next(0), rtr_blobs(0),
+		rtr_rdb(0), rtr_next(0), rtr_blobs(getPool()),
 		rtr_iface(NULL), rtr_id(0), rtr_limbo(0),
-		rtr_cursors(getPool()), rtr_self(NULL)
+		rtr_cursors(getPool()), rtr_self(NULL),
+		rtr_inline_blob(NULL)
 	{ }
 
 	~Rtr()
@@ -218,6 +238,9 @@ public:
 	}
 
 	static ISC_STATUS badHandle() { return isc_bad_trans_handle; }
+
+	Rbl* createInlineBlob();
+	void setupInlineBlob(P_INLINE_BLOB* p_blob);
 };
 
 
@@ -242,15 +265,24 @@ struct RBlobInfo
 		unsigned int bufferLength, unsigned char* buffer);
 };
 
+// Used in XDR
+class RemBlobBuffer : public Firebird::HalfStaticArray<UCHAR, BLOB_LENGTH>
+{
+public:
+	RemBlobBuffer(Firebird::MemoryPool& pool) :
+		Firebird::HalfStaticArray<UCHAR, BLOB_LENGTH>(pool)
+	{}
+};
+
 struct Rbl : public Firebird::GlobalStorage, public TypedHandle<rem_type_rbl>
 {
-	Firebird::HalfStaticArray<UCHAR, BLOB_LENGTH> rbl_data;
+	RemBlobBuffer	rbl_data;
 	Rdb*		rbl_rdb;
 	Rtr*		rbl_rtr;
-	Rbl*		rbl_next;
 	UCHAR*		rbl_buffer;
 	UCHAR*		rbl_ptr;
 	ServBlob	rbl_iface;
+	SQUAD		rbl_blob_id;
 	SLONG		rbl_offset;			// Apparent (to user) offset in blob
 	USHORT		rbl_id;
 	USHORT		rbl_flags;
@@ -265,17 +297,18 @@ struct Rbl : public Firebird::GlobalStorage, public TypedHandle<rem_type_rbl>
 public:
 	// Values for rbl_flags
 	enum {
-		EOF_SET = 1,
-		SEGMENT = 2,
-		EOF_PENDING = 4,
-		CREATE = 8
+		EOF_SET = 0x01,
+		SEGMENT = 0x02,
+		EOF_PENDING = 0x04,
+		CREATE = 0x08,
+		CACHED = 0x10
 	};
 
 public:
 	Rbl() :
-		rbl_data(getPool()), rbl_rdb(0), rbl_rtr(0), rbl_next(0),
+		rbl_data(getPool()), rbl_rdb(0), rbl_rtr(0),
 		rbl_buffer(rbl_data.getBuffer(BLOB_LENGTH)), rbl_ptr(rbl_buffer), rbl_iface(NULL),
-		rbl_offset(0), rbl_id(0), rbl_flags(0),
+		rbl_blob_id(NULL_BLOB), rbl_offset(0), rbl_id(0), rbl_flags(0),
 		rbl_buffer_length(BLOB_LENGTH), rbl_length(0), rbl_fragment_length(0),
 		rbl_source_interp(0), rbl_target_interp(0), rbl_self(NULL)
 	{ }
@@ -290,6 +323,10 @@ public:
 	}
 
 	static ISC_STATUS badHandle() { return isc_bad_segstr_handle; }
+
+	bool isCached() const { return rbl_flags & CACHED; }
+
+	static const SQUAD& generate(const void*, const Rbl* item) { return item->rbl_blob_id; }
 };
 
 
@@ -330,19 +367,28 @@ struct rem_str : public pool_alloc_rpt<SCHAR>
 
 #include "../common/dsc.h"
 
+// Note, currently the only routine that created and changed rem_fmt is
+// parse_format() in parse.cpp
 
 struct rem_fmt : public Firebird::GlobalStorage
 {
 	ULONG		fmt_length;
 	ULONG		fmt_net_length;
 	Firebird::Array<dsc> fmt_desc;
+	Firebird::HalfStaticArray<unsigned short, 4> fmt_blob_idx;		// indices of blob's in fmt_desc
 
 public:
 	explicit rem_fmt(FB_SIZE_T rpt) :
 		fmt_length(0), fmt_net_length(0),
-		fmt_desc(getPool(), rpt)
+		fmt_desc(getPool(), rpt),
+		fmt_blob_idx(getPool())
 	{
 		fmt_desc.grow(rpt);
+	}
+
+	bool haveBlobs() const
+	{
+		return fmt_blob_idx.hasData();
 	}
 };
 
@@ -575,6 +621,7 @@ public:
 		rsr_id(0), rsr_fmt_length(0),
 		rsr_rows_pending(0), rsr_msgs_waiting(0), rsr_reorder_level(0), rsr_batch_count(0),
 		rsr_cursor_name(getPool()), rsr_delayed_format(false), rsr_timeout(0), rsr_self(NULL),
+		rsr_batch_size(0), rsr_batch_flags(0), rsr_batch_ics(NULL),
 		rsr_fetch_operation(fetch_next), rsr_fetch_position(0)
 	{ }
 
@@ -606,6 +653,12 @@ public:
 	void checkIface(ISC_STATUS code = isc_unprepared_stmt);
 	void checkCursor();
 	void checkBatch();
+
+	// return true if select format have blobs
+	bool haveBlobs() const
+	{
+		return rsr_select_format && rsr_select_format->haveBlobs();
+	}
 
 	SLONG getCursorAdjustment() const
 	{
@@ -1310,7 +1363,7 @@ public:
 		port_send_partial(0), port_connect(0), port_request(0), port_select_multi(0),
 		port_type(t), port_state(PENDING), port_clients(0), port_next(0),
 		port_parent(0), port_async(0), port_async_receive(0),
-		port_server(0), port_server_flags(0), port_protocol(0), port_buff_size(rpt / 2),
+		port_server(0), port_server_flags(0), port_protocol(0), port_buff_size((USHORT)(rpt / 2)),
 		port_flags(0), port_partial_data(false), port_z_data(false),
 		port_connect_timeout(0), port_dummy_packet_interval(0),
 		port_dummy_timeout(0), port_handle(INVALID_SOCKET), port_channel(INVALID_SOCKET), port_context(0),
@@ -1576,6 +1629,11 @@ public:
 
 private:
 	bool tryKeyType(const KnownServerKey& srvKey, InternalCryptKey* cryptKey);
+
+	void sendInlineBlobs(PACKET*, Rtr* rtr, UCHAR* message, const rem_fmt* format);
+
+	// return false if any error retrieving blob happens
+	bool sendInlineBlob(PACKET*, Rtr* rtr, SQUAD blobId);
 };
 
 
