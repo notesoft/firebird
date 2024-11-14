@@ -6011,7 +6011,7 @@ void rem_port::sendInlineBlobs(PACKET* sendL, Rtr* rtr, UCHAR* message, const re
 	const auto& descs = format->fmt_desc;
 	for (unsigned ind : format->fmt_blob_idx)
 	{
-		const auto offs = (ULONG) (UINT_PTR) descs[ind].dsc_address;
+		const auto offs = (ULONG) (U_IPTR) descs[ind].dsc_address;
 		const auto blobId = (ISC_QUAD*) (message + offs);
 		if (*blobId == NULL_BLOB)
 			continue;
