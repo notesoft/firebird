@@ -193,21 +193,6 @@ public:
 };
 
 
-const SQUAD NULL_BLOB = {0, 0};
-
-inline bool operator==(const SQUAD& s1, const SQUAD& s2)
-{
-	return s1.gds_quad_high == s2.gds_quad_high &&
-		s2.gds_quad_low == s1.gds_quad_low;
-}
-
-inline bool operator>(const SQUAD& s1, const SQUAD& s2)
-{
-	return s1.gds_quad_high > s2.gds_quad_high ||
-		s1.gds_quad_high == s2.gds_quad_high &&
-		s1.gds_quad_low > s2.gds_quad_low;
-}
-
 struct Rtr : public Firebird::GlobalStorage, public TypedHandle<rem_type_rtr>
 {
 	using BlobsTree = Firebird::BePlusTree<struct Rbl*, SQUAD, MemoryPool, struct Rbl>;
@@ -268,10 +253,7 @@ struct RBlobInfo
 // Used in XDR
 class RemBlobBuffer : public Firebird::HalfStaticArray<UCHAR, BLOB_LENGTH>
 {
-public:
-	RemBlobBuffer(Firebird::MemoryPool& pool) :
-		Firebird::HalfStaticArray<UCHAR, BLOB_LENGTH>(pool)
-	{}
+	using Firebird::HalfStaticArray<UCHAR, BLOB_LENGTH>::HalfStaticArray;
 };
 
 struct Rbl : public Firebird::GlobalStorage, public TypedHandle<rem_type_rbl>
