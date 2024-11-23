@@ -9363,8 +9363,10 @@ static void release_blob( Rbl* blob)
 	Rdb* rdb = blob->rbl_rdb;
 
 	if (blob->isCached())
+	{
 		// Assume buffer was not resized while blob was cached
 		rdb->decBlobCache(blob->rbl_buffer_length);
+	}
 	else
 		rdb->rdb_port->releaseObject(blob->rbl_id);
 

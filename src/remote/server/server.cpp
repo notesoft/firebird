@@ -3513,9 +3513,10 @@ ISC_STATUS rem_port::execute_immediate(P_OP op, P_SQLST * exnow, PACKET* sendL)
 		this->port_statement->rsr_format = this->port_statement->rsr_select_format;
 
 		if (out_msg && exnow->p_sqlst_inline_blob_size)
+		{
 			sendInlineBlobs(sendL, transaction, out_msg, port_statement->rsr_select_format,
 				exnow->p_sqlst_inline_blob_size);
-
+		}
 		sendL->p_operation = op_sql_response;
 		sendL->p_sqldata.p_sqldata_messages =
 			((status_vector.getState() & IStatus::STATE_ERRORS) || !out_msg) ? 0 : 1;
@@ -3958,9 +3959,10 @@ ISC_STATUS rem_port::execute_statement(P_OP op, P_SQLDATA* sqldata, PACKET* send
 		this->port_statement->rsr_format = this->port_statement->rsr_select_format;
 
 		if (out_msg && statement->rsr_inline_blob_size)
+		{
 			sendInlineBlobs(sendL, transaction, out_msg, port_statement->rsr_select_format,
 				statement->rsr_inline_blob_size);
-
+		}
 		sendL->p_operation = op_sql_response;
 		sendL->p_sqldata.p_sqldata_messages =
 			((status_vector.getState() & IStatus::STATE_ERRORS) || !out_msg) ? 0 : 1;
