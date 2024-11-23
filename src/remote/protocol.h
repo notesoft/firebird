@@ -630,6 +630,7 @@ typedef struct p_sqlst
     CSTRING	p_sqlst_out_blr;			// blr describing output message
     USHORT	p_sqlst_out_message_number;
 	USHORT	p_sqlst_flags;				// prepare flags
+	ULONG	p_sqlst_inline_blob_size;	// maximum size of inlined blob
 } P_SQLST;
 
 typedef struct p_sqldata
@@ -647,6 +648,7 @@ typedef struct p_sqldata
 	ULONG	p_sqldata_cursor_flags;		// cursor flags
 	P_FETCH	p_sqldata_fetch_op;			// Fetch operation
 	SLONG	p_sqldata_fetch_pos;		// Fetch position
+	ULONG	p_sqldata_inline_blob_size;	// maximum size of inlined blob
 } P_SQLDATA;
 
 typedef struct p_sqlfree

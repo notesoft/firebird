@@ -3512,8 +3512,9 @@ ISC_STATUS rem_port::execute_immediate(P_OP op, P_SQLST * exnow, PACKET* sendL)
 	{
 		this->port_statement->rsr_format = this->port_statement->rsr_select_format;
 
-		if (out_msg)
-			sendInlineBlobs(sendL, transaction, out_msg, port_statement->rsr_select_format);
+		if (out_msg && exnow->p_sqlst_inline_blob_size)
+			sendInlineBlobs(sendL, transaction, out_msg, port_statement->rsr_select_format,
+				exnow->p_sqlst_inline_blob_size);
 
 		sendL->p_operation = op_sql_response;
 		sendL->p_sqldata.p_sqldata_messages =
@@ -3950,12 +3951,15 @@ ISC_STATUS rem_port::execute_statement(P_OP op, P_SQLDATA* sqldata, PACKET* send
 			iMsgBuffer.metadata, iMsgBuffer.buffer, oMsgBuffer.metadata, oMsgBuffer.buffer);
 	}
 
+	statement->rsr_inline_blob_size = sqldata->p_sqldata_inline_blob_size;
+
 	if (op == op_execute2)
 	{
 		this->port_statement->rsr_format = this->port_statement->rsr_select_format;
 
-		if (out_msg)
-			sendInlineBlobs(sendL, transaction, out_msg, port_statement->rsr_select_format);
+		if (out_msg && statement->rsr_inline_blob_size)
+			sendInlineBlobs(sendL, transaction, out_msg, port_statement->rsr_select_format,
+				statement->rsr_inline_blob_size);
 
 		sendL->p_operation = op_sql_response;
 		sendL->p_sqldata.p_sqldata_messages =
@@ -4256,12 +4260,12 @@ ISC_STATUS rem_port::fetch(P_SQLDATA * sqldata, PACKET* sendL, bool scroll)
 		}
 
 		// send blob data inline
-		if (statement->haveBlobs())
+		if (statement->haveBlobs() && statement->rsr_inline_blob_size)
 		{
 			AutoSaveRestore op(&sendL->p_operation);
 
 			sendInlineBlobs(sendL, statement->rsr_rtr, message->msg_buffer,
-				statement->rsr_select_format);
+				statement->rsr_select_format, statement->rsr_inline_blob_size);
 		}
 
 		// There's a buffer waiting -- send it
@@ -5996,7 +6000,8 @@ ISC_STATUS rem_port::seek_blob(P_SEEK* seek, PACKET* sendL)
 }
 
 
-void rem_port::sendInlineBlobs(PACKET* sendL, Rtr* rtr, UCHAR* message, const rem_fmt* format)
+void rem_port::sendInlineBlobs(PACKET* sendL, Rtr* rtr, UCHAR* message,
+	const rem_fmt* format, ULONG maxSize)
 {
 	if (port_protocol < PROTOCOL_INLINE_BLOB || port_type == XNET)
 		return;
@@ -6016,13 +6021,13 @@ void rem_port::sendInlineBlobs(PACKET* sendL, Rtr* rtr, UCHAR* message, const re
 		if (*blobId == NULL_BLOB)
 			continue;
 
-		if (!sendInlineBlob(sendL, rtr, *blobId))
+		if (!sendInlineBlob(sendL, rtr, *blobId, maxSize))
 			break;
 	}
 }
 
 
-bool rem_port::sendInlineBlob(PACKET* sendL, Rtr* rtr, SQUAD blobId)
+bool rem_port::sendInlineBlob(PACKET* sendL, Rtr* rtr, SQUAD blobId, ULONG maxSize)
 {
 	P_INLINE_BLOB* p_blob = &sendL->p_inline_blob;
 
@@ -6039,7 +6044,7 @@ bool rem_port::sendInlineBlob(PACKET* sendL, Rtr* rtr, SQUAD blobId)
 		return false;
 
 	// ask blob info
-	const UCHAR items[] =  {
+	const UCHAR items[] = {
 		isc_info_blob_num_segments,
 		isc_info_blob_max_segment,
 		isc_info_blob_total_length,
@@ -6087,8 +6092,7 @@ bool rem_port::sendInlineBlob(PACKET* sendL, Rtr* rtr, SQUAD blobId)
 	if (!total_length)
 		return true;
 
-	// todo: set max inline blob size
-	if (total_length > 16384)
+	if (total_length > maxSize)
 		return true;
 
 	if (!segmented)

@@ -104,6 +104,9 @@ const ULONG MAX_ROWS_PER_BATCH = 1000;
 
 const ULONG MAX_BATCH_CACHE_SIZE = 1024 * 1024; // 1 MB
 
+const ULONG	DEFAULT_BLOBS_CACHE_SIZE = 10 * 1024 * 1024;	// 10 MB
+const ULONG	DEFAULT_INLINE_BLOB_SIZE = BLOB_LENGTH;
+
 // fwd. decl.
 namespace Firebird {
 	class Exception;
@@ -181,15 +184,44 @@ private:
 public:
 	std::atomic<int> rdb_async_lock;		// Atomic to avoid >1 async calls at once
 
+	ULONG			rdb_inline_blob_size;		// default max size of blob that can be transfered inline
+	ULONG			rdb_blob_cache_size;		// limit on cached blobs size
+	ULONG			rdb_cached_blobs_size;		// actual size of cached blobs
+	ULONG			rdb_cached_blobs_count;		// actual count of cached blobs
+
 public:
 	Rdb() :
 		rdb_iface(NULL), rdb_port(0),
 		rdb_transactions(0), rdb_requests(0), rdb_events(0), rdb_sql_requests(0),
-		rdb_id(0), rdb_async_thread_id(0), rdb_async_lock(0)
+		rdb_id(0), rdb_async_thread_id(0), rdb_async_lock(0),
+		rdb_inline_blob_size(DEFAULT_INLINE_BLOB_SIZE), rdb_blob_cache_size(DEFAULT_BLOBS_CACHE_SIZE),
+		rdb_cached_blobs_size(0), rdb_cached_blobs_count(0)
 	{
 	}
 
 	static ISC_STATUS badHandle() { return isc_bad_db_handle; }
+
+	// Increment blob cache usage.
+	// Return false if blob cache have not enough space for a blob of given size.
+	bool incBlobCache(ULONG size)
+	{
+		if (rdb_cached_blobs_size + size > rdb_blob_cache_size)
+			return false;
+
+		rdb_cached_blobs_size += size;
+		rdb_cached_blobs_count++;
+		return true;
+	}
+
+	// Decrement blob cache usage.
+	void decBlobCache(ULONG size)
+	{
+		fb_assert(rdb_cached_blobs_size >= size);
+		fb_assert(rdb_cached_blobs_count > 0);
+
+		rdb_cached_blobs_size -= size;
+		rdb_cached_blobs_count--;
+	}
 };
 
 
@@ -550,6 +582,7 @@ struct Rsr : public Firebird::GlobalStorage, public TypedHandle<rem_type_rsr>
 
 	P_FETCH			rsr_fetch_operation;	// Last performed fetch operation
 	SLONG			rsr_fetch_position;		// and position
+	unsigned int	rsr_inline_blob_size;	// max size of blob that can be transfered inline
 
 	struct BatchStream
 	{
@@ -604,7 +637,7 @@ public:
 		rsr_rows_pending(0), rsr_msgs_waiting(0), rsr_reorder_level(0), rsr_batch_count(0),
 		rsr_cursor_name(getPool()), rsr_delayed_format(false), rsr_timeout(0), rsr_self(NULL),
 		rsr_batch_size(0), rsr_batch_flags(0), rsr_batch_ics(NULL),
-		rsr_fetch_operation(fetch_next), rsr_fetch_position(0)
+		rsr_fetch_operation(fetch_next), rsr_fetch_position(0), rsr_inline_blob_size(0)
 	{ }
 
 	~Rsr()
@@ -1612,10 +1645,10 @@ public:
 private:
 	bool tryKeyType(const KnownServerKey& srvKey, InternalCryptKey* cryptKey);
 
-	void sendInlineBlobs(PACKET*, Rtr* rtr, UCHAR* message, const rem_fmt* format);
+	void sendInlineBlobs(PACKET*, Rtr* rtr, UCHAR* message, const rem_fmt* format, ULONG maxSize);
 
 	// return false if any error retrieving blob happens
-	bool sendInlineBlob(PACKET*, Rtr* rtr, SQUAD blobId);
+	bool sendInlineBlob(PACKET*, Rtr* rtr, SQUAD blobId, ULONG maxSize);
 };
 
 

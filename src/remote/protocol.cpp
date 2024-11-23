@@ -670,6 +670,8 @@ bool_t xdr_protocol(RemoteXdr* xdrs, PACKET* p)
 			MAP(xdr_u_long, sqldata->p_sqldata_timeout);
 		if (port->port_protocol >= PROTOCOL_FETCH_SCROLL)
 			MAP(xdr_u_long, sqldata->p_sqldata_cursor_flags);
+		if (port->port_protocol >= PROTOCOL_INLINE_BLOB)
+			MAP(xdr_u_long, sqldata->p_sqldata_inline_blob_size);
 		DEBUG_PRINTSIZE(xdrs, p->p_operation);
 		return P_TRUE(xdrs, p);
 
@@ -691,6 +693,10 @@ bool_t xdr_protocol(RemoteXdr* xdrs, PACKET* p)
 			return P_FALSE(xdrs, p);
 		}
 		MAP(xdr_short, reinterpret_cast<SSHORT&>(prep_stmt->p_sqlst_out_message_number));
+
+		if (port->port_protocol >= PROTOCOL_INLINE_BLOB)
+			MAP(xdr_u_long, prep_stmt->p_sqlst_inline_blob_size);
+
 		// Fall into ...
 
 	case op_exec_immediate:
