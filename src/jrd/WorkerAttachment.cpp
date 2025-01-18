@@ -76,12 +76,12 @@ WorkerStableAttachment::~WorkerStableAttachment()
 	fini();
 }
 
-WorkerStableAttachment* WorkerStableAttachment::create(FbStatusVector* status, Jrd::Database* dbb)
+WorkerStableAttachment* WorkerStableAttachment::create(FbStatusVector* status, Database* dbb, JProvider* provider)
 {
 	Attachment* attachment = NULL;
 	try
 	{
-		attachment = Attachment::create(dbb, NULL);
+		attachment = Attachment::create(dbb, provider);
 		attachment->att_filename = dbb->dbb_filename;
 		attachment->att_flags |= ATT_worker;
 
@@ -120,6 +120,8 @@ void WorkerStableAttachment::fini()
 		BackgroundContextHolder tdbb(dbb, attachment, &status_vector, FB_FUNCTION);
 
 		Monitoring::cleanupAttachment(tdbb);
+		dbb->dbb_extManager->closeAttachment(tdbb, attachment);
+
 		attachment->releaseLocks(tdbb);
 		LCK_fini(tdbb, LCK_OWNER_attachment);
 
@@ -433,17 +435,16 @@ StableAttachmentPart* WorkerAttachment::doAttach(FbStatusVector* status, Databas
 {
 	StableAttachmentPart* sAtt = NULL;
 
+	AutoPlugin<JProvider> jInstance(JProvider::getInstance());
+	//jInstance->setDbCryptCallback(&status, tdbb->getAttachment()->att_crypt_callback);
+
 	if (Config::getServerMode() == MODE_SUPER)
-		sAtt = WorkerStableAttachment::create(status, dbb);
+		sAtt = WorkerStableAttachment::create(status, dbb, jInstance);
 	else
 	{
 		ClumpletWriter dpb(ClumpletReader::Tagged, MAX_DPB_SIZE, isc_dpb_version1);
 		dpb.insertString(isc_dpb_trusted_auth, DBA_USER_NAME);
 		dpb.insertInt(isc_dpb_worker_attach, 1);
-
-		AutoPlugin<JProvider> jInstance(JProvider::getInstance());
-
-		//jInstance->setDbCryptCallback(&status, tdbb->getAttachment()->att_crypt_callback);
 
 		JAttachment* jAtt = jInstance->attachDatabase(status, dbb->dbb_filename.c_str(),
 			dpb.getBufferLength(), dpb.getBuffer());
@@ -456,6 +457,7 @@ StableAttachmentPart* WorkerAttachment::doAttach(FbStatusVector* status, Databas
 	{
 		sAtt->addRef(); // !!
 		sAtt->getHandle()->setIdleTimeout(WORKER_IDLE_TIMEOUT);
+		jInstance->addRef();
 	}
 
 	return sAtt;
@@ -464,6 +466,15 @@ StableAttachmentPart* WorkerAttachment::doAttach(FbStatusVector* status, Databas
 void WorkerAttachment::doDetach(FbStatusVector* status, StableAttachmentPart* sAtt)
 {
 	status->init();
+
+	AutoPlugin<JProvider> provider;
+	{
+		AttSyncLockGuard guard(*sAtt->getSync(), FB_FUNCTION);
+
+		Attachment* attachment = sAtt->getHandle();
+		if (attachment)
+			provider.reset(attachment->getProvider());
+	}
 
 	// if (att->att_flags & ATT_system)
 	if (Config::getServerMode() == MODE_SUPER)

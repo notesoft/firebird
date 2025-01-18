@@ -46,7 +46,7 @@ namespace Jrd
 class WorkerStableAttachment : public SysStableAttachment
 {
 public:
-	static WorkerStableAttachment* create(FbStatusVector* status, Jrd::Database* dbb);
+	static WorkerStableAttachment* create(FbStatusVector* status, Database* dbb, JProvider* provider);
 
 	void fini();
 
