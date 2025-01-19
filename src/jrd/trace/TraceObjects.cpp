@@ -89,7 +89,7 @@ bool descToUTF8(const dsc* param, string& result)
 
 		char* hex = result.getBuffer(length * 2);
 
-		for (UCHAR* p = address; p < address + length; p++)
+		for (const UCHAR* p = address; p < address + length; p++)
 		{
 			UCHAR c = (*p & 0xF0) >> 4;
 			*hex++ = c + (c < 10 ? '0' : 'A' - 10);
