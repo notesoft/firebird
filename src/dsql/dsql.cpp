@@ -490,6 +490,8 @@ static DsqlRequest* prepareRequest(thread_db* tdbb, dsql_dbb* database, jrd_tra*
 		{
 			trace.prepare(ITracePlugin::RESULT_FAILED);
 		}
+		else
+			trace.avoidTrace();
 
 		throw;
 	}

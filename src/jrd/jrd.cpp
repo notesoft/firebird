@@ -1406,12 +1406,14 @@ static void successful_completion(CheckStatusWrapper* s, ISC_STATUS acceptCode =
 
 // Stuff exception transliterated to the client charset.
 static ISC_STATUS transliterateException(thread_db* tdbb, const Exception& ex, FbStatusVector* vector,
-	const char* func) noexcept
+	const char* func, std::function<bool (const FbStatusVector* vector)> avoidTrace = {}) noexcept
 {
 	ex.stuffException(vector);
 
 	Jrd::Attachment* attachment = tdbb->getAttachment();
-	if (func && attachment && attachment->att_trace_manager->needs(ITraceFactory::TRACE_EVENT_ERROR))
+
+	if ((!avoidTrace || !avoidTrace(vector)) && func &&
+		attachment && attachment->att_trace_manager->needs(ITraceFactory::TRACE_EVENT_ERROR))
 	{
 		TraceConnectionImpl conn(attachment);
 		TraceStatusVectorImpl traceStatus(vector, TraceStatusVectorImpl::TS_ERRORS);
@@ -5683,7 +5685,13 @@ JStatement* JAttachment::prepare(CheckStatusWrapper* user_status, ITransaction* 
 		}
 		catch (const Exception& ex)
 		{
-			transliterateException(tdbb, ex, user_status, "JStatement::prepare");
+			transliterateException(tdbb, ex, user_status, "JStatement::prepare",
+				[&](const FbStatusVector* vector)
+				{
+					return (flags & IStatement::PREPARE_REQUIRE_SEMICOLON) &&
+						fb_utils::containsErrorCode(vector->getErrors(), isc_command_end_err2);
+				});
+
 			if (statement)
 			{
 				try
