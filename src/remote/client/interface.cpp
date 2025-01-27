@@ -954,6 +954,9 @@ public:
 	Transaction* remoteTransactionInterface(ITransaction* apiTra);
 	Statement* createStatement(CheckStatusWrapper* status, unsigned dialect);
 
+	// Set params that was set in DPB, ignoring unknown and not applicable tags.
+	void setParamsFromDPB(ClumpletReader& dpb);
+
 	Replicator* replicator;
 
 private:
@@ -965,7 +968,7 @@ private:
 
 	// Returns nullptr if all items was handled or if user buffer is full, else
 	// returns pointer into unused buffer space. Handled info items are removed.
-	unsigned char* getWireStatsInfo(UCharBuffer& info, unsigned int buffer_length,
+	unsigned char* getLocalInfo(UCharBuffer& info, unsigned int buffer_length,
 								unsigned char* buffer);
 
 	Rdb* rdb;
@@ -1264,9 +1267,11 @@ IAttachment* RProvider::attach(CheckStatusWrapper* status, const char* filename,
 		if (!init(status, cBlock, port, op_attach, expanded_name, newDpb, intl, cryptCallback))
 			return NULL;
 
-		Attachment* a = FB_NEW Attachment(port->port_context, filename);
-		a->addRef();
-		return a;
+		Attachment* att = FB_NEW Attachment(port->port_context, filename);
+		att->addRef();
+		att->setParamsFromDPB(newDpb);
+
+		return att;
 	}
 	catch (const Exception& ex)
 	{
@@ -2002,7 +2007,7 @@ IAttachment* Loopback::createDatabase(CheckStatusWrapper* status, const char* fi
 }
 
 
-unsigned char* Attachment::getWireStatsInfo(UCharBuffer& info, unsigned int buffer_length,
+unsigned char* Attachment::getLocalInfo(UCharBuffer& info, unsigned int buffer_length,
 	unsigned char* buffer)
 {
 	const rem_port* const port = rdb->rdb_port;
@@ -2022,6 +2027,9 @@ unsigned char* Attachment::getWireStatsInfo(UCharBuffer& info, unsigned int buff
 			break;
 		}
 
+		FB_UINT64 value;
+		bool skip = false;
+
 		switch (*item)
 		{
 		case fb_info_wire_snd_packets:
@@ -2033,25 +2041,37 @@ unsigned char* Attachment::getWireStatsInfo(UCharBuffer& info, unsigned int buff
 		case fb_info_wire_out_bytes:
 		case fb_info_wire_in_bytes:
 		case fb_info_wire_roundtrips:
-		{
-			const FB_UINT64 value = port->getStatItem(*item);
-
-			if (value <= MAX_SLONG)
-				ptr = fb_utils::putInfoItemInt(*item, (SLONG) value, ptr, end);
-			else
-				ptr = fb_utils::putInfoItemInt(*item, value, ptr, end);
-
-			if (!ptr)
-				return nullptr;
-
-			info.remove(item);
+			value = port->getStatItem(*item);
 			break;
-		}
+
+		case fb_info_max_blob_cache_size:
+			value = rdb->rdb_blob_cache_size;
+			break;
+
+		case fb_info_max_inline_blob_size:
+			value = rdb->rdb_inline_blob_size;
+			break;
 
 		default:
-			item++;
+			skip = true;
 			break;
 		}
+
+		if (skip)
+		{
+			item++;
+			continue;
+		}
+
+		if (value <= MAX_SLONG)
+			ptr = fb_utils::putInfoItemInt(*item, (SLONG) value, ptr, end);
+		else
+			ptr = fb_utils::putInfoItemInt(*item, value, ptr, end);
+
+		if (!ptr)
+			return nullptr;
+
+		info.remove(item);
 	}
 
 	if (info.isEmpty() && ptr < end)
@@ -2090,7 +2110,7 @@ void Attachment::getInfo(CheckStatusWrapper* status,
 		RefMutexGuard portGuard(*port->port_sync, FB_FUNCTION);
 
 		UCharBuffer tempInfo(items, item_length);
-		UCHAR* ptr = getWireStatsInfo(tempInfo, buffer_length, buffer);
+		UCHAR* ptr = getLocalInfo(tempInfo, buffer_length, buffer);
 		if (!ptr)
 			return;
 
@@ -2471,47 +2491,106 @@ Batch* Attachment::createBatch(CheckStatusWrapper* status, ITransaction* transac
 }
 
 
+void Attachment::setParamsFromDPB(ClumpletReader& dpb)
+{
+	dpb.rewind();
+	for (; !dpb.isEof(); dpb.moveNext())
+	{
+		const UCHAR item = dpb.getClumpTag();
+		switch (item)
+		{
+		case isc_dpb_max_blob_cache_size:
+			if (rdb->rdb_port->port_protocol >= PROTOCOL_INLINE_BLOB)
+				rdb->rdb_blob_cache_size = dpb.getInt();
+			break;
+
+		case isc_dpb_max_inline_blob_size:
+			if (rdb->rdb_port->port_protocol >= PROTOCOL_INLINE_BLOB)
+				rdb->rdb_inline_blob_size = dpb.getInt();
+			break;
+
+		default:
+			break;
+		}
+	}
+}
+
+
 unsigned Attachment::getMaxBlobCacheSize(CheckStatusWrapper* status)
 {
-	if (rdb->rdb_port->port_protocol < PROTOCOL_INLINE_BLOB)
+	try
 	{
-		status->setErrors(Arg::Gds(isc_wish_list).value());
-		return 0;
+		reset(status);
+		CHECK_HANDLE(rdb, isc_bad_db_handle);
+
+		if (rdb->rdb_port->port_protocol < PROTOCOL_INLINE_BLOB)
+			unsupported();
+
+		return rdb->rdb_blob_cache_size;
 	}
-	return rdb->rdb_blob_cache_size;
+	catch (const Exception& ex)
+	{
+		ex.stuffException(status);
+	}
+	return 0;
 }
 
 
 void Attachment::setMaxBlobCacheSize(CheckStatusWrapper* status, unsigned size)
 {
-	if (rdb->rdb_port->port_protocol < PROTOCOL_INLINE_BLOB)
+	try
 	{
-		status->setErrors(Arg::Gds(isc_wish_list).value());
-		return;
+		reset(status);
+		CHECK_HANDLE(rdb, isc_bad_db_handle);
+
+		if (rdb->rdb_port->port_protocol < PROTOCOL_INLINE_BLOB)
+			unsupported();
+
+		rdb->rdb_blob_cache_size = size;
 	}
-	rdb->rdb_blob_cache_size = size;
+	catch (const Exception& ex)
+	{
+		ex.stuffException(status);
+	}
 }
 
 
 unsigned Attachment::getMaxInlineBlobSize(CheckStatusWrapper* status)
 {
-	if (rdb->rdb_port->port_protocol < PROTOCOL_INLINE_BLOB)
+	try
 	{
-		status->setErrors(Arg::Gds(isc_wish_list).value());
-		return 0;
+		reset(status);
+		CHECK_HANDLE(rdb, isc_bad_db_handle);
+
+		if (rdb->rdb_port->port_protocol < PROTOCOL_INLINE_BLOB)
+			unsupported();
+
+		return rdb->rdb_inline_blob_size;
 	}
-	return rdb->rdb_inline_blob_size;
+	catch (const Exception& ex)
+	{
+		ex.stuffException(status);
+	}
+	return 0;
 }
 
 
 void Attachment::setMaxInlineBlobSize(CheckStatusWrapper* status, unsigned size)
 {
-	if (rdb->rdb_port->port_protocol < PROTOCOL_INLINE_BLOB)
+	try
 	{
-		status->setErrors(Arg::Gds(isc_wish_list).value());
-		return;
+		reset(status);
+		CHECK_HANDLE(rdb, isc_bad_db_handle);
+
+		if (rdb->rdb_port->port_protocol < PROTOCOL_INLINE_BLOB)
+			unsupported();
+
+		rdb->rdb_inline_blob_size = size;
 	}
-	rdb->rdb_inline_blob_size = size;
+	catch (const Exception& ex)
+	{
+		ex.stuffException(status);
+	}
 }
 
 
