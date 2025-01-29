@@ -42,7 +42,6 @@
 #include "../common/StatusHolder.h"
 #include "../common/classes/RefCounted.h"
 #include "../common/classes/GetPlugins.h"
-#include "../common/classes/RefMutex.h"
 
 #include "firebird/Interface.h"
 
@@ -93,7 +92,6 @@ const int BLOB_LENGTH		= 16384;
 
 #include "../remote/protocol.h"
 #include "fb_blk.h"
-#include "firebird/Interface.h"
 
 // Prefetch constants
 
@@ -105,7 +103,9 @@ const ULONG MAX_ROWS_PER_BATCH = 1000;
 const ULONG MAX_BATCH_CACHE_SIZE = 1024 * 1024; // 1 MB
 
 const ULONG	DEFAULT_BLOBS_CACHE_SIZE = 10 * 1024 * 1024;	// 10 MB
-const ULONG	DEFAULT_INLINE_BLOB_SIZE = BLOB_LENGTH;
+
+const ULONG	MAX_INLINE_BLOB_SIZE = MAX_USHORT;
+const ULONG	DEFAULT_INLINE_BLOB_SIZE = MAX_USHORT;
 
 // fwd. decl.
 namespace Firebird {

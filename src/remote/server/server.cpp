@@ -6094,13 +6094,17 @@ bool rem_port::sendInlineBlob(PACKET* sendL, Rtr* rtr, SQUAD blobId, ULONG maxSi
 	if (!total_length)
 		return true;
 
-	if (total_length > maxSize)
-		return true;
-
 	if (!segmented)
 		num_segments = (total_length + max_segment - 1) / max_segment;
 
 	const ULONG dataLen = total_length + num_segments * 2;
+
+	fb_assert(maxSize <= MAX_INLINE_BLOB_SIZE);
+	if (maxSize > MAX_INLINE_BLOB_SIZE)
+		maxSize = MAX_INLINE_BLOB_SIZE;
+
+	if (dataLen > maxSize)
+		return true;
 
 	RemBlobBuffer buff(getPool());
 

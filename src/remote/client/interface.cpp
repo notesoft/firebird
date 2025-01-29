@@ -699,25 +699,8 @@ public:
 	Batch* createBatch(CheckStatusWrapper* status, IMessageMetadata* inMetadata,
 		unsigned parLength, const unsigned char* par) override;
 
-	unsigned getMaxInlineBlobSize(CheckStatusWrapper* status) override
-	{
-		if (statement->rsr_rdb->rdb_port->port_protocol < PROTOCOL_INLINE_BLOB)
-		{
-			status->setErrors(Arg::Gds(isc_wish_list).value());
-			return 0;
-		}
-		return statement->rsr_inline_blob_size;
-	}
-
-	void setMaxInlineBlobSize(CheckStatusWrapper* status, unsigned size) override
-	{
-		if (statement->rsr_rdb->rdb_port->port_protocol < PROTOCOL_INLINE_BLOB)
-		{
-			status->setErrors(Arg::Gds(isc_wish_list).value());
-			return;
-		}
-		statement->rsr_inline_blob_size = size;
-	}
+	unsigned getMaxInlineBlobSize(CheckStatusWrapper* status) override;
+	void setMaxInlineBlobSize(CheckStatusWrapper* status, unsigned size) override;
 
 public:
 	Statement(Rsr* handle, Attachment* a, unsigned aDialect)
@@ -2500,13 +2483,18 @@ void Attachment::setParamsFromDPB(ClumpletReader& dpb)
 		switch (item)
 		{
 		case isc_dpb_max_blob_cache_size:
-			if (rdb->rdb_port->port_protocol >= PROTOCOL_INLINE_BLOB)
-				rdb->rdb_blob_cache_size = dpb.getInt();
-			break;
-
 		case isc_dpb_max_inline_blob_size:
 			if (rdb->rdb_port->port_protocol >= PROTOCOL_INLINE_BLOB)
-				rdb->rdb_inline_blob_size = dpb.getInt();
+			{
+				SLONG val = dpb.getInt();
+				if (val < 0)
+					val = 0;
+
+				if (item == isc_dpb_max_blob_cache_size)
+					rdb->rdb_blob_cache_size = val;
+				else
+					rdb->rdb_inline_blob_size = MIN(val, MAX_INLINE_BLOB_SIZE);
+			}
 			break;
 
 		default:
@@ -2585,7 +2573,61 @@ void Attachment::setMaxInlineBlobSize(CheckStatusWrapper* status, unsigned size)
 		if (rdb->rdb_port->port_protocol < PROTOCOL_INLINE_BLOB)
 			unsupported();
 
+		if (size > MAX_INLINE_BLOB_SIZE)
+			size = MAX_INLINE_BLOB_SIZE;
+
 		rdb->rdb_inline_blob_size = size;
+	}
+	catch (const Exception& ex)
+	{
+		ex.stuffException(status);
+	}
+}
+
+
+unsigned Statement::getMaxInlineBlobSize(CheckStatusWrapper* status)
+{
+	try
+	{
+		reset(status);
+
+		Rsr* statement = getStatement();
+		CHECK_HANDLE(statement, isc_bad_req_handle);
+		Rdb* rdb = statement->rsr_rdb;
+		CHECK_HANDLE(rdb, isc_bad_db_handle);
+
+		if (rdb->rdb_port->port_protocol < PROTOCOL_INLINE_BLOB)
+			unsupported();
+
+		return statement->rsr_inline_blob_size;
+	}
+	catch (const Exception& ex)
+	{
+		ex.stuffException(status);
+	}
+
+	return 0;
+}
+
+
+void Statement::setMaxInlineBlobSize(CheckStatusWrapper* status, unsigned size)
+{
+	try
+	{
+		reset(status);
+
+		Rsr* statement = getStatement();
+		CHECK_HANDLE(statement, isc_bad_req_handle);
+		Rdb* rdb = statement->rsr_rdb;
+		CHECK_HANDLE(rdb, isc_bad_db_handle);
+
+		if (rdb->rdb_port->port_protocol < PROTOCOL_INLINE_BLOB)
+			unsupported();
+
+		if (size > MAX_INLINE_BLOB_SIZE)
+			size = MAX_INLINE_BLOB_SIZE;
+
+		statement->rsr_inline_blob_size = size;
 	}
 	catch (const Exception& ex)
 	{
@@ -9444,7 +9486,7 @@ static void release_blob( Rbl* blob)
 	if (blob->isCached())
 	{
 		// Assume buffer was not resized while blob was cached
-		rdb->decBlobCache(blob->rbl_buffer_length);
+		rdb->decBlobCache(blob->rbl_data.getCapacity());
 	}
 	else
 		rdb->rdb_port->releaseObject(blob->rbl_id);
