@@ -4081,6 +4081,8 @@ const
 	isc_dpb_parallel_workers = byte(100);
 	isc_dpb_worker_attach = byte(101);
 	isc_dpb_owner = byte(102);
+	isc_dpb_max_blob_cache_size = byte(103);
+	isc_dpb_max_inline_blob_size = byte(104);
 	isc_dpb_address = byte(1);
 	isc_dpb_addr_protocol = byte(1);
 	isc_dpb_addr_endpoint = byte(2);
@@ -4540,6 +4542,8 @@ const
 	fb_info_wire_snd_bytes = byte(156);
 	fb_info_wire_rcv_bytes = byte(157);
 	fb_info_wire_roundtrips = byte(158);
+	fb_info_max_blob_cache_size = byte(159);
+	fb_info_max_inline_blob_size = byte(160);
 	fb_info_crypt_encrypted = $01;
 	fb_info_crypt_process = $02;
 	fb_feature_multi_statements = byte(1);
