@@ -1167,16 +1167,15 @@ bool_t xdr_protocol(RemoteXdr* xdrs, PACKET* p)
 
 				MAP(xdr_response, p_blob->p_blob_info);
 
-				Rbl* blb = tran->createInlineBlob();
+				AutoPtr<Rbl> blb = tran->createInlineBlob();
 				p_blob->p_blob_data = &blb->rbl_data;
 
 				if (!xdr_blobBuffer(xdrs, p_blob->p_blob_data))
 				{
 					tran->rtr_inline_blob = nullptr;
-					delete blb;
-
 					return P_FALSE(xdrs, p);
 				}
+				blb.release();
 			}
 
 			return P_TRUE(xdrs, p);

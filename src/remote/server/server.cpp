@@ -4825,7 +4825,7 @@ ISC_STATUS rem_port::open_blob(P_OP op, P_BLOB* stuff, PACKET* sendL)
 	USHORT object = 0;
 	if (!(status_vector.getState() & IStatus::STATE_ERRORS))
 	{
-		Rbl* blob = FB_NEW Rbl;
+		Rbl* blob = FB_NEW Rbl(BLOB_LENGTH);
 #ifdef DEBUG_REMOTE_MEMORY
 		printf("open_blob(server)         allocate blob    %x\n", blob);
 #endif

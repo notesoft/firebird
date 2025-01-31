@@ -283,9 +283,9 @@ struct RBlobInfo
 };
 
 // Used in XDR
-class RemBlobBuffer : public Firebird::HalfStaticArray<UCHAR, BLOB_LENGTH>
+class RemBlobBuffer : public Firebird::Array<UCHAR>
 {
-	using Firebird::HalfStaticArray<UCHAR, BLOB_LENGTH>::HalfStaticArray;
+	using Firebird::Array<UCHAR>::Array;
 };
 
 struct Rbl : public Firebird::GlobalStorage, public TypedHandle<rem_type_rbl>
@@ -319,11 +319,11 @@ public:
 	};
 
 public:
-	Rbl() :
+	Rbl(unsigned int initialSize) :
 		rbl_data(getPool()), rbl_rdb(0), rbl_rtr(0),
-		rbl_buffer(rbl_data.getBuffer(BLOB_LENGTH)), rbl_ptr(rbl_buffer), rbl_iface(NULL),
+		rbl_buffer(rbl_data.getBuffer(initialSize)), rbl_ptr(rbl_buffer), rbl_iface(NULL),
 		rbl_blob_id(NULL_BLOB), rbl_offset(0), rbl_id(0), rbl_flags(0),
-		rbl_buffer_length(BLOB_LENGTH), rbl_length(0), rbl_fragment_length(0),
+		rbl_buffer_length(initialSize), rbl_length(0), rbl_fragment_length(0),
 		rbl_source_interp(0), rbl_target_interp(0), rbl_self(NULL)
 	{ }
 
@@ -339,6 +339,7 @@ public:
 	static ISC_STATUS badHandle() { return isc_bad_segstr_handle; }
 
 	bool isCached() const { return rbl_flags & CACHED; }
+	unsigned getCachedSize() const { return sizeof(Rbl) + rbl_data.getCapacity(); }
 
 	static const SQUAD& generate(const void*, const Rbl* item) { return item->rbl_blob_id; }
 };

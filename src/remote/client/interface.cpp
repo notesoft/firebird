@@ -1866,7 +1866,7 @@ IBlob* Attachment::createBlob(CheckStatusWrapper* status, ITransaction* apiTra, 
 		p_blob->p_blob_bpb.cstr_length = 0;
 		p_blob->p_blob_bpb.cstr_address = NULL;
 
-		Rbl* blob = FB_NEW Rbl();
+		Rbl* blob = FB_NEW Rbl(BLOB_LENGTH);
 		blob->rbl_blob_id = *blob_id = packet->p_resp.p_resp_blob_id;
 		blob->rbl_rdb = rdb;
 		blob->rbl_rtr = transaction;
@@ -6009,7 +6009,7 @@ IBlob* Attachment::openBlob(CheckStatusWrapper* status, ITransaction* apiTra, IS
 		//p_blob->p_blob_bpb.cstr_length = 0;
 		//p_blob->p_blob_bpb.cstr_address = NULL;
 
-		Rbl* blob = FB_NEW Rbl;
+		Rbl* blob = FB_NEW Rbl(BLOB_LENGTH);
 		blob->rbl_rdb = rdb;
 		blob->rbl_rtr = transaction;
 		blob->rbl_blob_id = *id;
@@ -9486,7 +9486,7 @@ static void release_blob( Rbl* blob)
 	if (blob->isCached())
 	{
 		// Assume buffer was not resized while blob was cached
-		rdb->decBlobCache(blob->rbl_data.getCapacity());
+		rdb->decBlobCache(blob->getCachedSize());
 	}
 	else
 		rdb->rdb_port->releaseObject(blob->rbl_id);
