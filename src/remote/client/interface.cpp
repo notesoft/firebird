@@ -10210,7 +10210,7 @@ unsigned ClntAuthBlock::ClientCrypt::afterAttach(CheckStatusWrapper* st, const c
 	return NO_RETRY;
 }
 
-void ClntAuthBlock::ClientCrypt::destroy()
+void ClntAuthBlock::ClientCrypt::dispose()
 {
 	if (currentIface)
 	{
@@ -10223,4 +10223,17 @@ void ClntAuthBlock::ClientCrypt::destroy()
 		afterIface->dispose();
 		afterIface = nullptr;
 	}
+}
+
+int ClntAuthBlock::ClientCrypt::getHashLength(Firebird::CheckStatusWrapper* status)
+{
+	getHashData(status, nullptr);
+
+	return -1;
+}
+
+void ClntAuthBlock::ClientCrypt::getHashData(Firebird::CheckStatusWrapper* status, void*)
+{
+	ISC_STATUS err[] = {isc_arg_gds, isc_wish_list};
+	status->setErrors2(FB_NELEM(err), err);
 }

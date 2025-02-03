@@ -492,6 +492,8 @@ type
 	ICryptKeyCallback_callbackPtr = function(this: ICryptKeyCallback; dataLength: Cardinal; data: Pointer; bufferLength: Cardinal; buffer: Pointer): Cardinal; cdecl;
 	ICryptKeyCallback_afterAttachPtr = function(this: ICryptKeyCallback; status: IStatus; dbName: PAnsiChar; attStatus: IStatus): Cardinal; cdecl;
 	ICryptKeyCallback_disposePtr = procedure(this: ICryptKeyCallback); cdecl;
+	ICryptKeyCallback_getHashLengthPtr = function(this: ICryptKeyCallback; status: IStatus): Integer; cdecl;
+	ICryptKeyCallback_getHashDataPtr = procedure(this: ICryptKeyCallback; status: IStatus; hash: Pointer); cdecl;
 	IKeyHolderPlugin_keyCallbackPtr = function(this: IKeyHolderPlugin; status: IStatus; callback: ICryptKeyCallback): Integer; cdecl;
 	IKeyHolderPlugin_keyHandlePtr = function(this: IKeyHolderPlugin; status: IStatus; keyName: PAnsiChar): ICryptKeyCallback; cdecl;
 	IKeyHolderPlugin_useOnlyOwnKeysPtr = function(this: IKeyHolderPlugin; status: IStatus): Boolean; cdecl;
@@ -2380,16 +2382,20 @@ type
 		callback: ICryptKeyCallback_callbackPtr;
 		afterAttach: ICryptKeyCallback_afterAttachPtr;
 		dispose: ICryptKeyCallback_disposePtr;
+		getHashLength: ICryptKeyCallback_getHashLengthPtr;
+		getHashData: ICryptKeyCallback_getHashDataPtr;
 	end;
 
 	ICryptKeyCallback = class(IVersioned)
-		const VERSION = 3;
+		const VERSION = 4;
 		const NO_RETRY = Cardinal(0);
 		const DO_RETRY = Cardinal(1);
 
 		function callback(dataLength: Cardinal; data: Pointer; bufferLength: Cardinal; buffer: Pointer): Cardinal;
 		function afterAttach(status: IStatus; dbName: PAnsiChar; attStatus: IStatus): Cardinal;
 		procedure dispose();
+		function getHashLength(status: IStatus): Integer;
+		procedure getHashData(status: IStatus; hash: Pointer);
 	end;
 
 	ICryptKeyCallbackImpl = class(ICryptKeyCallback)
@@ -2398,6 +2404,8 @@ type
 		function callback(dataLength: Cardinal; data: Pointer; bufferLength: Cardinal; buffer: Pointer): Cardinal; virtual; abstract;
 		function afterAttach(status: IStatus; dbName: PAnsiChar; attStatus: IStatus): Cardinal; virtual;
 		procedure dispose(); virtual;
+		function getHashLength(status: IStatus): Integer; virtual; abstract;
+		procedure getHashData(status: IStatus; hash: Pointer); virtual; abstract;
 	end;
 
 	KeyHolderPluginVTable = class(PluginBaseVTable)
@@ -8151,6 +8159,29 @@ begin
 	end;
 end;
 
+function ICryptKeyCallback.getHashLength(status: IStatus): Integer;
+begin
+	if (vTable.version < 4) then begin
+		FbException.setVersionError(status, 'ICryptKeyCallback', vTable.version, 4);
+		Result := -1;
+	end
+	else begin
+		Result := CryptKeyCallbackVTable(vTable).getHashLength(Self, status);
+	end;
+	FbException.checkException(status);
+end;
+
+procedure ICryptKeyCallback.getHashData(status: IStatus; hash: Pointer);
+begin
+	if (vTable.version < 4) then begin
+		FbException.setVersionError(status, 'ICryptKeyCallback', vTable.version, 4);
+	end
+	else begin
+		CryptKeyCallbackVTable(vTable).getHashData(Self, status, hash);
+	end;
+	FbException.checkException(status);
+end;
+
 function IKeyHolderPlugin.keyCallback(status: IStatus; callback: ICryptKeyCallback): Integer;
 begin
 	Result := KeyHolderPluginVTable(vTable).keyCallback(Self, status, callback);
@@ -13507,6 +13538,25 @@ procedure ICryptKeyCallbackImpl.dispose();
 begin
 end;
 
+function ICryptKeyCallbackImpl_getHashLengthDispatcher(this: ICryptKeyCallback; status: IStatus): Integer; cdecl;
+begin
+	Result := 0;
+	try
+		Result := ICryptKeyCallbackImpl(this).getHashLength(status);
+	except
+		on e: Exception do FbException.catchException(status, e);
+	end
+end;
+
+procedure ICryptKeyCallbackImpl_getHashDataDispatcher(this: ICryptKeyCallback; status: IStatus; hash: Pointer); cdecl;
+begin
+	try
+		ICryptKeyCallbackImpl(this).getHashData(status, hash);
+	except
+		on e: Exception do FbException.catchException(status, e);
+	end
+end;
+
 var
 	ICryptKeyCallbackImpl_vTable: CryptKeyCallbackVTable;
 
@@ -17592,10 +17642,12 @@ initialization
 	IWireCryptPluginImpl_vTable.setSpecificData := @IWireCryptPluginImpl_setSpecificDataDispatcher;
 
 	ICryptKeyCallbackImpl_vTable := CryptKeyCallbackVTable.create;
-	ICryptKeyCallbackImpl_vTable.version := 3;
+	ICryptKeyCallbackImpl_vTable.version := 4;
 	ICryptKeyCallbackImpl_vTable.callback := @ICryptKeyCallbackImpl_callbackDispatcher;
 	ICryptKeyCallbackImpl_vTable.afterAttach := @ICryptKeyCallbackImpl_afterAttachDispatcher;
 	ICryptKeyCallbackImpl_vTable.dispose := @ICryptKeyCallbackImpl_disposeDispatcher;
+	ICryptKeyCallbackImpl_vTable.getHashLength := @ICryptKeyCallbackImpl_getHashLengthDispatcher;
+	ICryptKeyCallbackImpl_vTable.getHashData := @ICryptKeyCallbackImpl_getHashDataDispatcher;
 
 	IKeyHolderPluginImpl_vTable := KeyHolderPluginVTable.create;
 	IKeyHolderPluginImpl_vTable.version := 5;

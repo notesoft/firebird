@@ -894,15 +894,17 @@ private:
 
 		~ClientCrypt()
 		{
-			destroy();
+			dispose();
 		}
 
 		Firebird::ICryptKeyCallback* create(const Firebird::Config* conf);
 
 		// Firebird::ICryptKeyCallback implementation
-		unsigned callback(unsigned dataLength, const void* data, unsigned bufferLength, void* buffer);
-		unsigned afterAttach(Firebird::CheckStatusWrapper* st, const char* dbName, const Firebird::IStatus* attStatus);
-		void destroy();
+		unsigned callback(unsigned dataLength, const void* data, unsigned bufferLength, void* buffer) override;
+		unsigned afterAttach(Firebird::CheckStatusWrapper* st, const char* dbName, const Firebird::IStatus* attStatus) override;
+		void dispose() override;
+		int getHashLength(Firebird::CheckStatusWrapper* status) override;
+		void getHashData(Firebird::CheckStatusWrapper* status, void* hash) override;
 
  	private:
 		typedef Firebird::GetPlugins<Firebird::IKeyHolderPlugin> KeyHolderItr;

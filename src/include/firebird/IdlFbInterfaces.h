@@ -3892,7 +3892,7 @@ namespace Firebird
 		}
 	};
 
-#define FIREBIRD_ICRYPT_KEY_CALLBACK_VERSION 3u
+#define FIREBIRD_ICRYPT_KEY_CALLBACK_VERSION 4u
 
 	class ICryptKeyCallback : public IVersioned
 	{
@@ -3902,6 +3902,8 @@ namespace Firebird
 			unsigned (CLOOP_CARG *callback)(ICryptKeyCallback* self, unsigned dataLength, const void* data, unsigned bufferLength, void* buffer) CLOOP_NOEXCEPT;
 			unsigned (CLOOP_CARG *afterAttach)(ICryptKeyCallback* self, IStatus* status, const char* dbName, const IStatus* attStatus) CLOOP_NOEXCEPT;
 			void (CLOOP_CARG *dispose)(ICryptKeyCallback* self) CLOOP_NOEXCEPT;
+			int (CLOOP_CARG *getHashLength)(ICryptKeyCallback* self, IStatus* status) CLOOP_NOEXCEPT;
+			void (CLOOP_CARG *getHashData)(ICryptKeyCallback* self, IStatus* status, void* hash) CLOOP_NOEXCEPT;
 		};
 
 	protected:
@@ -3947,6 +3949,33 @@ namespace Firebird
 				return;
 			}
 			static_cast<VTable*>(this->cloopVTable)->dispose(this);
+		}
+
+		template <typename StatusType> int getHashLength(StatusType* status)
+		{
+			if (cloopVTable->version < 4)
+			{
+				StatusType::setVersionError(status, "ICryptKeyCallback", cloopVTable->version, 4);
+				StatusType::checkException(status);
+				return -1;
+			}
+			StatusType::clearException(status);
+			int ret = static_cast<VTable*>(this->cloopVTable)->getHashLength(this, status);
+			StatusType::checkException(status);
+			return ret;
+		}
+
+		template <typename StatusType> void getHashData(StatusType* status, void* hash)
+		{
+			if (cloopVTable->version < 4)
+			{
+				StatusType::setVersionError(status, "ICryptKeyCallback", cloopVTable->version, 4);
+				StatusType::checkException(status);
+				return;
+			}
+			StatusType::clearException(status);
+			static_cast<VTable*>(this->cloopVTable)->getHashData(this, status, hash);
+			StatusType::checkException(status);
 		}
 	};
 
@@ -14426,6 +14455,8 @@ namespace Firebird
 					this->callback = &Name::cloopcallbackDispatcher;
 					this->afterAttach = &Name::cloopafterAttachDispatcher;
 					this->dispose = &Name::cloopdisposeDispatcher;
+					this->getHashLength = &Name::cloopgetHashLengthDispatcher;
+					this->getHashData = &Name::cloopgetHashDataDispatcher;
 				}
 			} vTable;
 
@@ -14471,6 +14502,35 @@ namespace Firebird
 				StatusType::catchException(0);
 			}
 		}
+
+		static int CLOOP_CARG cloopgetHashLengthDispatcher(ICryptKeyCallback* self, IStatus* status) CLOOP_NOEXCEPT
+		{
+			StatusType status2(status);
+
+			try
+			{
+				return static_cast<Name*>(self)->Name::getHashLength(&status2);
+			}
+			catch (...)
+			{
+				StatusType::catchException(&status2);
+				return static_cast<int>(0);
+			}
+		}
+
+		static void CLOOP_CARG cloopgetHashDataDispatcher(ICryptKeyCallback* self, IStatus* status, void* hash) CLOOP_NOEXCEPT
+		{
+			StatusType status2(status);
+
+			try
+			{
+				static_cast<Name*>(self)->Name::getHashData(&status2, hash);
+			}
+			catch (...)
+			{
+				StatusType::catchException(&status2);
+			}
+		}
 	};
 
 	template <typename Name, typename StatusType, typename Base = IVersionedImpl<Name, StatusType, Inherit<ICryptKeyCallback> > >
@@ -14494,6 +14554,8 @@ namespace Firebird
 		virtual void dispose()
 		{
 		}
+		virtual int getHashLength(StatusType* status) = 0;
+		virtual void getHashData(StatusType* status, void* hash) = 0;
 	};
 
 	template <typename Name, typename StatusType, typename Base>
