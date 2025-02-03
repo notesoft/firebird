@@ -6091,41 +6091,41 @@ bool rem_port::sendInlineBlob(PACKET* sendL, Rtr* rtr, SQUAD blobId, ULONG maxSi
 		}
 	}
 
-	if (!total_length)
-		return true;
-
-	if (!segmented)
-		num_segments = (total_length + max_segment - 1) / max_segment;
-
-	const ULONG dataLen = total_length + num_segments * 2;
-
-	fb_assert(maxSize <= MAX_INLINE_BLOB_SIZE);
-	if (maxSize > MAX_INLINE_BLOB_SIZE)
-		maxSize = MAX_INLINE_BLOB_SIZE;
-
-	if (dataLen > maxSize)
-		return true;
-
 	RemBlobBuffer buff(getPool());
 
-	UCHAR* ptr = buff.getBuffer(dataLen);
-	const UCHAR* const end = ptr + dataLen;
-
-	for (; num_segments; num_segments--)
+	if (total_length)
 	{
-		const unsigned inLen = MIN(end - ptr, max_segment);
-		unsigned outLen;
+		if (!segmented)
+			num_segments = (total_length + max_segment - 1) / max_segment;
 
-		const int res = blob->getSegment(&status, inLen, ptr + 2, &outLen);
-		if (res == IStatus::RESULT_ERROR)
-			return false;
+		const ULONG dataLen = total_length + num_segments * 2;
 
-		ptr[0] = (UCHAR) outLen;
-		ptr[1] = (UCHAR) (outLen >> 8);
+		fb_assert(maxSize <= MAX_INLINE_BLOB_SIZE);
+		if (maxSize > MAX_INLINE_BLOB_SIZE)
+			maxSize = MAX_INLINE_BLOB_SIZE;
 
-		ptr += 2 + outLen;
+		if (dataLen > maxSize)
+			return true;
+
+		UCHAR* ptr = buff.getBuffer(dataLen);
+		const UCHAR* const end = ptr + dataLen;
+
+		for (; num_segments; num_segments--)
+		{
+			const unsigned inLen = MIN(end - ptr, max_segment);
+			unsigned outLen;
+
+			const int res = blob->getSegment(&status, inLen, ptr + 2, &outLen);
+			if (res == IStatus::RESULT_ERROR)
+				return false;
+
+			ptr[0] = (UCHAR) outLen;
+			ptr[1] = (UCHAR) (outLen >> 8);
+
+			ptr += 2 + outLen;
+		}
+		fb_assert(ptr == end);
 	}
-	fb_assert(ptr == end);
 
 	blob->close(&status);
 
