@@ -924,15 +924,16 @@ SINT64 get_gen_id( const TEXT* name, SSHORT name_len)
 		getGenerator.singleSelect(tdgbl->tr_handle, &getGen);
 		return getGen->id;
 	}
-	catch (const Firebird::FbException& ex)
+	catch (const status_exception& ex)
 	{
-		Firebird::IStatus* st = ex.getStatus();
+		LocalStatus ls;
+		ex.stuffException(&ls);
 
 		// if there's no gen_id, never mind ...
-		if (st->getErrors()[1] == isc_dsql_error)
+		if (ls.getErrors()[1] == isc_dsql_error)
 			return 0;
 
-		BURP_error_redirect(st, 25);
+		BURP_error_redirect(&ls, 25);
 		// msg 25 Failed in put_blr_gen_id
 	}
 	return 0;	// warning silencer
