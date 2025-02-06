@@ -11779,8 +11779,8 @@ namespace Firebird
 					this->createReplicator = &Name::cloopcreateReplicatorDispatcher;
 					this->detach = &Name::cloopdetachDispatcher;
 					this->dropDatabase = &Name::cloopdropDatabaseDispatcher;
-					this->getMaxBlobCacheSize = &Name::cloopgetBlobCacheSizeDispatcher;
-					this->setMaxBlobCacheSize = &Name::cloopsetBlobCacheSizeDispatcher;
+					this->getMaxBlobCacheSize = &Name::cloopgetMaxBlobCacheSizeDispatcher;
+					this->setMaxBlobCacheSize = &Name::cloopsetMaxBlobCacheSizeDispatcher;
 					this->getMaxInlineBlobSize = &Name::cloopgetMaxInlineBlobSizeDispatcher;
 					this->setMaxInlineBlobSize = &Name::cloopsetMaxInlineBlobSizeDispatcher;
 				}
@@ -12167,7 +12167,7 @@ namespace Firebird
 			}
 		}
 
-		static unsigned CLOOP_CARG cloopgetBlobCacheSizeDispatcher(IAttachment* self, IStatus* status) CLOOP_NOEXCEPT
+		static unsigned CLOOP_CARG cloopgetMaxBlobCacheSizeDispatcher(IAttachment* self, IStatus* status) CLOOP_NOEXCEPT
 		{
 			StatusType status2(status);
 
@@ -12182,7 +12182,7 @@ namespace Firebird
 			}
 		}
 
-		static void CLOOP_CARG cloopsetBlobCacheSizeDispatcher(IAttachment* self, IStatus* status, unsigned size) CLOOP_NOEXCEPT
+		static void CLOOP_CARG cloopsetMaxBlobCacheSizeDispatcher(IAttachment* self, IStatus* status, unsigned size) CLOOP_NOEXCEPT
 		{
 			StatusType status2(status);
 
