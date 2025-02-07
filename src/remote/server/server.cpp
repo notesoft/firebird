@@ -197,7 +197,7 @@ class CryptKeyCallback : public VersionedIface<ICryptKeyCallbackImpl<CryptKeyCal
 {
 public:
 	explicit CryptKeyCallback(rem_port* prt)
-		: port(prt), networkCallback(prt), keyHolder(NULL), keyCallback(NULL)
+		: port(prt), networkCallback(prt)
 	{ }
 
 	~CryptKeyCallback()
@@ -209,7 +209,7 @@ public:
 
 	void loadClientKey()
 	{
-		if (keyCallback)
+		if (clientKeyChecked)
 			return;
 
 		Reference r(*port);
@@ -241,6 +241,8 @@ public:
 					check(&st);
 			}
 		}
+
+		clientKeyChecked = true;
 	}
 
 	void wakeup(unsigned int length, const void* data)
@@ -330,8 +332,9 @@ public:
 private:
 	rem_port* port;
 	NetworkCallback networkCallback;
-	IKeyHolderPlugin* keyHolder;
-	ICryptKeyCallback* keyCallback;
+	IKeyHolderPlugin* keyHolder = nullptr;
+	ICryptKeyCallback* keyCallback = nullptr;
+	bool clientKeyChecked = false;
 };
 
 class ServerCallback : public ServerCallbackBase, public GlobalStorage
