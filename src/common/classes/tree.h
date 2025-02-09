@@ -64,19 +64,6 @@ const int NODE_PAGE_SIZE = 3000;
 // should be more than enough. No checks are performed in code against overflow of this value
 const int MAX_TREE_LEVEL = 30;
 
-class MallocAllocator
-{
-public:
-	void *allocate(size_t size ALLOC_PARAMS)
-	{
-		return malloc(size);
-	}
-	void deallocate(void *p)
-	{
-		free(p);
-	}
-};
-
 enum LocType { locEqual, locLess, locGreat, locGreatEqual, locLessEqual };
 
 // Fast and simple B+ tree of simple types.
@@ -106,7 +93,7 @@ enum LocType { locEqual, locLess, locGreat, locGreatEqual, locLessEqual };
 // an indexed dynamic array without increase of algorithm calculation costs (this is one
 // more classical B+ tree feature). This is also not done to improve tree performance a little
 //
-template <typename Value, typename Key = Value, typename Allocator = MallocAllocator,
+template <typename Value, typename Key = Value, typename Allocator = Firebird::MemoryPool,
 	typename KeyOfValue = DefaultKeyValue<Value>,
 	typename Cmp = DefaultComparator<Key> >
 class BePlusTree
@@ -115,15 +102,15 @@ class BePlusTree
 	static const FB_SIZE_T NODE_COUNT = NODE_PAGE_SIZE / sizeof(void*);
 public:
 	explicit BePlusTree(Allocator *_pool)
-		: pool(_pool), level(0), root(nullptr), defaultAccessor(this)
+		: pool(_pool), level(0), defaultAccessor(this)
 	{ }
 
 	explicit BePlusTree(Allocator& _pool)
-		: pool(&_pool), level(0), root(nullptr), defaultAccessor(this)
+		: pool(&_pool), level(0), defaultAccessor(this)
 	{ }
 
 	BePlusTree(Allocator *_pool, const BePlusTree& from)
-		: pool(_pool), level(0), root(nullptr), defaultAccessor(this)
+		: pool(_pool), level(0), defaultAccessor(this)
 	{
 		append(from);
 	}
@@ -159,8 +146,7 @@ public:
 		while (items)
 		{
 			ItemList *t = items->next;
-			items->~ItemList();
-			pool->deallocate(items);
+			delete items;
 			items = t;
 		}
 
@@ -172,21 +158,20 @@ public:
 			while (list)
 			{
 				NodeList *t = list->next;
-				list->~NodeList();
-				pool->deallocate(list);
+				delete list;
 				list = t;
 			}
 		}
 
 		// Initialize fields to make tree usable again
-		root = nullptr;
+		root.items = nullptr;
 		level = 0;
 	}
 
     ~BePlusTree()
 	{
 		clear();
-		pool->deallocate(root.pointer);
+		delete root.items;
 	}
 
 	bool isEmpty() const
@@ -321,25 +306,18 @@ private:
 		}
 		// Create first item in the linked list
 		ItemList() : parent(nullptr), next(nullptr), prev(nullptr) {}
-
-		friend class BePlusTree;
-#ifndef _MSC_VER
-		friend class BePlusTree::NodeList;
-		friend class BePlusTree::Accessor;
-#endif
 	};
 
 	union NodePtr
 	{
-		NodePtr(void* p = nullptr) : pointer(p) {}
+		NodePtr() : items(nullptr) {}
+		NodePtr(ItemList* p) : items(p) {}
+		NodePtr(NodeList* p) : nodes(p) {}
 
-		operator bool() const { return pointer != nullptr; }
-
-		bool operator ==(const void* ptr) const { return pointer == ptr; }
+		operator bool() const { return items != nullptr; }
 
 		ItemList* items;
 		NodeList* nodes;
-		void* pointer;
 	};
 
     class NodeList : public SortedVector<NodePtr, NODE_COUNT, Key, NodeList, Cmp>
@@ -660,8 +638,6 @@ public:
 
 	private:
 		BePlusTree* tree;
-
-		friend class BePlusTree;
 	}; // class Accessor
 
 private:
@@ -684,7 +660,7 @@ bool BePlusTree<Value, Key, Allocator, KeyOfValue, Cmp>::add(const Value& item, 
 {
 	// Finish initialization of the tree if necessary
 	if (!root)
-		root = new (pool->allocate(sizeof(ItemList) ALLOC_ARGS)) ItemList();
+		root = FB_NEW_POOL(*pool) ItemList();
 
 	// Find leaf page for our item
 	NodePtr vList = this->root;
@@ -766,7 +742,7 @@ bool BePlusTree<Value, Key, Allocator, KeyOfValue, Cmp>::add(const Value& item, 
 	// No re-enterance allowed !!!
 	// Since we haven't done anything with tree yet, thus we don't need to recover
 	// anything in case of error thrown at this allocation here
-	ItemList *newLeaf = new(this->pool->allocate(sizeof(ItemList) ALLOC_ARGS)) ItemList(leaf);
+	ItemList *newLeaf = FB_NEW_POOL(*pool) ItemList(leaf);
 
 	// Start building recovery map.
 	// This array contains index of the element we try to add on page of each level
@@ -851,7 +827,7 @@ bool BePlusTree<Value, Key, Allocator, KeyOfValue, Cmp>::add(const Value& item, 
 			// No re-enterance allowed !!!
 			// Exceptions from this point
 			// are cleaned up lower
-			NodeList *newList = new(this->pool->allocate(sizeof(NodeList) ALLOC_ARGS)) NodeList(nodeList);
+			NodeList *newList = FB_NEW_POOL(*pool) NodeList(nodeList);
 
 			if (pos == NODE_COUNT)
 			{
@@ -876,7 +852,7 @@ bool BePlusTree<Value, Key, Allocator, KeyOfValue, Cmp>::add(const Value& item, 
 
 		// This is the worst case. We reached the top of tree but were not able to insert node
 		// Allocate new root page and increase level of our tree
-		nodeList = new(this->pool->allocate(sizeof(NodeList) ALLOC_ARGS)) NodeList();
+		nodeList = FB_NEW_POOL(*pool) NodeList();
 		nodeList->level = this->level;
 		nodeList->insert(0, this->root);
 		NodeList::setNodeParentAndLevel(newNode, this->level, nodeList);
@@ -902,8 +878,7 @@ bool BePlusTree<Value, Key, Allocator, KeyOfValue, Cmp>::add(const Value& item, 
 				itemL->prev->insert(itemL->prev->getCount(), (*itemL)[0]);
 				NodeList::setNodeParent((*itemL)[0], curLevel - 1, itemL->prev);
 			}
-			itemL->~NodeList();
-			this->pool->deallocate(newNode.pointer);
+			delete itemL;
 			newNode = lower;
 			curLevel--;
 		}
@@ -913,8 +888,7 @@ bool BePlusTree<Value, Key, Allocator, KeyOfValue, Cmp>::add(const Value& item, 
 			itemL2->prev->remove(recovery_map[0]);
 			itemL2->prev->insert(itemL2->prev->getCount(), (*itemL2)[0]);
 		}
-		itemL2->~ItemList();
-		this->pool->deallocate(newNode.pointer);
+		delete itemL2;
 		throw;
 	}
 	return true;
@@ -985,7 +959,7 @@ void BePlusTree<Value, Key, Allocator, KeyOfValue, Cmp>::_removePage(const int n
 #endif
 		list->remove(pos);
 
-		if (root == list && list->getCount() == 1)
+		if (root.nodes == list && list->getCount() == 1)
 		{
 			// We reached the top of the tree and were asked to modify root
 			// page so only one node will be left in this case.
@@ -993,8 +967,7 @@ void BePlusTree<Value, Key, Allocator, KeyOfValue, Cmp>::_removePage(const int n
 			root = (*list)[0];
 			level--;
 			NodeList::setNodeParent(root, level, nullptr);
-			list->~NodeList();
-			pool->deallocate(list);
+			delete list;
 		}
 		else
 		{
@@ -1020,10 +993,9 @@ void BePlusTree<Value, Key, Allocator, KeyOfValue, Cmp>::_removePage(const int n
 	}
 
 	if (nodeLevel)
-		node.nodes->~NodeList();
+		delete node.nodes;
 	else
-		node.items->~ItemList();
-	pool->deallocate(node.pointer);
+		delete node.items;
 }
 
 }  // namespace Firebird
