@@ -227,7 +227,7 @@ public:
 
 struct Rtr : public Firebird::GlobalStorage, public TypedHandle<rem_type_rtr>
 {
-	using BlobsTree = Firebird::BePlusTree<struct Rbl*, SQUAD, MemoryPool, struct Rbl>;
+	using BlobsTree = Firebird::BePlusTree<struct Rbl*, SQUAD, struct Rbl>;
 
 	Rdb*			rtr_rdb;
 	Rtr*			rtr_next;

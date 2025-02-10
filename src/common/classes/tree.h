@@ -93,24 +93,20 @@ enum LocType { locEqual, locLess, locGreat, locGreatEqual, locLessEqual };
 // an indexed dynamic array without increase of algorithm calculation costs (this is one
 // more classical B+ tree feature). This is also not done to improve tree performance a little
 //
-template <typename Value, typename Key = Value, typename Allocator = Firebird::MemoryPool,
-	typename KeyOfValue = DefaultKeyValue<Value>,
-	typename Cmp = DefaultComparator<Key> >
+template <typename Value, typename Key = Value,
+		  typename KeyOfValue = DefaultKeyValue<Value>,
+		  typename Cmp = DefaultComparator<Key> >
 class BePlusTree
 {
 	static const FB_SIZE_T LEAF_COUNT = LEAF_PAGE_SIZE / sizeof(Value);
 	static const FB_SIZE_T NODE_COUNT = NODE_PAGE_SIZE / sizeof(void*);
 public:
-	explicit BePlusTree(Allocator *_pool)
-		: pool(_pool), level(0), defaultAccessor(this)
-	{ }
-
-	explicit BePlusTree(Allocator& _pool)
+	explicit BePlusTree(Firebird::MemoryPool& _pool)
 		: pool(&_pool), level(0), defaultAccessor(this)
 	{ }
 
-	BePlusTree(Allocator *_pool, const BePlusTree& from)
-		: pool(_pool), level(0), defaultAccessor(this)
+	BePlusTree(Firebird::MemoryPool& _pool, const BePlusTree& from)
+		: pool(&_pool), level(0), defaultAccessor(this)
 	{
 		append(from);
 	}
@@ -283,9 +279,6 @@ public:
 	}
 
 private:
-	BePlusTree(Allocator *_pool, void *rootPage) : 	pool(_pool), level(0),
-		root(new(rootPage) ItemList()), defaultAccessor(this) {}
-
 	class NodeList;
 
     class ItemList : public SortedVector<Value, LEAF_COUNT, Key, KeyOfValue, Cmp>
@@ -641,22 +634,18 @@ public:
 	}; // class Accessor
 
 private:
-	Allocator* pool;
+	Firebird::MemoryPool* const pool;
 	int level;
 	NodePtr root;
 	Accessor defaultAccessor;
 
 	void _removePage(int level, NodePtr node);
-
-	friend class MemoryPool;
-	friend class NodeList;
-	friend class Accessor;
 };
 
 // ************************ BePlusTree implementation ******************
 
-template <typename Value, typename Key, typename Allocator, typename KeyOfValue, typename Cmp>
-bool BePlusTree<Value, Key, Allocator, KeyOfValue, Cmp>::add(const Value& item, Accessor* accessor)
+template <typename Value, typename Key, typename KeyOfValue, typename Cmp>
+bool BePlusTree<Value, Key, KeyOfValue, Cmp>::add(const Value& item, Accessor* accessor)
 {
 	// Finish initialization of the tree if necessary
 	if (!root)
@@ -894,8 +883,8 @@ bool BePlusTree<Value, Key, Allocator, KeyOfValue, Cmp>::add(const Value& item, 
 	return true;
 }
 
-template <typename Value, typename Key, typename Allocator, typename KeyOfValue, typename Cmp>
-void BePlusTree<Value, Key, Allocator, KeyOfValue, Cmp>::_removePage(const int nodeLevel, NodePtr node)
+template <typename Value, typename Key, typename KeyOfValue, typename Cmp>
+void BePlusTree<Value, Key, KeyOfValue, Cmp>::_removePage(const int nodeLevel, NodePtr node)
 {
 	NodeList *list;
 	// Get parent and adjust the links
