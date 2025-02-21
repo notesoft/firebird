@@ -108,11 +108,16 @@ const USHORT PROTOCOL_VERSION18 = (FB_PROTOCOL_FLAG | 18);
 const USHORT PROTOCOL_FETCH_SCROLL = PROTOCOL_VERSION18;
 
 // Protocol 19:
-//	- supports passing flags to IStatement::prepare
 //	- supports op_inline_blob
 
 const USHORT PROTOCOL_VERSION19 = (FB_PROTOCOL_FLAG | 19);
 const USHORT PROTOCOL_INLINE_BLOB = PROTOCOL_VERSION19;
+
+// Protocol 20:
+//	- supports passing flags to IStatement::prepare
+
+const USHORT PROTOCOL_VERSION20 = (FB_PROTOCOL_FLAG | 20);
+const USHORT PROTOCOL_PREPARE_FLAG = PROTOCOL_VERSION20;
 
 // Architecture types
 
@@ -380,6 +385,9 @@ typedef struct p_malloc
 
 // Connect Block (Client to server)
 
+// Servers before FB6 (PROTOCOL_VERSION20) uses only first 10 elements of p_cnct_versions
+constexpr size_t MAX_CNCT_VERSIONS = 11;
+
 typedef struct p_cnct
 {
 	USHORT	p_cnct_operation;			// unused
@@ -395,7 +403,7 @@ typedef struct p_cnct
 		USHORT	p_cnct_min_type;		// Minimum type (unused)
 		USHORT	p_cnct_max_type;		// Maximum type
 		USHORT	p_cnct_weight;			// Preference weight
-	}		p_cnct_versions[10];
+	}	p_cnct_versions[MAX_CNCT_VERSIONS];
 } P_CNCT;
 
 #ifdef ASYMMETRIC_PROTOCOLS_ONLY

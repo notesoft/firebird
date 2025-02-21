@@ -328,13 +328,12 @@ bool_t xdr_protocol(RemoteXdr* xdrs, PACKET* p)
 
 			MAP(xdr_cstring_const, connect->p_cnct_user_id);
 
-			const size_t CNCT_VERSIONS = FB_NELEM(connect->p_cnct_versions);
 			tail = connect->p_cnct_versions;
 			for (USHORT i = 0; i < connect->p_cnct_count; i++, tail++)
 			{
 				// ignore the rest of protocols in case of too many suggested versions
 				p_cnct::p_cnct_repeat dummy;
-				if (i >= CNCT_VERSIONS)
+				if (i >= MAX_CNCT_VERSIONS)
 				{
 					tail = &dummy;
 				}
@@ -347,9 +346,9 @@ bool_t xdr_protocol(RemoteXdr* xdrs, PACKET* p)
 			}
 
 			// ignore the rest of protocols in case of too many suggested versions
-			if (connect->p_cnct_count > CNCT_VERSIONS)
+			if (connect->p_cnct_count > MAX_CNCT_VERSIONS)
 			{
-				connect->p_cnct_count = CNCT_VERSIONS;
+				connect->p_cnct_count = MAX_CNCT_VERSIONS;
 			}
 
 			DEBUG_PRINTSIZE(xdrs, p->p_operation);
@@ -711,7 +710,7 @@ bool_t xdr_protocol(RemoteXdr* xdrs, PACKET* p)
 		// p_sqlst_buffer_length was USHORT in older versions
 		fixupLength(xdrs, prep_stmt->p_sqlst_buffer_length);
 
-		if (port->port_protocol >= PROTOCOL_VERSION19)
+		if (port->port_protocol >= PROTOCOL_PREPARE_FLAG)
 			MAP(xdr_short, reinterpret_cast<SSHORT&>(prep_stmt->p_sqlst_flags));
 
 		DEBUG_PRINTSIZE(xdrs, p->p_operation);
