@@ -371,7 +371,7 @@ struct index_root_page
 									// alignment between 32-bit and 64-bit builds
 	struct irt_repeat
 	{
-		friend class index_root_page;	// to allow offset check for private members
+		friend struct index_root_page;	// to allow offset check for private members
 
 	private:
 		FB_UINT64 irt_transaction;		// transaction in progress

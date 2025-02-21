@@ -1039,6 +1039,8 @@ void PAG_header(thread_db* tdbb, bool info, const TriState newForceWrite)
 	const auto replicaMode = (ReplicaMode) header->hdr_replica_mode;
 	dbb->dbb_replica_mode.store(replicaMode, std::memory_order_relaxed);
 
+	dbb->dbb_guid = Guid(header->hdr_guid);
+
 	// If database in backup lock state...
 	if (!info && dbb->dbb_backup_manager->getState() != Ods::hdr_nbak_normal)
 	{
