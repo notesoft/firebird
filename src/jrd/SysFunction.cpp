@@ -4592,7 +4592,7 @@ dsc* evlGetContext(thread_db* tdbb, const SysFunction*, const NestValueArray& ar
 		else if (nameStr == DATABASE_NAME)
 			resultStr = dbb->dbb_database_name.ToString();
 		else if (nameStr == DATABASE_GUID)
-			resultStr = dbb->dbb_guid.value().toString();
+			resultStr = dbb->dbb_guid.toString();
         else if (nameStr == PAGES_ALLOCATED)
         {
             resultStr.printf("%" ULONGFORMAT, PageSpace::actAlloc(dbb));
