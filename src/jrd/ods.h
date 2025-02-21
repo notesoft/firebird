@@ -480,8 +480,7 @@ inline ULONG index_root_page::irt_repeat::getRoot() const
 
 inline void index_root_page::irt_repeat::setRoot(ULONG rootPage)
 {
-	fb_assert(irt_state == irt_in_progress);
-	fb_assert(!irt_page_num && !irt_page_space_id);
+	fb_assert(irt_state == irt_in_progress || irt_state == irt_normal);
 	fb_assert(rootPage);
 
 	irt_transaction = 0;
