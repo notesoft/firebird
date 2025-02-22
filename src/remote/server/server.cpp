@@ -2019,7 +2019,7 @@ static bool accept_connection(rem_port* port, P_CNCT* connect, PACKET* send)
 	{
 		if ((protocol->p_cnct_version == PROTOCOL_VERSION10 ||
 			 (protocol->p_cnct_version >= PROTOCOL_VERSION11 &&
-			  protocol->p_cnct_version <= PROTOCOL_VERSION19)) &&
+			  protocol->p_cnct_version <= PROTOCOL_VERSION20)) &&
 			 (protocol->p_cnct_architecture == arch_generic ||
 			  protocol->p_cnct_architecture == ARCHITECTURE) &&
 			protocol->p_cnct_weight >= weight)
