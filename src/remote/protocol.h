@@ -49,75 +49,75 @@ class RemBlobBuffer;	// see remote.h
 // separate the protocol from the transport layer.
 
 // p_cnct_cversion
-const USHORT CONNECT_VERSION3	= 3;
+constexpr USHORT CONNECT_VERSION3	= 3;
 
 // Protocol 10 includes support for warnings and removes the requirement for
 // encoding and decoding status codes
 
-const USHORT PROTOCOL_VERSION10	= 10;
+constexpr USHORT PROTOCOL_VERSION10	= 10;
 
 // Since protocol 11 we must be separated from Borland Interbase.
 // Therefore always set highmost bit in protocol version to 1.
 // For unsigned protocol version this does not break version's compare.
 
-const USHORT FB_PROTOCOL_FLAG = 0x8000;
-const USHORT FB_PROTOCOL_MASK = static_cast<USHORT>(~FB_PROTOCOL_FLAG);
+constexpr USHORT FB_PROTOCOL_FLAG = 0x8000;
+constexpr USHORT FB_PROTOCOL_MASK = ~FB_PROTOCOL_FLAG;
 
 // Protocol 11 has support for user authentication related
 // operations (op_update_account_info, op_authenticate_user and
 // op_trusted_auth). When specific operation is not supported,
 // we say "sorry".
 
-const USHORT PROTOCOL_VERSION11	= (FB_PROTOCOL_FLAG | 11);
+constexpr USHORT PROTOCOL_VERSION11	= (FB_PROTOCOL_FLAG | 11);
 
 // Protocol 12 has support for asynchronous call op_cancel.
 // Currently implemented asynchronously only for TCP/IP.
 
-const USHORT PROTOCOL_VERSION12	= (FB_PROTOCOL_FLAG | 12);
+constexpr USHORT PROTOCOL_VERSION12	= (FB_PROTOCOL_FLAG | 12);
 
 // Protocol 13 has support for authentication plugins (op_cont_auth).
 // It also transfers SQL messages in the packed (null aware) format.
 
-const USHORT PROTOCOL_VERSION13	= (FB_PROTOCOL_FLAG | 13);
+constexpr USHORT PROTOCOL_VERSION13	= (FB_PROTOCOL_FLAG | 13);
 
 // Protocol 14:
 //	- fixes a bug in database crypt key callback
 
-const USHORT PROTOCOL_VERSION14	= (FB_PROTOCOL_FLAG | 14);
+constexpr USHORT PROTOCOL_VERSION14	= (FB_PROTOCOL_FLAG | 14);
 
 // Protocol 15:
 //	- supports crypt key callback at connect phase
 
-const USHORT PROTOCOL_VERSION15 = (FB_PROTOCOL_FLAG | 15);
+constexpr USHORT PROTOCOL_VERSION15 = (FB_PROTOCOL_FLAG | 15);
 
 // Protocol 16:
 //	- supports statement timeouts
 
-const USHORT PROTOCOL_VERSION16 = (FB_PROTOCOL_FLAG | 16);
-const USHORT PROTOCOL_STMT_TOUT = PROTOCOL_VERSION16;
+constexpr USHORT PROTOCOL_VERSION16 = (FB_PROTOCOL_FLAG | 16);
+constexpr USHORT PROTOCOL_STMT_TOUT = PROTOCOL_VERSION16;
 
 // Protocol 17:
 //	- supports op_batch_sync, op_info_batch
 
-const USHORT PROTOCOL_VERSION17 = (FB_PROTOCOL_FLAG | 17);
+constexpr USHORT PROTOCOL_VERSION17 = (FB_PROTOCOL_FLAG | 17);
 
 // Protocol 18:
 //	- supports op_fetch_scroll
 
-const USHORT PROTOCOL_VERSION18 = (FB_PROTOCOL_FLAG | 18);
-const USHORT PROTOCOL_FETCH_SCROLL = PROTOCOL_VERSION18;
+constexpr USHORT PROTOCOL_VERSION18 = (FB_PROTOCOL_FLAG | 18);
+constexpr USHORT PROTOCOL_FETCH_SCROLL = PROTOCOL_VERSION18;
 
 // Protocol 19:
 //	- supports op_inline_blob
 
-const USHORT PROTOCOL_VERSION19 = (FB_PROTOCOL_FLAG | 19);
-const USHORT PROTOCOL_INLINE_BLOB = PROTOCOL_VERSION19;
+constexpr USHORT PROTOCOL_VERSION19 = (FB_PROTOCOL_FLAG | 19);
+constexpr USHORT PROTOCOL_INLINE_BLOB = PROTOCOL_VERSION19;
 
 // Protocol 20:
 //	- supports passing flags to IStatement::prepare
 
-const USHORT PROTOCOL_VERSION20 = (FB_PROTOCOL_FLAG | 20);
-const USHORT PROTOCOL_PREPARE_FLAG = PROTOCOL_VERSION20;
+constexpr USHORT PROTOCOL_VERSION20 = (FB_PROTOCOL_FLAG | 20);
+constexpr USHORT PROTOCOL_PREPARE_FLAG = PROTOCOL_VERSION20;
 
 // Architecture types
 
@@ -143,28 +143,28 @@ enum P_ARCH
 
 // Protocol Types
 // p_acpt_type
-//const USHORT ptype_page		= 1;	// Page server protocol
-//const USHORT ptype_rpc		= 2;	// Simple remote procedure call
-const USHORT ptype_batch_send	= 3;	// Batch sends, no asynchrony
-const USHORT ptype_out_of_band	= 4;	// Batch sends w/ out of band notification
-const USHORT ptype_lazy_send	= 5;	// Deferred packets delivery
-const USHORT ptype_MASK			= 0xFF;	// Mask - up to 255 types of protocol
+//constexpr USHORT ptype_page		= 1;	// Page server protocol
+//constexpr USHORT ptype_rpc		= 2;	// Simple remote procedure call
+constexpr USHORT ptype_batch_send	= 3;	// Batch sends, no asynchrony
+constexpr USHORT ptype_out_of_band	= 4;	// Batch sends w/ out of band notification
+constexpr USHORT ptype_lazy_send	= 5;	// Deferred packets delivery
+constexpr USHORT ptype_MASK			= 0xFF;	// Mask - up to 255 types of protocol
 //
 // upper byte is used for protocol flags
-const USHORT pflag_compress			= 0x100;	// Turn on compression if possible
-const USHORT pflag_win_sspi_nego	= 0x200;	// Win_SSPI supports Negotiate security package
+constexpr USHORT pflag_compress			= 0x100;	// Turn on compression if possible
+constexpr USHORT pflag_win_sspi_nego	= 0x200;	// Win_SSPI supports Negotiate security package
 
 // Generic object id
 
 typedef USHORT OBJCT;
-const int MAX_OBJCT_HANDLES	= 65000;
-const int INVALID_OBJECT = MAX_USHORT;
+constexpr int MAX_OBJCT_HANDLES	= 65000;
+constexpr int INVALID_OBJECT = MAX_USHORT;
 
 // Statement flags
 
-//const USHORT STMT_BLOB			= 1;
-const USHORT STMT_NO_BATCH		= 2;
-const USHORT STMT_DEFER_EXECUTE	= 4;
+//constexpr USHORT STMT_BLOB			= 1;
+constexpr USHORT STMT_NO_BATCH		= 2;
+constexpr USHORT STMT_DEFER_EXECUTE	= 4;
 
 enum P_FETCH
 {
@@ -176,7 +176,7 @@ enum P_FETCH
 	fetch_relative	= 5
 };
 
-const P_FETCH fetch_execute = fetch_next;
+constexpr P_FETCH fetch_execute = fetch_next;
 
 // Operation (packet) types
 
@@ -371,7 +371,7 @@ typedef struct cstring_const
 
 // Debug xdr memory allocations
 
-const USHORT P_MALLOC_SIZE	= 64;	// Xdr memory allocations per packet
+constexpr USHORT P_MALLOC_SIZE	= 64;	// Xdr memory allocations per packet
 
 typedef struct p_malloc
 {
@@ -427,18 +427,18 @@ where
 
 */
 
-const UCHAR CNCT_user		= 1;			// User name
-const UCHAR CNCT_passwd		= 2;
-//const UCHAR CNCT_ppo		= 3;			// Apollo person, project, organization. OBSOLETE.
-const UCHAR CNCT_host		= 4;
-const UCHAR CNCT_group		= 5;			// Effective Unix group id
-const UCHAR CNCT_user_verification	= 6;	// Attach/create using this connection
-					 						// will use user verification
-const UCHAR CNCT_specific_data		= 7;	// Some data, needed for user verification on server
-const UCHAR CNCT_plugin_name		= 8;	// Name of plugin, which generated that data
-const UCHAR CNCT_login				= 9;	// Same data as isc_dpb_user_name
-const UCHAR CNCT_plugin_list		= 10;	// List of plugins, available on client
-const UCHAR CNCT_client_crypt		= 11;	// Client encryption level (DISABLED/ENABLED/REQUIRED)
+constexpr UCHAR CNCT_user		= 1;			// User name
+constexpr UCHAR CNCT_passwd		= 2;
+//constexpr UCHAR CNCT_ppo		= 3;			// Apollo person, project, organization. OBSOLETE.
+constexpr UCHAR CNCT_host		= 4;
+constexpr UCHAR CNCT_group		= 5;			// Effective Unix group id
+constexpr UCHAR CNCT_user_verification	= 6;	// Attach/create using this connection
+					 							// will use user verification
+constexpr UCHAR CNCT_specific_data		= 7;	// Some data, needed for user verification on server
+constexpr UCHAR CNCT_plugin_name		= 8;	// Name of plugin, which generated that data
+constexpr UCHAR CNCT_login				= 9;	// Same data as isc_dpb_user_name
+constexpr UCHAR CNCT_plugin_list		= 10;	// List of plugins, available on client
+constexpr UCHAR CNCT_client_crypt		= 11;	// Client encryption level (DISABLED/ENABLED/REQUIRED)
 
 // Accept Block (Server response to connect block)
 
@@ -588,7 +588,7 @@ typedef struct p_req
 } P_REQ;
 
 // p_req_type
-const USHORT P_REQ_async	= 1;	// Auxiliary asynchronous port
+constexpr USHORT P_REQ_async	= 1;	// Auxiliary asynchronous port
 
 // DDL request
 
