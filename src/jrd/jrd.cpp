@@ -757,7 +757,7 @@ namespace
 		{
 			for (SLONG size = MIN_PAGE_SIZE; size <= MAX_PAGE_SIZE; size <<= 1)
 			{
-				if (pageSize <= size)
+				if (pageSize < (size + (size << 1)) / 2)
 				{
 					pageSize = size;
 					break;
