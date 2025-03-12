@@ -88,24 +88,24 @@ DEFINE_TRACE_ROUTINE(remote_trace);
 
 #endif
 
-const int BLOB_LENGTH		= 16384;
+constexpr int BLOB_LENGTH = 16384;
 
 #include "../remote/protocol.h"
 #include "fb_blk.h"
 
 // Prefetch constants
 
-const ULONG MAX_PACKETS_PER_BATCH = 16;
+constexpr ULONG MAX_PACKETS_PER_BATCH = 16;
 
-const ULONG MIN_ROWS_PER_BATCH = 10;
-const ULONG MAX_ROWS_PER_BATCH = 1000;
+constexpr ULONG MIN_ROWS_PER_BATCH = 10;
+constexpr ULONG MAX_ROWS_PER_BATCH = 1000;
 
-const ULONG MAX_BATCH_CACHE_SIZE = 1024 * 1024; // 1 MB
+constexpr ULONG MAX_BATCH_CACHE_SIZE = 1024 * 1024; // 1 MB
 
-const ULONG	DEFAULT_BLOBS_CACHE_SIZE = 10 * 1024 * 1024;	// 10 MB
+constexpr ULONG	DEFAULT_BLOBS_CACHE_SIZE = 10 * 1024 * 1024;	// 10 MB
 
-const ULONG	MAX_INLINE_BLOB_SIZE = MAX_USHORT;
-const ULONG	DEFAULT_INLINE_BLOB_SIZE = MAX_USHORT;
+constexpr ULONG	MAX_INLINE_BLOB_SIZE = MAX_USHORT;
+constexpr ULONG	DEFAULT_INLINE_BLOB_SIZE = MAX_USHORT;
 
 // fwd. decl.
 namespace Firebird {
@@ -591,7 +591,7 @@ struct Rsr : public Firebird::GlobalStorage, public TypedHandle<rem_type_rsr>
 			: curBpb(*getDefaultMemoryPool()), hdrPrevious(0), segmented(false)
 		{ }
 
-		static const ULONG SIZEOF_BLOB_HEAD = sizeof(ISC_QUAD) + 2 * sizeof(ULONG);
+		static constexpr ULONG SIZEOF_BLOB_HEAD = sizeof(ISC_QUAD) + 2 * sizeof(ULONG);
 
 		typedef Firebird::HalfStaticArray<UCHAR, 64> Bpb;
 		Bpb curBpb;
@@ -626,8 +626,8 @@ public:
 		PAST_BOF = 256		// BOF was returned by fetch from this statement
 	};
 
-	static const auto STREAM_END = (BOF_SET | EOF_SET);
-	static const auto PAST_END = (PAST_BOF | PAST_EOF);
+	static constexpr auto STREAM_END = (BOF_SET | EOF_SET);
+	static constexpr auto PAST_END = (PAST_BOF | PAST_EOF);
 
 public:
 	Rsr() :
@@ -789,8 +789,8 @@ typedef Firebird::Array<rem_que_packet> PacketQueue;
 class ServerAuthBase
 {
 public:
-	static const unsigned AUTH_CONTINUE		= 0x01;
-	static const unsigned AUTH_COND_ACCEPT	= 0x02;
+	static constexpr unsigned AUTH_CONTINUE		= 0x01;
+	static constexpr unsigned AUTH_COND_ACCEPT	= 0x02;
 
 	virtual ~ServerAuthBase();
 	virtual bool authenticate(PACKET* send, unsigned flags = 0) = 0;
@@ -899,10 +899,10 @@ private:
 };
 
 // Tags for clumplets, passed from server to client
-const UCHAR TAG_KEY_TYPE		= 0;
-const UCHAR TAG_KEY_PLUGINS		= 1;
-const UCHAR TAG_KNOWN_PLUGINS	= 2;
-const UCHAR TAG_PLUGIN_SPECIFIC	= 3;
+constexpr UCHAR TAG_KEY_TYPE		= 0;
+constexpr UCHAR TAG_KEY_PLUGINS		= 1;
+constexpr UCHAR TAG_KNOWN_PLUGINS	= 2;
+constexpr UCHAR TAG_PLUGIN_SPECIFIC	= 3;
 
 
 typedef Firebird::GetPlugins<Firebird::IClient> AuthClientPlugins;
@@ -1090,8 +1090,8 @@ public:
 	Auth::WriterImplementation authBlockWriter;
 
 	// extractNewKeys flags
-	static const ULONG EXTRACT_PLUGINS_LIST = 0x1;
-	static const ULONG ONLY_CLEANUP = 0x2;
+	static constexpr ULONG EXTRACT_PLUGINS_LIST = 0x1;
+	static constexpr ULONG ONLY_CLEANUP = 0x2;
 
 	explicit SrvAuthBlock(rem_port* p_port)
 		: port(p_port),
@@ -1136,26 +1136,26 @@ public:
 };
 
 
-const signed char WIRECRYPT_BROKEN		= -1;
-const signed char WIRECRYPT_DISABLED	= 0;
-const signed char WIRECRYPT_ENABLED		= 1;
-const signed char WIRECRYPT_REQUIRED	= 2;
+constexpr signed char WIRECRYPT_BROKEN		= -1;
+constexpr signed char WIRECRYPT_DISABLED	= 0;
+constexpr signed char WIRECRYPT_ENABLED		= 1;
+constexpr signed char WIRECRYPT_REQUIRED	= 2;
 
 // port_flags
-const USHORT PORT_symmetric		= 0x0001;	// Server/client architectures are symmetic
-const USHORT PORT_async			= 0x0002;	// Port is asynchronous channel for events
-const USHORT PORT_no_oob		= 0x0004;	// Don't send out of band data
-const USHORT PORT_disconnect	= 0x0008;	// Disconnect is in progress
-const USHORT PORT_dummy_pckt_set= 0x0010;	// A dummy packet interval is set
-//const USHORT PORT_partial_data	= 0x0020;	// Physical packet doesn't contain all API packet
-const USHORT PORT_lazy			= 0x0040;	// Deferred operations are allowed
-const USHORT PORT_server		= 0x0080;	// Server (not client) port
-const USHORT PORT_detached		= 0x0100;	// op_detach, op_drop_database or op_service_detach was processed
-const USHORT PORT_rdb_shutdown	= 0x0200;	// Database is shut down
-const USHORT PORT_connecting	= 0x0400;	// Aux connection waits for a channel to be activated by client
-//const USHORT PORT_z_data		= 0x0800;	// Zlib incoming buffer has data left after decompression
-const USHORT PORT_compressed	= 0x1000;	// Compress outgoing stream (does not affect incoming)
-const USHORT PORT_released		= 0x2000;	// release(), complementary to the first addRef() in constructor, was called
+constexpr USHORT PORT_symmetric		= 0x0001;	// Server/client architectures are symmetic
+constexpr USHORT PORT_async			= 0x0002;	// Port is asynchronous channel for events
+constexpr USHORT PORT_no_oob		= 0x0004;	// Don't send out of band data
+constexpr USHORT PORT_disconnect	= 0x0008;	// Disconnect is in progress
+constexpr USHORT PORT_dummy_pckt_set= 0x0010;	// A dummy packet interval is set
+//constexpr USHORT PORT_partial_data	= 0x0020;	// Physical packet doesn't contain all API packet
+constexpr USHORT PORT_lazy			= 0x0040;	// Deferred operations are allowed
+constexpr USHORT PORT_server		= 0x0080;	// Server (not client) port
+constexpr USHORT PORT_detached		= 0x0100;	// op_detach, op_drop_database or op_service_detach was processed
+constexpr USHORT PORT_rdb_shutdown	= 0x0200;	// Database is shut down
+constexpr USHORT PORT_connecting	= 0x0400;	// Aux connection waits for a channel to be activated by client
+//constexpr USHORT PORT_z_data		= 0x0800;	// Zlib incoming buffer has data left after decompression
+constexpr USHORT PORT_compressed	= 0x1000;	// Compress outgoing stream (does not affect incoming)
+constexpr USHORT PORT_released		= 0x2000;	// release(), complementary to the first addRef() in constructor, was called
 
 // forward decl
 class RemotePortGuard;
