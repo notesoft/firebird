@@ -3432,6 +3432,9 @@ void RseNode::planSet(CompilerScratch* csb, PlanNode* plan)
 
 	fb_assert(planRelation || planProcedure);
 
+	ObjectsArray<QualifiedMetaString> planAliasList;
+	QualifiedMetaString::parseSchemaObjectListNoSep(planAlias, planAliasList);
+
 	const auto name = planRelation ? planRelation->rel_name :
 		planProcedure ? planProcedure->getName() :
 		QualifiedName();
@@ -3453,17 +3456,44 @@ void RseNode::planSet(CompilerScratch* csb, PlanNode* plan)
 
 		auto tailAlias = tail->csb_alias ? *tail->csb_alias : "";
 
-		if (planAlias.hasData())
+		const auto matchAlias = [&]() -> bool
 		{
-			const auto spacePos = planAlias.find_first_of(' ');
-			const auto subAlias = planAlias.substr(0, spacePos);	// FIXME:
-
-			if (tailName.object == subAlias || tailAlias == subAlias)	// FIXME:
+			if (planAliasList.front() == tailName ||
+				(planAliasList.front().schema.isEmpty() && planAliasList.front().object == tailName.object))
 			{
-				planAlias = planAlias.substr(spacePos);
-				planAlias.ltrim();
+				planAliasList.remove(0);
+				return true;
 			}
-		}
+
+			if (tailAlias.hasData())
+			{
+				ObjectsArray<QualifiedMetaString> tailAliasList;
+				QualifiedMetaString::parseSchemaObjectListNoSep(tailAlias, tailAliasList);
+
+				if (planAliasList.getCount() == tailAliasList.getCount())
+				{
+					auto planIt = planAliasList.begin();
+					auto tailIt = tailAliasList.begin();
+
+					for (; planIt != planAliasList.end(); ++planIt, ++tailIt)
+					{
+						if (*planIt != *tailIt &&
+							!(planIt->schema.isEmpty() && planIt->object == tailIt->object))
+						{
+							return false;
+						}
+					}
+
+					planAliasList.remove(0);
+					return true;
+				}
+			}
+
+			return false;
+		};
+
+		if (planAlias.hasData())
+			matchAlias();
 
 		// Loop through potentially a stack of views to find the appropriate base table
 		StreamType* mapBase;
@@ -3560,16 +3590,8 @@ void RseNode::planSet(CompilerScratch* csb, PlanNode* plan)
 
 				tailAlias = tail->csb_alias ? *tail->csb_alias : "";
 
-				const auto spacePos = planAlias.find_first_of(' ');
-				const auto subAlias = planAlias.substr(0, spacePos);	// FIXME:
-
-				if (tailName.object == subAlias || tailAlias == subAlias)	// FIXME:
-				{
-					// Skip past the alias
-					planAlias = planAlias.substr(spacePos);
-					planAlias.ltrim();
+				if (matchAlias())
 					break;
-				}
 			}
 
 			if (!*map)

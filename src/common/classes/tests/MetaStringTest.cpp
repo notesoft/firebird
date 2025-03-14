@@ -69,6 +69,5 @@ BOOST_DATA_TEST_CASE(ParseErrorTest, parseErrorTestData, input)
 }
 
 
-
 BOOST_AUTO_TEST_SUITE_END()	// MetaStringTests
 BOOST_AUTO_TEST_SUITE_END()	// MetaStringSuite

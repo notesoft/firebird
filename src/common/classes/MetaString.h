@@ -140,6 +140,9 @@ public:
 
 		const auto validateUnquotedIdentifier = [&](const string& name)
 		{
+			if (name.length() > MAX_SQL_IDENTIFIER_LEN)
+				(Arg::Gds(isc_invalid_name) << str).raise();
+
 			bool first = true;
 
 			for (const auto c : name)

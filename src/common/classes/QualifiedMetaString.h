@@ -24,6 +24,7 @@
 #define QUALIFIED_METASTRING_H
 
 #include "../common/classes/MetaString.h"
+#include "../common/classes/objects_array.h"
 #include "../common/StatusArg.h"
 #include <algorithm>
 #include <cctype>
@@ -86,7 +87,7 @@ public:
 	}
 
 public:
-	static BaseQualifiedName<T> parseSchemaObject(const string& str)
+	static void parseSchemaObjectListNoSep(const string& str, ObjectsArray<BaseQualifiedName<T>>& list)
 	{
 		const auto isQuoted = [](const string& name) -> bool
 		{
@@ -118,6 +119,9 @@ public:
 
 		const auto validateUnquotedIdentifier = [&](const string& name)
 		{
+			if (name.length() > MAX_SQL_IDENTIFIER_LEN)
+				(Arg::Gds(isc_invalid_name) << str).raise();
+
 			bool first = true;
 
 			for (const auto c : name)
@@ -139,64 +143,137 @@ public:
 			return true;
 		};
 
-		BaseQualifiedName<T> result;
-		string schema, object;
+		size_t i = 0;
 
-		// Find the last unquoted dot to determine schema and object
-		bool inQuotes = false;
-		auto lastDotPos = string::npos;
-
-		for (size_t i = 0; i < str.size(); ++i)
+		const auto skipSpaces = [&]()
 		{
-			if (str[i] == '"')
-				inQuotes = !inQuotes;
-			else if (str[i] == '.' && !inQuotes)
-				lastDotPos = i;
-		}
+			while (i < str.size() &&
+				(str[i] == ' ' || str[i] == '\t' || str[i] == '\f' || str[i] == '\r' || str[i] == '\n'))
+			{
+				++i;
+			}
+		};
 
-		if (lastDotPos != string::npos)
+		skipSpaces();
+
+		do
 		{
-			schema = str.substr(0, lastDotPos);
-			object = str.substr(lastDotPos + 1);
-		}
-		else
-			object = str;
+			BaseQualifiedName<T> result;
+			string schema, object;
 
-		schema.trim(" \t\f\r\n");
-		object.trim(" \t\f\r\n");
+			const auto start = i;
+			bool nameFound = false;
+			bool inQuotes = false;
+			auto dotPos = string::npos;
 
-		// Process schema if it exists
-		if (schema.hasData())
-		{
-			if (isQuoted(schema))
-				result.schema = unquote(schema);
+			for (; !nameFound && i < str.size(); ++i)
+			{
+				const auto ch = str[i];
+
+				if (inQuotes)
+				{
+					if (ch == '"')
+					{
+						if (i + 1 < str.size() && str[i + 1] == '"')
+							++i;
+						else
+							inQuotes = false;
+					}
+				}
+				else
+				{
+					switch (ch)
+					{
+						case '"':
+							inQuotes = true;
+							break;
+
+						case '.':
+						{
+							dotPos = i++;
+							skipSpaces();
+							--i;
+							break;
+						}
+
+						case ' ':
+						case '\t':
+						case '\f':
+						case '\r':
+						case '\n':
+						{
+							skipSpaces();
+
+							if (i < str.size() && str[i] == '.')
+							{
+								dotPos = i++;
+								skipSpaces();
+							}
+							else
+								nameFound = true;
+
+							--i;
+							break;
+						}
+					}
+				}
+			}
+
+			if (dotPos != string::npos)
+			{
+				schema = str.substr(start, dotPos - start);
+				object = str.substr(dotPos + 1, i - dotPos - 1);
+			}
+			else
+				object = str.substr(start, i - start);
+
+			schema.trim(" \t\f\r\n");
+			object.trim(" \t\f\r\n");
+
+			// Process schema if it exists
+			if (schema.hasData())
+			{
+				if (isQuoted(schema))
+					result.schema = unquote(schema);
+				else
+				{
+					validateUnquotedIdentifier(schema);
+
+					std::transform(schema.begin(), schema.end(), schema.begin(), ::toupper);
+					result.schema = schema;
+				}
+			}
+
+			if (dotPos != string::npos && result.schema.isEmpty())
+				(Arg::Gds(isc_invalid_name) << str).raise();
+
+			// Process object
+			if (isQuoted(object))
+				result.object = unquote(object);
 			else
 			{
-				validateUnquotedIdentifier(schema);
+				validateUnquotedIdentifier(object);
 
-				std::transform(schema.begin(), schema.end(), schema.begin(), ::toupper);
-				result.schema = schema;
+				std::transform(object.begin(), object.end(), object.begin(), ::toupper);
+				result.object = object;
 			}
-		}
 
-		if (lastDotPos != string::npos && result.schema.isEmpty())
+			if (result.object.isEmpty())
+				(Arg::Gds(isc_invalid_name) << str).raise();
+
+			list.add(result);
+		} while (i < str.size());
+	}
+
+	static BaseQualifiedName<T> parseSchemaObject(const string& str)
+	{
+		ObjectsArray<BaseQualifiedName<T>> list;
+		parseSchemaObjectListNoSep(str, list);
+
+		if (list.getCount() != 1)
 			(Arg::Gds(isc_invalid_name) << str).raise();
 
-		// Process object
-		if (isQuoted(object))
-			result.object = unquote(object);
-		else
-		{
-			validateUnquotedIdentifier(object);
-
-			std::transform(object.begin(), object.end(), object.begin(), ::toupper);
-			result.object = object;
-		}
-
-		if (result.object.isEmpty())
-			(Arg::Gds(isc_invalid_name) << str).raise();
-
-		return result;
+		return list[0];
 	}
 
 public:
