@@ -1269,7 +1269,8 @@ void put_blob( burp_fld* field, ISC_QUAD& blob_id)
 	put(tdgbl, (UCHAR) rec_blob);
 	put_int32(att_blob_field_number, field->fld_number);
 
-	ULONG segments = 0, total_length = 0;
+	ULONG segments = 0;
+	FB_UINT64 total_length = 0;
 	USHORT max_segment = 0;
 	int blob_type = 0; // 0 - segmented, 1 - stream
 	const UCHAR* p = blob_info;
@@ -1277,26 +1278,27 @@ void put_blob( burp_fld* field, ISC_QUAD& blob_id)
 	UCHAR item;
 	while ((item = *p++) != isc_info_end)
 	{
-		const USHORT l = gds__vax_integer(p, 2);
+		const auto l = gds__vax_integer(p, 2);
 		p += 2;
-		const ULONG n = gds__vax_integer(p, l);
+		const auto n = isc_portable_integer(p, l);
 		p += l;
+
 		switch (item)
 		{
 		case isc_info_blob_max_segment:
-			max_segment = n;
+			max_segment = (USHORT) n;
 			break;
 
 		case isc_info_blob_type:
-			blob_type = n;
+			blob_type = (int) n;
 			break;
 
 		case isc_info_blob_num_segments:
-			segments = n;
+			segments = (ULONG) n;
 			break;
 
 		case isc_info_blob_total_length:
-			total_length = n;
+			total_length = (FB_UINT64) n;
 			break;
 
 		default:
@@ -1312,12 +1314,7 @@ void put_blob( burp_fld* field, ISC_QUAD& blob_id)
 	// our own chunk size. Note, the number of segments returned by information
 	// call for stream blob is always unreliable, even for zero-length blobs
 	if (blob_type == 1)
-	{
-		if (total_length != 0)
-			segments = (total_length + max_segment - 1) / max_segment;
-		else
-			segments = 0;
-	}
+		segments = total_length ? (total_length + max_segment - 1) / max_segment : 0;
 
 	put_int32(att_blob_max_segment, max_segment);
 	put_int32(att_blob_number_segments, segments);

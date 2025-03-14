@@ -6113,10 +6113,10 @@ bool rem_port::sendInlineBlob(PACKET* sendL, Rtr* rtr, SQUAD blobId, ULONG maxSi
 	if (status.getState() & IStatus::STATE_ERRORS)
 		return false;
 
-	bool	segmented;
-	ULONG	num_segments;
-	ULONG	max_segment;
-	ULONG	total_length;
+	bool segmented;
+	ULONG num_segments;
+	ULONG max_segment;
+	FB_UINT64 total_length;
 
 	ClumpletReader p(ClumpletReader::InfoResponse, info, sizeof(info));
 	for (; !p.isEof(); p.moveNext())
@@ -6130,7 +6130,7 @@ bool rem_port::sendInlineBlob(PACKET* sendL, Rtr* rtr, SQUAD blobId, ULONG maxSi
 			max_segment = p.getInt();
 			break;
 		case isc_info_blob_total_length:
-			total_length = p.getInt();
+			total_length = p.getBigInt();
 			break;
 		case isc_info_blob_type:
 			segmented = (p.getInt() == 0);
@@ -6151,7 +6151,7 @@ bool rem_port::sendInlineBlob(PACKET* sendL, Rtr* rtr, SQUAD blobId, ULONG maxSi
 		if (!segmented)
 			num_segments = (total_length + max_segment - 1) / max_segment;
 
-		const ULONG dataLen = total_length + num_segments * 2;
+		const FB_UINT64 dataLen = total_length + num_segments * 2;
 
 		fb_assert(maxSize <= MAX_INLINE_BLOB_SIZE);
 		if (maxSize > MAX_INLINE_BLOB_SIZE)

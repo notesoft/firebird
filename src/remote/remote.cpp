@@ -923,7 +923,7 @@ void RBlobInfo::parseInfo(unsigned int bufferLength, const unsigned char* buffer
 			c++;
 			break;
 		case isc_info_blob_total_length:
-			total_length = p.getInt();
+			total_length = p.getBigInt();
 			c++;
 			break;
 		case isc_info_blob_type:

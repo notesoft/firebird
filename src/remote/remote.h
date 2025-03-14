@@ -267,7 +267,7 @@ struct RBlobInfo
 	UCHAR	blob_type;
 	ULONG	num_segments;
 	ULONG	max_segment;
-	ULONG	total_length;
+	FB_UINT64	total_length;
 
 	RBlobInfo()
 	{
