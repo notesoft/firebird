@@ -977,18 +977,20 @@ SLONG blb::BLB_lseek(USHORT mode, SLONG offset)
 	if (!(blb_flags & BLB_stream))
 		ERR_post(Arg::Gds(isc_bad_segstr_type));
 
+	SINT64 position = offset;
+
 	if (mode == 1)
-		offset += blb_seek;
+		position += blb_seek;
 	else if (mode == 2)
-		offset = blb_length + offset;
+		position += blb_length;
 
-	if (offset < 0)
-		offset = 0;
+	if (position < 0)
+		position = 0;
 
-	if (offset > (SLONG) blb_length)
-		offset = blb_length;
+	if (position > blb_length)
+		position = blb_length;
 
-	blb_seek = offset;
+	blb_seek = (FB_UINT64) position;
 	blb_flags |= BLB_seek;
 	blb_flags &= ~BLB_eof;
 
