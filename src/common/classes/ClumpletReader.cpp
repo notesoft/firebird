@@ -266,8 +266,9 @@ UCHAR ClumpletReader::getBufferTag() const
 			}
 			return buffer_start[1];
 		case isc_spb_version3:
-			// This is wide SPB attach format - buffer's tag is the first byte.
-			return buffer_start[0];
+			// This is wide SPB attach format, not traditional SpbAttach.
+			usage_mistake("isc_spb_version3 should use WideTagged format, not SpbAttach");
+			return 0;
 		default:
 			invalid_structure("spb in service attach should begin with isc_spb_version1 or isc_spb_version", buffer_start[0]);
 			return 0;
