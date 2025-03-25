@@ -6864,7 +6864,31 @@ int Blob::seek(CheckStatusWrapper* status, int mode, int offset)
 
 		if (blob->isCached())
 		{
-			Arg::Gds(isc_wish_list).raise();
+			// Segmented blobs does not support seek
+			if (blob->rbl_info.blob_type == 0)
+				Arg::Gds(isc_bad_segstr_type).raise();
+
+			if (mode == 1)						// seek from current position
+				offset += blob->rbl_offset;
+			else if (mode == 2)					// seek from end of blob
+				offset = blob->rbl_info.total_length + offset;
+
+			if (offset < 0)
+				offset = 0;
+
+			if (offset > blob->rbl_info.total_length)
+				offset = blob->rbl_info.total_length;
+
+			// Assume stream blob with single segment in buffer
+			fb_assert(blob->rbl_info.num_segments <= 1);
+			fb_assert(blob->rbl_info.total_length <= MAX_USHORT);
+
+			blob->rbl_ptr = blob->rbl_buffer + offset + 2;
+			blob->rbl_offset = offset;
+			blob->rbl_length = blob->rbl_data.end() - blob->rbl_ptr;
+			blob->rbl_fragment_length = blob->rbl_length;
+			blob->rbl_flags &= ~(Rbl::EOF_SET | Rbl::SEGMENT);
+			return blob->rbl_offset;
 		}
 
 		Rdb* rdb = blob->rbl_rdb;
