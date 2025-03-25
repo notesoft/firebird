@@ -902,12 +902,9 @@ bool RBlobInfo::getLocalInfo(unsigned int itemsLength, const unsigned char* item
 			p = fb_utils::putInfoItemInt(*item, (SLONG) value, p, end);
 		else
 			p = fb_utils::putInfoItemInt(*item, value, p, end);
-
-		if (!p)
-			return false;
 	}
 
-	if (p < end)
+	if (p && p < end)
 		*p++ = isc_info_end;
 
 	return true;
