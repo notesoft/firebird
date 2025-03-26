@@ -994,7 +994,7 @@ SLONG blb::BLB_lseek(USHORT mode, SLONG offset)
 	blb_flags |= BLB_seek;
 	blb_flags &= ~BLB_eof;
 
-	return offset;
+	return blb_seek;
 }
 
 
