@@ -6883,10 +6883,13 @@ int Blob::seek(CheckStatusWrapper* status, int mode, int offset)
 			fb_assert(blob->rbl_info.num_segments <= 1);
 			fb_assert(blob->rbl_info.total_length <= MAX_USHORT);
 
-			blob->rbl_ptr = blob->rbl_buffer + offset + 2;
 			blob->rbl_offset = offset;
-			blob->rbl_length = blob->rbl_data.end() - blob->rbl_ptr;
-			blob->rbl_fragment_length = blob->rbl_length;
+			if (!blob->rbl_data.isEmpty())
+			{
+				blob->rbl_ptr = blob->rbl_buffer + offset + 2;
+				blob->rbl_length = blob->rbl_data.end() - blob->rbl_ptr;
+				blob->rbl_fragment_length = blob->rbl_length;
+			}
 			blob->rbl_flags &= ~(Rbl::EOF_SET | Rbl::SEGMENT);
 			return blob->rbl_offset;
 		}
