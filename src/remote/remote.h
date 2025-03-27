@@ -263,7 +263,7 @@ public:
 
 	Rbl* locate(SQUAD blob_id);
 
-	Rbl* BlobsContainer::getFirst()
+	Rbl* getFirst()
 	{
 		if (m_tree.getFirst())
 			return m_tree.current().m_blob;
@@ -271,7 +271,7 @@ public:
 		return nullptr;
 	}
 
-	Rbl* BlobsContainer::getNext()
+	Rbl* getNext()
 	{
 		if (m_tree.getNext())
 			return m_tree.current().m_blob;
