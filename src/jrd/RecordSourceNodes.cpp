@@ -3456,6 +3456,9 @@ RecordSource* RseNode::compile(thread_db* tdbb, Optimizer* opt, bool innerSubStr
 
 	const auto csb = opt->getCompilerScratch();
 
+	StreamList rseStreams;
+	computeRseStreams(rseStreams);
+
 	BoolExprNodeStack conjunctStack;
 
 	// pass RseNode boolean only to inner substreams because join condition
@@ -3478,13 +3481,19 @@ RecordSource* RseNode::compile(thread_db* tdbb, Optimizer* opt, bool innerSubStr
 			{
 				// Push all conjuncts except "missing" ones (e.g. IS NULL)
 				for (auto iter = opt->getConjuncts(false, true); iter.hasData(); ++iter)
-					conjunctStack.push(iter);
+				{
+					if (iter->containsAnyStream(rseStreams))
+						conjunctStack.push(iter);
+				}
 			}
 		}
 		else
 		{
 			for (auto iter = opt->getConjuncts(); iter.hasData(); ++iter)
-				conjunctStack.push(iter);
+			{
+				if (iter->containsAnyStream(rseStreams))
+					conjunctStack.push(iter);
+			}
 		}
 
 		return opt->compile(this, &conjunctStack);
@@ -3492,7 +3501,10 @@ RecordSource* RseNode::compile(thread_db* tdbb, Optimizer* opt, bool innerSubStr
 
 	// Push only parent conjuncts to the outer stream
 	for (auto iter = opt->getConjuncts(true, false); iter.hasData(); ++iter)
-		conjunctStack.push(iter);
+	{
+		if (iter->containsAnyStream(rseStreams))
+			conjunctStack.push(iter);
+	}
 
 	return opt->compile(this, &conjunctStack);
 }
