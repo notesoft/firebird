@@ -251,28 +251,16 @@ UCHAR ClumpletReader::getBufferTag() const
 			invalid_structure("empty buffer");
 			return 0;
 		}
-		switch (buffer_start[0])
+		if (buffer_start[0] == isc_spb_version)
 		{
-		case isc_spb_version1:
-			// This is old SPB format, it's almost like DPB -
-			// buffer's tag is the first byte.
-			return buffer_start[0];
-		case isc_spb_version:
-			// Buffer's tag is the second byte
 			if (buffer_end - buffer_start == 1)
 			{
 				invalid_structure("buffer too short", 1);
 				return 0;
 			}
 			return buffer_start[1];
-		case isc_spb_version3:
-			// This is wide SPB attach format, not traditional SpbAttach.
-			usage_mistake("isc_spb_version3 should use WideTagged format, not SpbAttach");
-			return 0;
-		default:
-			invalid_structure("spb in service attach should begin with isc_spb_version1 or isc_spb_version", buffer_start[0]);
-			return 0;
 		}
+		return buffer_start[0];
 	default:
 		fb_assert(false);
 		return 0;
