@@ -5912,7 +5912,7 @@ IBlob* Attachment::openBlob(CheckStatusWrapper* status, ITransaction* apiTra, IS
 			{
 				if (!(blob->rbl_flags & Rbl::USED))
 					release_blob(blob);
-				continue;
+				break;
 			}
 
 			if (blob->rbl_flags & Rbl::USED)
