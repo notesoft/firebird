@@ -647,7 +647,11 @@ Optimizer::~Optimizer()
 
 RecordSource* Optimizer::compile(RseNode* subRse, BoolExprNodeStack* parentStack)
 {
-	Optimizer subOpt(tdbb, csb, subRse, firstRows, cardinality);
+	// dimitr:	it makes no sense to optimize sub-RSE for first rows
+	//			if we're going to sort/aggregate the resultset afterwards
+	const bool subFirstRows = firstRows && !rse->rse_sorted && !rse->rse_aggregate;
+
+	Optimizer subOpt(tdbb, csb, subRse, subFirstRows, cardinality);
 	const auto rsb = subOpt.compile(parentStack);
 
 	if (parentStack && subOpt.isInnerJoin())
