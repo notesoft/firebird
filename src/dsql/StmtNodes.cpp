@@ -6012,8 +6012,6 @@ const StmtNode* LabelNode::execute(thread_db* /*tdbb*/, Request* request, ExeSta
 			return statement;
 
 		case Request::req_unwind:
-			fb_assert(!(request->req_flags & req_continue_loop));
-
 			if (request->req_label == labelNumber &&
 				(request->req_flags & (req_leave | req_error_handler)))
 			{
