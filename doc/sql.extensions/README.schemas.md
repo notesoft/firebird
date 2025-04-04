@@ -146,7 +146,7 @@ create table SCHEMA1.TABLE1 (id DOMAIN1);
 
 set search_path to SCHEMA2, SCHEMA1;
 -- Error: even if SCHEMA1 is in the search path, TABLE2 is bound to SCHEMA2,
--- so DOMAIN1 is searched in SCHEMA2 and SYSTEM schemas
+-- so DOMAIN1 is searched only in SCHEMA2 schema
 create table TABLE2 (id DOMAIN1);
 
 set search_path to SYSTEM;
@@ -451,7 +451,7 @@ process.
 #### Options
 
 `gbak` now includes the `-INCLUDE_SCHEMA_D(ATA)` and `-SKIP_SCHEMA_D(ATA)` switches, which complement the previously
-existing `-INCLUDE_SCHEMA` and `-SKIP_SCHEMA` options. If `-INCLUDE_SCHEMA_D(ATA)` is not specified, all schemas are
+existing `-INCLUDE_DATA` and `-SKIP_DATA` options. If `-INCLUDE_SCHEMA_D(ATA)` is not specified, all schemas are
 included by default. Likewise, if `-SKIP_SCHEMA_D(ATA)` is not provided, no schemas are skipped.
 
 Example:
@@ -643,9 +643,3 @@ It should also be possible to downgrade databases with multiple user schemas, as
 the same name do not exist in multiple schemas.
 
 This documentation will be updated once these changes are implemented.
-
-## Limitations
-
-DPB and TPB parameters cannot be greater than 255 bytes. That imposes a limit for usage of multiple schemas in 
-`isc_dpb_search_path` or fully qualified names with multi-byte characters in `isc_dpb_lc_ctype` and 
-`isc_dpb_set_db_charset`.
