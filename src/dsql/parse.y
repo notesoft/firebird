@@ -6642,26 +6642,6 @@ table_value_function_correlation_name
 	: as_noise symbol_table_alias_name	{ $$ = $2; }
 	;
 
-%type <metaNameArray> table_value_function_columns
-table_value_function_columns
-	: table_value_function_column
-		{
-			ObjectsArray<MetaName>* node = newNode<ObjectsArray<MetaName>>();
-			node->add(*$1);
-			$$ = node;
-		}
-	| table_value_function_columns ',' table_value_function_column
-		{
-			ObjectsArray<MetaName>* node = $1;
-			node->add(*$3);
-			$$ = node;
-		}
-	;
-
-%type <metaNamePtr> table_value_function_column
-table_value_function_column
-	: symbol_column_name	{ $$ = $1; }
-	;
 
 // other clauses in the select expression
 

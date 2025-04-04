@@ -261,5 +261,6 @@ static const struct
 	{"select_procedure", invsel_procedure},
 	{"default_arg", zero},
 	{"cast_format", cast_format},
+	{"table_value_fun", table_value_fun},
 	{0, 0}
 };
