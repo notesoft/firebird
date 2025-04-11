@@ -569,7 +569,7 @@ ClumpletReader::ClumpletType ClumpletReader::getClumpletType(UCHAR tag) const
 
 void ClumpletReader::adjustSpbState()
 {
-	if (kind == SpbStart && 
+	if (kind == SpbStart &&
 		spbState == 0 &&							// Just started with service start block ...
 		getClumpletSize(true, true, true) == 1)		// and this is action_XXX clumplet
 	{

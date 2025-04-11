@@ -221,7 +221,7 @@ void ClumpletWriter::reset(const UCHAR* buffer, const FB_SIZE_T buffLen)
 		dynamic_buffer.push(buffer, buffLen);
 	}
 	else
-	{	
+	{
 		initNewBuffer(tag);
 	}
 	rewind();
