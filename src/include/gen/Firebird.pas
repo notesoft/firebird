@@ -5784,6 +5784,7 @@ const
 	 isc_invalid_timezone_region_or_displacement = 335545312;
 	 isc_argmustbe_exact_range_for = 335545313;
 	 isc_range_for_by_should_be_positive = 335545314;
+	 isc_missing_value_for_format_pattern = 335545315;
 	 isc_gfix_db_name = 335740929;
 	 isc_gfix_invalid_sw = 335740930;
 	 isc_gfix_incmp_sw = 335740932;
