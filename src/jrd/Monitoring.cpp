@@ -626,21 +626,31 @@ MonitoringSnapshot::MonitoringSnapshot(thread_db* tdbb, MemoryPool& pool)
 		{
 			if (dbb->getEncodedOdsVersion() >= ODS_13_1)
 			{
+				// The code below requires that rel_mon_compiled_statements put
+				// into dump before	rel_mon_statements, see also dumpAttachment()
+
 				FB_UINT64 stmtId;
 				StmtBlobs stmtBlobs;
 				dsc desc;
 
 				if ((rid == rel_mon_compiled_statements) && EVL_field(nullptr, record, f_mon_cmp_stmt_id, &desc))
 				{
+					fb_assert(desc.dsc_dtype == dtype_int64);
 					stmtId = *(FB_UINT64*) desc.dsc_address;
 
 					if (EVL_field(nullptr, record, f_mon_cmp_stmt_sql_text, &desc))
+					{
+						fb_assert(desc.isBlob());
 						stmtBlobs.text = *reinterpret_cast<bid*>(desc.dsc_address);
+					}
 					else
 						stmtBlobs.text.clear();
 
 					if (EVL_field(nullptr, record, f_mon_cmp_stmt_expl_plan, &desc))
+					{
+						fb_assert(desc.isBlob());
 						stmtBlobs.plan = *reinterpret_cast<bid*>(desc.dsc_address);
+					}
 					else
 						stmtBlobs.plan.clear();
 
@@ -649,6 +659,7 @@ MonitoringSnapshot::MonitoringSnapshot(thread_db* tdbb, MemoryPool& pool)
 				}
 				else if ((rid == rel_mon_statements) && EVL_field(nullptr, record, f_mon_stmt_cmp_stmt_id, &desc))
 				{
+					fb_assert(desc.dsc_dtype == dtype_int64);
 					stmtId = *(FB_UINT64*) desc.dsc_address;
 
 					if (blobsMap.get(stmtId, stmtBlobs))
@@ -657,14 +668,19 @@ MonitoringSnapshot::MonitoringSnapshot(thread_db* tdbb, MemoryPool& pool)
 						{
 							record->clearNull(f_mon_stmt_sql_text);
 							if (EVL_field(nullptr, record, f_mon_stmt_sql_text, &desc))
+							{
+								fb_assert(desc.isBlob());
 								*reinterpret_cast<bid*>(desc.dsc_address) = stmtBlobs.text;
+							}
 						}
-
 						if (!stmtBlobs.plan.isEmpty())
 						{
 							record->clearNull(f_mon_stmt_expl_plan);
 							if (EVL_field(nullptr, record, f_mon_stmt_expl_plan, &desc))
+							{
+								fb_assert(desc.isBlob());
 								*reinterpret_cast<bid*>(desc.dsc_address) = stmtBlobs.plan;
+							}
 						}
 					}
 				}
@@ -1564,7 +1580,7 @@ void Monitoring::dumpAttachment(thread_db* tdbb, Attachment* attachment, ULONG g
 
 	if (dbb->getEncodedOdsVersion() >= ODS_13_1)
 	{
-		// Statement information
+		// Statement information, must be put into dump before requests
 
 		for (const auto statement : attachment->att_statements)
 		{
