@@ -549,6 +549,12 @@ MonitoringSnapshot::MonitoringSnapshot(thread_db* tdbb, MemoryPool& pool)
 
 	// Parse the dump
 
+	// BlobID's of statement text and plan
+	using StmtBlobs = struct { bid text; bid plan; };
+
+	// Map compiled statement id to blobs ids
+	NonPooledMap<FB_UINT64, StmtBlobs> blobsMap(pool);
+
 	MonitoringData::Reader reader(pool, temp_space);
 
 	SnapshotData::DumpRecord dumpRecord(pool);
@@ -617,7 +623,55 @@ MonitoringSnapshot::MonitoringSnapshot(thread_db* tdbb, MemoryPool& pool)
 		}
 
 		if (store_record)
+		{
+			if (dbb->getEncodedOdsVersion() >= ODS_13_1)
+			{
+				FB_UINT64 stmtId;
+				StmtBlobs stmtBlobs;
+				dsc desc;
+
+				if ((rid == rel_mon_compiled_statements) && EVL_field(nullptr, record, f_mon_cmp_stmt_id, &desc))
+				{
+					stmtId = *(FB_UINT64*) desc.dsc_address;
+
+					if (EVL_field(nullptr, record, f_mon_cmp_stmt_sql_text, &desc))
+						stmtBlobs.text = *reinterpret_cast<bid*>(desc.dsc_address);
+					else
+						stmtBlobs.text.clear();
+
+					if (EVL_field(nullptr, record, f_mon_cmp_stmt_expl_plan, &desc))
+						stmtBlobs.plan = *reinterpret_cast<bid*>(desc.dsc_address);
+					else
+						stmtBlobs.plan.clear();
+
+					if (!stmtBlobs.text.isEmpty() || !stmtBlobs.plan.isEmpty())
+						blobsMap.put(stmtId, stmtBlobs);
+				}
+				else if ((rid == rel_mon_statements) && EVL_field(nullptr, record, f_mon_stmt_cmp_stmt_id, &desc))
+				{
+					stmtId = *(FB_UINT64*) desc.dsc_address;
+
+					if (blobsMap.get(stmtId, stmtBlobs))
+					{
+						if (!stmtBlobs.text.isEmpty())
+						{
+							record->clearNull(f_mon_stmt_sql_text);
+							if (EVL_field(nullptr, record, f_mon_stmt_sql_text, &desc))
+								*reinterpret_cast<bid*>(desc.dsc_address) = stmtBlobs.text;
+						}
+
+						if (!stmtBlobs.plan.isEmpty())
+						{
+							record->clearNull(f_mon_stmt_expl_plan);
+							if (EVL_field(nullptr, record, f_mon_stmt_expl_plan, &desc))
+								*reinterpret_cast<bid*>(desc.dsc_address) = stmtBlobs.plan;
+						}
+					}
+				}
+			}
+
 			buffer->store(record);
+		}
 	}
 }
 
@@ -1221,13 +1275,17 @@ void Monitoring::putRequest(SnapshotData::DumpRecord& record, const Request* req
 
 	const Statement* const statement = request->getStatement();
 
-	// sql text
-	if (statement->sqlText)
-		record.storeString(f_mon_stmt_sql_text, *statement->sqlText);
+	// Since ODS 13.1 statement text and plan is put into mon$compiled_statements
+	if (dbb->getEncodedOdsVersion() < ODS_13_1)
+	{
+		// sql text
+		if (statement->sqlText)
+			record.storeString(f_mon_stmt_sql_text, *statement->sqlText);
 
-	// explained plan
-	if (plan.hasData())
-		record.storeString(f_mon_stmt_expl_plan, plan);
+		// explained plan
+		if (plan.hasData())
+			record.storeString(f_mon_stmt_expl_plan, plan);
+	}
 
 	// statistics
 	const int stat_id = fb_utils::genUniqueId();
@@ -1526,7 +1584,8 @@ void Monitoring::dumpAttachment(thread_db* tdbb, Attachment* attachment, ULONG g
 
 		if (!(statement->flags & (Statement::FLAG_INTERNAL | Statement::FLAG_SYS_TRIGGER)))
 		{
-			const string plan = Optimizer::getPlan(tdbb, statement, true);
+			const string plan = (dbb->getEncodedOdsVersion() >= ODS_13_1) ?
+				"" : Optimizer::getPlan(tdbb, statement, true);
 			putRequest(record, request, plan);
 		}
 	}
