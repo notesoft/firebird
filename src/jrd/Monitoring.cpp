@@ -550,7 +550,7 @@ MonitoringSnapshot::MonitoringSnapshot(thread_db* tdbb, MemoryPool& pool)
 	// Parse the dump
 
 	// BlobID's of statement text and plan
-	using StmtBlobs = struct { bid text; bid plan; };
+	struct StmtBlobs { bid text; bid plan; };
 
 	// Map compiled statement id to blobs ids
 	NonPooledMap<FB_UINT64, StmtBlobs> blobsMap(pool);
