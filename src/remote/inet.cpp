@@ -1690,12 +1690,12 @@ static rem_port* aux_request( rem_port* port, PACKET* packet)
 	if constexpr (
 		ARCHITECTURE == arch_darwin_ppc ||
 		ARCHITECTURE == arch_darwin_x64 ||
-		ARCHITECTURE == arch_darwin_ppc64) 
+		ARCHITECTURE == arch_darwin_ppc64)
 	{
 		if (!macOsClient)
 			port_address.convertFromMacOsToPosixWindows();
 	}
-	else if (macOsClient) 
+	else if (macOsClient)
 		port_address.convertFromPosixWindowsToMacOs();
 
 	response->p_resp_data.cstr_length = (ULONG) port_address.length();
