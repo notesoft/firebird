@@ -4008,7 +4008,7 @@ static void check_autoterm()
 		}
 	}
 
-	if (!(protocolVersion == 0 || protocolVersion >= PROTOCOL_PREPARE_FLAG) &&
+	if (!(protocolVersion == 0 || protocolVersion >= (PROTOCOL_PREPARE_FLAG & FB_PROTOCOL_MASK)) &&
 		isqlGlob.major_ods >= ODS_VERSION14)
 	{
 		setValues.AutoTerm = false;
