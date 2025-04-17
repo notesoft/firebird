@@ -1390,7 +1390,7 @@ static rem_port* alloc_port(rem_port* const parent, const USHORT flags)
 		{
 #ifdef WIN_NT
 			static WSADATA wsadata;
-			constexpr WORD version = MAKEWORD(2, 0);
+			constexpr WORD version = MAKEWORD(2, 2);
 			const int wsaError = WSAStartup(version, &wsadata);
 			if (wsaError)
 			{
