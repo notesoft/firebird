@@ -64,13 +64,15 @@ constexpr P_ARCH ARCHITECTURE	= arch_netbsd;
 constexpr P_ARCH ARCHITECTURE	= arch_darwin_ppc;
 #elif defined(WIN_NT) && defined(AMD64)
 constexpr P_ARCH ARCHITECTURE	= arch_winnt_64;
+#elif defined(WIN_NT) && defined(ARM64)
+constexpr P_ARCH ARCHITECTURE	= arch_winnt_arm64;
 #elif defined(I386)
 constexpr P_ARCH ARCHITECTURE	= arch_intel_32;
 #elif defined(DARWIN64)
 constexpr P_ARCH ARCHITECTURE	= arch_darwin_x64;
 #elif defined(DARWINPPC64)
 constexpr P_ARCH ARCHITECTURE	= arch_darwin_ppc64;
-#elif defined(ARM) || defined(ARM64)
+#elif defined(ARM)
 constexpr P_ARCH ARCHITECTURE	= arch_arm;
 #endif
 
