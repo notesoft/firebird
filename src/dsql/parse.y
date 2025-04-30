@@ -710,6 +710,8 @@ using namespace Firebird;
 %token <metaNamePtr> NAMED_ARG_ASSIGN
 %token <metaNamePtr> RTRIM
 %token <metaNamePtr> UNLIST
+%token <metaNamePtr> GREATEST
+%token <metaNamePtr> LEAST
 
 // precedence declarations for expression evaluation
 
@@ -4595,6 +4597,8 @@ keyword_or_column
 	| CALL
 	| LTRIM
 	| RTRIM
+	| GREATEST
+	| LEAST
 	;
 
 col_opt
@@ -8659,8 +8663,10 @@ system_function_std_syntax
 	| EXP
 	| FLOOR
 	| GEN_UUID
+	| GREATEST
 	| HEX_DECODE
 	| HEX_ENCODE
+	| LEAST
 	| LEFT
 	| LN
 	| LOG
