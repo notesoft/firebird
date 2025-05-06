@@ -13429,12 +13429,28 @@ ValueExprNode* UdfCallNode::pass1(thread_db* tdbb, CompilerScratch* csb)
 
 ValueExprNode* UdfCallNode::pass2(thread_db* tdbb, CompilerScratch* csb)
 {
-	if (function->fun_deterministic && !function->fun_inputs)
+	if (function->fun_deterministic)
 	{
 		// Deterministic function without input arguments is expected to be
-		// always returning the same result, so it can be marked as invariant
-		nodFlags |= FLAG_INVARIANT;
-		csb->csb_invariants.push(&impureOffset);
+		// always returning the same result, so it can be marked as invariant.
+		// Ditto if all its input arguments are deterministic expressions
+		// that do not reference any stream.
+
+		bool invariant = true;
+		for (const auto& arg : args->items)
+		{
+			if (!arg->deterministic() || arg->containsAnyStream())
+			{
+				invariant = false;
+				break;
+			}
+		}
+
+		if (invariant)
+		{
+			nodFlags |= FLAG_INVARIANT;
+			csb->csb_invariants.push(&impureOffset);
+		}
 	}
 
 	ValueExprNode::pass2(tdbb, csb);
