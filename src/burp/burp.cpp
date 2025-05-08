@@ -1177,7 +1177,7 @@ int gbak(Firebird::UtilSvc* uSvc)
 		dpb.insertBytes(isc_dpb_auth_block, authBlock, authSize);
 	}
 
-	dpb.insertString(isc_dpb_search_path, SYSTEM_SCHEMA, fb_strlen(SYSTEM_SCHEMA));
+	dpb.insertString(isc_dpb_search_path, SYSTEM_SCHEMA);
 
 	// We call getTableMod() because we are interested in the items that were activated previously,
 	// not in the original, unchanged table that "switches" took as parameter in the constructor.
@@ -1910,7 +1910,7 @@ void BURP_message(USHORT number, const MsgFormat::SafeArg& arg, bool totals)
 }
 
 
-void BURP_verbose(USHORT number, const char* str)
+void BURP_verbose(USHORT number, const string& str)
 {
 /**************************************
  *
@@ -1922,7 +1922,7 @@ void BURP_verbose(USHORT number, const char* str)
  *	Shortcut for text argument
  *
  **************************************/
-	BURP_verbose(number, SafeArg() << str);
+	BURP_verbose(number, SafeArg() << str.c_str());
 }
 
 

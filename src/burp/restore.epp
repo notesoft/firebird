@@ -282,7 +282,7 @@ static inline void collect_missing_privs(BurpGlobals* tdgbl, USHORT type, const 
 
 void activateIndex(BurpGlobals* tdgbl, const QualifiedMetaString& indexName)
 {
-	BURP_verbose(285, indexName.toQuotedString().c_str());
+	BURP_verbose(285, indexName.toQuotedString());
 	// activating and creating deferred index %s
 
 	bool fError = false;
@@ -374,7 +374,7 @@ int RESTORE_restore (const TEXT* file_name, const TEXT* database_name)
 						WITH IDX.RDB$SCHEMA_NAME EQUIV NULLIF(indexName.schema.c_str(), '') AND
 							 IDX.RDB$INDEX_NAME EQ indexName.object.c_str()
 					{
-						BURP_verbose(243, indexName.toQuotedString().c_str());
+						BURP_verbose(243, indexName.toQuotedString());
 						MODIFY IDX USING
 							IDX.RDB$INDEX_INACTIVE = TRUE;
 						END_MODIFY;
@@ -1079,7 +1079,7 @@ void create_database(BurpGlobals* tdgbl, Firebird::IProvider* provider, const TE
 	dpb.insertInt(isc_dpb_shutdown_delay, 0);
 	dpb.insertInt(isc_dpb_overwrite, tdgbl->gbl_sw_overwrite);
 	dpb.insertByte(isc_dpb_no_db_triggers, 1);
-	dpb.insertString(isc_dpb_search_path, SYSTEM_SCHEMA, fb_strlen(SYSTEM_SCHEMA));
+	dpb.insertString(isc_dpb_search_path, SYSTEM_SCHEMA);
 
 	FbLocalStatus status_vector;
 
@@ -2529,7 +2529,7 @@ bool get_character_set(BurpGlobals* tdgbl)
 						X.RDB$CHARACTER_SET_NAME.NULL = FALSE;
 						GET_TEXT(X.RDB$CHARACTER_SET_NAME);
 						name.object = X.RDB$CHARACTER_SET_NAME;
-						BURP_verbose(msgVerbose_restore_charset, name.toQuotedString().c_str());
+						BURP_verbose(msgVerbose_restore_charset, name.toQuotedString());
 						break;
 
 					case att_charset_form:
@@ -2647,7 +2647,7 @@ bool get_character_set(BurpGlobals* tdgbl)
 						X.RDB$CHARACTER_SET_NAME.NULL = FALSE;
 						GET_TEXT(X.RDB$CHARACTER_SET_NAME);
 						name.object = X.RDB$CHARACTER_SET_NAME;
-						BURP_verbose(msgVerbose_restore_charset, name.toQuotedString().c_str());
+						BURP_verbose(msgVerbose_restore_charset, name.toQuotedString());
 						break;
 
 					case att_charset_form:
@@ -2837,7 +2837,7 @@ bool get_collation(BurpGlobals* tdgbl)
 					X.RDB$COLLATION_NAME.NULL = FALSE;
 					GET_TEXT(X.RDB$COLLATION_NAME);
 					name.object = X.RDB$COLLATION_NAME;
-					BURP_verbose(msgVerbose_restore_collation, name.toQuotedString().c_str());
+					BURP_verbose(msgVerbose_restore_collation, name.toQuotedString());
 					break;
 
 				case att_coll_id:
@@ -2958,7 +2958,7 @@ bool get_collation(BurpGlobals* tdgbl)
 					X.RDB$COLLATION_NAME.NULL = FALSE;
 					GET_TEXT(X.RDB$COLLATION_NAME);
 					name.object = X.RDB$COLLATION_NAME;
-					BURP_verbose(msgVerbose_restore_collation, name.toQuotedString().c_str());
+					BURP_verbose(msgVerbose_restore_collation, name.toQuotedString());
 					break;
 
 				case att_coll_id:
@@ -3062,7 +3062,7 @@ bool get_collation(BurpGlobals* tdgbl)
 					X.RDB$COLLATION_NAME.NULL = FALSE;
 					GET_TEXT(X.RDB$COLLATION_NAME);
 					name.object = X.RDB$COLLATION_NAME;
-					BURP_verbose(msgVerbose_restore_collation, name.toQuotedString().c_str());
+					BURP_verbose(msgVerbose_restore_collation, name.toQuotedString());
 					break;
 
 				case att_coll_id:
@@ -3183,7 +3183,7 @@ static void check_data_error(BurpGlobals* tdgbl, IStatus* status_vector, const b
 
 static void commit_relation_data(BurpGlobals* tdgbl, burp_rel* relation)
 {
-	BURP_verbose(72, relation->rel_name.toQuotedString().c_str());
+	BURP_verbose(72, relation->rel_name.toQuotedString());
 	// msg 72  committing data for relation %s
 	COMMIT
 	// existing ON_ERROR continues past error, beck
@@ -3540,7 +3540,7 @@ bool get_exception(BurpGlobals* tdgbl)
 						GET_TEXT(X.RDB$EXCEPTION_NAME);
 						X.RDB$EXCEPTION_NAME.NULL = FALSE;
 						name.object = X.RDB$EXCEPTION_NAME;
-						BURP_verbose(199, name.toQuotedString().c_str());
+						BURP_verbose(199, name.toQuotedString());
 						// msg 199 restoring exception %s
 					}
 					break;
@@ -3689,7 +3689,7 @@ bool get_exception(BurpGlobals* tdgbl)
 						GET_TEXT(X.RDB$EXCEPTION_NAME);
 						X.RDB$EXCEPTION_NAME.NULL = FALSE;
 						name.object = X.RDB$EXCEPTION_NAME;
-						BURP_verbose(199, name.toQuotedString().c_str());
+						BURP_verbose(199, name.toQuotedString());
 						// msg 199 restoring exception %s
 					}
 					break;
@@ -3882,7 +3882,7 @@ burp_fld* get_field(BurpGlobals* tdgbl, burp_rel* relation)
 				{
 				case att_field_name:
 					field->fld_name_length = GET_TEXT(field->fld_name);
-					BURP_verbose(115, MetaString(field->fld_name).toQuotedString().c_str());
+					BURP_verbose(115, MetaString(field->fld_name).toQuotedString());
 					// msg 115 restoring field %s
 					strcpy (X.RDB$FIELD_NAME, field->fld_name);
 					break;
@@ -4095,7 +4095,7 @@ burp_fld* get_field(BurpGlobals* tdgbl, burp_rel* relation)
 				{
 				case att_field_name:
 					field->fld_name_length = GET_TEXT(field->fld_name);
-					BURP_verbose(115, MetaString(field->fld_name).toQuotedString().c_str());
+					BURP_verbose(115, MetaString(field->fld_name).toQuotedString());
 					// msg 115 restoring field %s
 					strcpy (X.RDB$FIELD_NAME, field->fld_name);
 					break;
@@ -4447,7 +4447,7 @@ bool get_filter(BurpGlobals* tdgbl)
 			{
 			case att_filter_name:
 				GET_TEXT(X.RDB$FUNCTION_NAME);
-				BURP_verbose(117, MetaString(X.RDB$FUNCTION_NAME).toQuotedString().c_str());
+				BURP_verbose(117, MetaString(X.RDB$FUNCTION_NAME).toQuotedString());
 				// msg 117 restoring filter %s
 				break;
 
@@ -4556,7 +4556,7 @@ bool get_function(BurpGlobals* tdgbl)
 				case att_function_name:
 					GET_TEXT(X.RDB$FUNCTION_NAME);
 					name.object = X.RDB$FUNCTION_NAME;
-					BURP_verbose(118, name.toQuotedString().c_str());
+					BURP_verbose(118, name.toQuotedString());
 					// msg 118 restoring function %s
 					break;
 
@@ -4760,7 +4760,7 @@ bool get_function(BurpGlobals* tdgbl)
 				case att_function_name:
 					GET_TEXT(X.RDB$FUNCTION_NAME);
 					name.object = X.RDB$FUNCTION_NAME;
-					BURP_verbose(118, name.toQuotedString().c_str());
+					BURP_verbose(118, name.toQuotedString());
 					// msg 118 restoring function %s
 					break;
 
@@ -5033,7 +5033,7 @@ void get_function_arg(BurpGlobals* tdgbl, bool skip_arguments)
 				case att_functionarg_name:
 					GET_TEXT(X.RDB$FUNCTION_NAME);
 					name.object = X.RDB$FUNCTION_NAME;
-					BURP_verbose(119, name.toQuotedString().c_str());
+					BURP_verbose(119, name.toQuotedString());
 					// msg 119 restoring argument for function %s
 					break;
 
@@ -5246,7 +5246,7 @@ void get_function_arg(BurpGlobals* tdgbl, bool skip_arguments)
 				case att_functionarg_name:
 					GET_TEXT(X.RDB$FUNCTION_NAME);
 					name.object = X.RDB$FUNCTION_NAME;
-					BURP_verbose(119, name.toQuotedString().c_str());
+					BURP_verbose(119, name.toQuotedString());
 					// msg 119 restoring argument for function %s
 					break;
 
@@ -5363,7 +5363,7 @@ void get_function_arg(BurpGlobals* tdgbl, bool skip_arguments)
 				case att_functionarg_name:
 					GET_TEXT(X.RDB$FUNCTION_NAME);
 					name.object = X.RDB$FUNCTION_NAME;
-					BURP_verbose(119, name.toQuotedString().c_str());
+					BURP_verbose(119, name.toQuotedString());
 					// msg 119 restoring argument for function %s
 					break;
 
@@ -5663,7 +5663,7 @@ bool get_global_field(BurpGlobals* tdgbl)
 				case att_field_name:
 					GET_TEXT(X.RDB$FIELD_NAME);
 					name.object = X.RDB$FIELD_NAME;
-					BURP_verbose(121, name.toQuotedString().c_str());
+					BURP_verbose(121, name.toQuotedString());
 					// msg 121  restoring global field %s
 					break;
 
@@ -6028,7 +6028,7 @@ bool get_global_field(BurpGlobals* tdgbl)
 				case att_field_name:
 					GET_TEXT(X.RDB$FIELD_NAME);
 					name.object = X.RDB$FIELD_NAME;
-					BURP_verbose(121, name.toQuotedString().c_str());
+					BURP_verbose(121, name.toQuotedString());
 					// msg 121  restoring global field %s
 					break;
 
@@ -6377,7 +6377,7 @@ bool get_global_field(BurpGlobals* tdgbl)
 				case att_field_name:
 					GET_TEXT(X.RDB$FIELD_NAME);
 					name.object = X.RDB$FIELD_NAME;
-					BURP_verbose(121, name.toQuotedString().c_str());
+					BURP_verbose(121, name.toQuotedString());
 					// msg 121  restoring global field %s
 					break;
 
@@ -6749,7 +6749,7 @@ bool get_index(BurpGlobals* tdgbl, const burp_rel* relation)
 			case att_index_name:
 				GET_TEXT(X.RDB$INDEX_NAME);
 				strcpy(index_name, X.RDB$INDEX_NAME);
-				BURP_verbose(122, QualifiedMetaString(X.RDB$INDEX_NAME, relation->rel_name.schema).toQuotedString().c_str());
+				BURP_verbose(122, QualifiedMetaString(X.RDB$INDEX_NAME, relation->rel_name.schema).toQuotedString());
 				break;
 
 			case att_segment_count:
@@ -7068,7 +7068,7 @@ bool get_package(BurpGlobals* tdgbl)
 			case att_package_name:
 				GET_TEXT(X.RDB$PACKAGE_NAME);
 				package->pkg_name.object = X.RDB$PACKAGE_NAME;
-				BURP_verbose(337, package->pkg_name.toQuotedString().c_str());	// msg 337 restoring package %s
+				BURP_verbose(337, package->pkg_name.toQuotedString());	// msg 337 restoring package %s
 				break;
 
 			case att_package_header_source:
@@ -7202,7 +7202,7 @@ bool get_procedure(BurpGlobals* tdgbl)
 				case att_procedure_name:
 					GET_TEXT(X.RDB$PROCEDURE_NAME);
 					procedure->prc_name.object = X.RDB$PROCEDURE_NAME;
-					BURP_verbose(195, procedure->prc_name.toQuotedString().c_str());
+					BURP_verbose(195, procedure->prc_name.toQuotedString());
 					// msg 195 restoring stored procedure %s
 					break;
 
@@ -7354,7 +7354,7 @@ bool get_procedure(BurpGlobals* tdgbl)
 				case att_procedure_name:
 					GET_TEXT(X.RDB$PROCEDURE_NAME);
 					procedure->prc_name.object = X.RDB$PROCEDURE_NAME;
-					BURP_verbose(195, procedure->prc_name.toQuotedString().c_str());
+					BURP_verbose(195, procedure->prc_name.toQuotedString());
 					// msg 195 restoring stored procedure %s
 					break;
 
@@ -7534,7 +7534,7 @@ bool get_procedure_prm(BurpGlobals* tdgbl, const QualifiedMetaString& name)
 				{
 				case att_procedureprm_name:
 					GET_TEXT(X.RDB$PARAMETER_NAME);
-					BURP_verbose(196, MetaString(X.RDB$PARAMETER_NAME).toQuotedString().c_str());
+					BURP_verbose(196, MetaString(X.RDB$PARAMETER_NAME).toQuotedString());
 					// msg 196 restoring parameter %s for stored procedure
 					break;
 
@@ -7666,7 +7666,7 @@ bool get_procedure_prm(BurpGlobals* tdgbl, const QualifiedMetaString& name)
 				{
 				case att_procedureprm_name:
 					GET_TEXT(X.RDB$PARAMETER_NAME);
-					BURP_verbose(196, MetaString(X.RDB$PARAMETER_NAME).toQuotedString().c_str());
+					BURP_verbose(196, MetaString(X.RDB$PARAMETER_NAME).toQuotedString());
 					// msg 196 restoring parameter %s for stored procedure
 					break;
 
@@ -7774,7 +7774,7 @@ bool get_publication(BurpGlobals* tdgbl)
 				case att_pub_name:
 					GET_TEXT(X.RDB$PUBLICATION_NAME);
 					X.RDB$PUBLICATION_NAME.NULL = FALSE;
-					BURP_verbose(399, MetaString(X.RDB$PUBLICATION_NAME).toQuotedString().c_str());
+					BURP_verbose(399, MetaString(X.RDB$PUBLICATION_NAME).toQuotedString());
 					// msg 399 restoring publication %s
 					break;
 
@@ -7879,7 +7879,7 @@ bool get_pub_table(BurpGlobals* tdgbl)
 					GET_TEXT(X.RDB$TABLE_NAME);
 					name.object = X.RDB$TABLE_NAME;
 					X.RDB$TABLE_NAME.NULL = FALSE;
-					BURP_verbose(401, name.toQuotedString().c_str());
+					BURP_verbose(401, name.toQuotedString());
 					// msg 401 restoring publication for table %s
 					break;
 
@@ -8080,7 +8080,7 @@ bool get_relation(BurpGlobals* tdgbl, Coordinator* coord, RestoreRelationTask* t
 			{
 				GET_TEXT(temp);
 				relation->rel_name.object = temp;
-				BURP_verbose(167, relation->rel_name.toQuotedString().c_str()); // msg 167 restoring table @1
+				BURP_verbose(167, relation->rel_name.toQuotedString()); // msg 167 restoring table @1
 			}
 			break;
 
@@ -8095,7 +8095,7 @@ bool get_relation(BurpGlobals* tdgbl, Coordinator* coord, RestoreRelationTask* t
 			get_blr_blob(tdgbl, view_blr, true);
 			relation->rel_flags |= REL_view;
 			fb_assert(relation->rel_name.object.hasData());
-			BURP_verbose(346, relation->rel_name.toQuotedString().c_str()); // msg 346 '    table @1 is a view'
+			BURP_verbose(346, relation->rel_name.toQuotedString()); // msg 346 '    table @1 is a view'
 			break;
 
 		case att_relation_view_source:
@@ -8262,7 +8262,7 @@ bool get_relation(BurpGlobals* tdgbl, Coordinator* coord, RestoreRelationTask* t
 		case rec_relation_end:
 			if (tdgbl->gbl_sw_incremental)
 			{
-				BURP_verbose(170, relation->rel_name.toQuotedString().c_str());
+				BURP_verbose(170, relation->rel_name.toQuotedString());
 				// msg 170: committing metadata for relation %s
 				COMMIT
 				// existing ON_ERROR continues past error, beck
@@ -8596,7 +8596,7 @@ bool get_schema(BurpGlobals* tdgbl)
 					GET_TEXT(X.RDB$SCHEMA_NAME);
 					X.RDB$SCHEMA_NAME.NULL = FALSE;
 					name.object = X.RDB$SCHEMA_NAME;
-					BURP_verbose(413, name.object.toQuotedString().c_str());	// msg 413 restoring schema @1
+					BURP_verbose(413, name.object.toQuotedString());	// msg 413 restoring schema @1
 					break;
 
 				case att_schema_charset_schema_name:
@@ -8683,7 +8683,7 @@ bool get_sql_roles(BurpGlobals* tdgbl)
 					X.RDB$ROLE_NAME.NULL = FALSE;
 					GET_TEXT(X.RDB$ROLE_NAME);
 					// msg 251, restoring SQL role: %s
-					BURP_verbose(251, MetaString(X.RDB$ROLE_NAME).toQuotedString().c_str());
+					BURP_verbose(251, MetaString(X.RDB$ROLE_NAME).toQuotedString());
 					break;
 
 				case att_role_owner_name:
@@ -8743,7 +8743,7 @@ bool get_sql_roles(BurpGlobals* tdgbl)
 					X.RDB$ROLE_NAME.NULL = FALSE;
 					GET_TEXT(X.RDB$ROLE_NAME);
 					// msg 251, restoring SQL role: %s
-					BURP_verbose(251, MetaString(X.RDB$ROLE_NAME).toQuotedString().c_str());
+					BURP_verbose(251, MetaString(X.RDB$ROLE_NAME).toQuotedString());
 					break;
 
 				case att_role_owner_name:
@@ -8861,7 +8861,7 @@ bool get_mapping(BurpGlobals* tdgbl)
 
 					BURP_verbose(301);
 					// msg 301, restoring names mapping
-					BURP_verbose(298, MetaString(M.RDB$MAP_NAME).toQuotedString().c_str());
+					BURP_verbose(298, MetaString(M.RDB$MAP_NAME).toQuotedString());
 					break;
 
 				case att_map_name:
@@ -8873,7 +8873,7 @@ bool get_mapping(BurpGlobals* tdgbl)
 						BURP_verbose(301);
 						// msg 301, restoring names mapping
 					}
-					BURP_verbose(298, MetaString(M.RDB$MAP_NAME).toQuotedString().c_str());
+					BURP_verbose(298, MetaString(M.RDB$MAP_NAME).toQuotedString());
 					break;
 
 				case att_map_using:
@@ -9033,7 +9033,7 @@ bool get_mapping(BurpGlobals* tdgbl)
 			return true;
 		}
 
-		BURP_verbose(298, MetaString(ADMIN_ROLE).toQuotedString().c_str());
+		BURP_verbose(298, MetaString(ADMIN_ROLE).toQuotedString());
 		// msg 298, restoring map @1
 		Firebird::string sql;
 		sql.printf("%s ('%s', %d) %s",
@@ -9108,7 +9108,7 @@ bool get_db_creator(BurpGlobals* tdgbl)
 		STORE (REQUEST_HANDLE tdgbl->handles_get_db_creators_req_handle1)
 			C IN RDB$DB_CREATORS
 
-			BURP_verbose(393, MetaString(usr).toQuotedString().c_str());
+			BURP_verbose(393, MetaString(usr).toQuotedString());
 			if (strlen(usr) > sizeof(C.RDB$USER))
 				BURP_error_redirect(NULL, 46);
 
@@ -9199,7 +9199,7 @@ bool get_security_class(BurpGlobals* tdgbl)
 					break;
 				}
 
-				BURP_verbose(125, name.toQuotedString().c_str());
+				BURP_verbose(125, name.toQuotedString());
 				// msg 125   restoring security class %s
 				break;
 
@@ -9470,7 +9470,7 @@ bool get_trigger_old (BurpGlobals* tdgbl, burp_rel* relation)
 			*p++ = *q++;
 		}
 		*p = 0;
-		BURP_verbose(126, MetaString(X.RDB$TRIGGER_NAME).toQuotedString().c_str());
+		BURP_verbose(126, MetaString(X.RDB$TRIGGER_NAME).toQuotedString());
 		// msg 126 restoring trigger %s
 		strncpy (X.RDB$RELATION_NAME, relation->rel_name.object.c_str(), GDS_NAME_LEN);
 		strcpy (name, X.RDB$TRIGGER_NAME);
@@ -9589,7 +9589,7 @@ bool get_trigger(BurpGlobals* tdgbl)
 				case att_trig_name:
 					GET_TEXT(X.RDB$TRIGGER_NAME);
 					name.object = X.RDB$TRIGGER_NAME;
-					BURP_verbose(126, name.toQuotedString().c_str());
+					BURP_verbose(126, name.toQuotedString());
 					// msg 126 restoring trigger %s
 					break;
 
@@ -9748,7 +9748,7 @@ bool get_trigger(BurpGlobals* tdgbl)
 				case att_trig_name:
 					GET_TEXT(X.RDB$TRIGGER_NAME);
 					name.object = X.RDB$TRIGGER_NAME;
-					BURP_verbose(126, name.toQuotedString().c_str());
+					BURP_verbose(126, name.toQuotedString());
 					// msg 126 restoring trigger %s
 					break;
 
@@ -9916,7 +9916,7 @@ bool get_trigger_message(BurpGlobals* tdgbl)
 			ON_ERROR
 				general_on_error ();
 			END_ERROR
-			BURP_verbose(127, name.toQuotedString().c_str());
+			BURP_verbose(127, name.toQuotedString());
 			// msg 127 restoring trigger message for %s
 			break;
 
@@ -10105,7 +10105,7 @@ bool get_user_privilege(BurpGlobals* tdgbl)
 			flags |= USER_PRIV_USER;
 			GET_TEXT(temp);
 			user.object = temp;
-			BURP_verbose(123, user.toQuotedString().c_str());
+			BURP_verbose(123, user.toQuotedString());
 			// msg 123 restoring privilege for user %s
 			break;
 
@@ -13294,7 +13294,7 @@ IBatch* WriteRelationMeta::createBatch(BurpGlobals* tdgbl, IAttachment* att)
 	if (m_batchOk)
 		return batch;
 
-	BURP_verbose(371, m_relation->rel_name.toQuotedString().c_str());
+	BURP_verbose(371, m_relation->rel_name.toQuotedString());
 	// msg 371 could not start batch when restoring table @1, trying old way
 
 	//BURP_print_status(false, fbStatus);
@@ -13813,7 +13813,7 @@ bool RestoreRelationTask::fileReader(Item& item)
 	BurpGlobals* tdgbl = item.m_gbl;
 	fb_assert(tdgbl == m_masterGbl);
 
-	BURP_verbose(124, m_relation->rel_name.toQuotedString().c_str()); // msg 124  restoring data for relation %s
+	BURP_verbose(124, m_relation->rel_name.toQuotedString()); // msg 124  restoring data for relation %s
 
 	const RCRD_LENGTH length = m_metadata.m_inMsgLen;	// full record length
 
