@@ -4762,20 +4762,14 @@ void CurrentSchemaNode::genBlr(DsqlCompilerScratch* dsqlScratch)
 
 void CurrentSchemaNode::make(DsqlCompilerScratch* dsqlScratch, dsc* desc)
 {
-	desc->dsc_dtype = dtype_varying;
-	desc->dsc_scale = 0;
-	desc->dsc_flags = DSC_nullable;
-	desc->dsc_ttype() = ttype_metadata;
-	desc->dsc_length = MAX_SQL_IDENTIFIER_LEN + sizeof(USHORT);
+	desc->makeVarying(MAX_SQL_IDENTIFIER_LEN, ttype_metadata);
+	desc->setNullable(true);
 }
 
 void CurrentSchemaNode::getDesc(thread_db* /*tdbb*/, CompilerScratch* /*csb*/, dsc* desc)
 {
-	desc->dsc_dtype = dtype_text;
-	desc->dsc_ttype() = ttype_metadata;
-	desc->dsc_length = MAX_SQL_IDENTIFIER_LEN;
-	desc->dsc_scale = 0;
-	desc->dsc_flags = DSC_nullable;
+	desc->makeText(MAX_SQL_IDENTIFIER_LEN, ttype_metadata);
+	desc->setNullable(true);
 }
 
 ValueExprNode* CurrentSchemaNode::copy(thread_db* tdbb, NodeCopier& /*copier*/) const

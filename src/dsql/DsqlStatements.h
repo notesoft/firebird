@@ -169,7 +169,7 @@ protected:
 	Firebird::MemoryStats memoryStats;
 	Type type = TYPE_SELECT;	// Type of statement
 	ULONG flags = 0;			// generic flag
-	unsigned blrVersion = 5;
+	unsigned blrVersion = blr_version5;
 	Firebird::RefStrPtr sqlText;
 	Firebird::RefStrPtr orgText;
 	Firebird::RefStrPtr cacheKey;

@@ -233,18 +233,7 @@ public:
 protected:
 	virtual void putErrorPrefix(Firebird::Arg::StatusVector& statusVector)
 	{
-		statusVector << Firebird::Arg::Gds(ERROR_CODE) << nameToString(createNode->name);
-	}
-
-private:
-	Firebird::string nameToString(const QualifiedName& name)
-	{
-		return name.toQuotedString();
-	}
-
-	Firebird::string nameToString(const MetaName& name)
-	{
-		return name.toQuotedString();
+		statusVector << Firebird::Arg::Gds(ERROR_CODE) << createNode->name.toQuotedString();
 	}
 
 protected:

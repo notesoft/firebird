@@ -79,9 +79,10 @@ Nonexistent schemas can be included in the search path but are ignored during na
 The first existing schema in the search path is referred to as the **current schema** and is exclusively used in some 
 operations.
 
-Binding unqualified objects to a schema typically occurs at **statement preparation time**. An exception to this is 
-the `MAKE_DBKEY` function when its first argument is an expression (not a simple literal), in which case the table 
-resolution happens at **execution time**.
+Binding unqualified objects to a schema typically occurs at **statement preparation time**. One exception is 
+`EXECUTE STATEMENT`, which prepares the statement at **execution time**. Another exception is the `MAKE_DBKEY` function 
+when its first argument is an expression (not a simple literal), in which case the table resolution happens at 
+**execution time**.
 
 Object names can now be explicitly qualified with their schema, such as `SCHEMA_NAME.TABLE_NAME`, 
 `SCHEMA_NAME.TABLE_NAME.COLUMN_NAME`, or `SCHEMA_NAME.PACKAGE_NAME.PROCEDURE_NAME`. However, the schema qualifier is 
@@ -222,7 +223,7 @@ or by a user with `DROP ANY SCHEMA` permission. If restoring a Firebird 6 or lat
     [DEFAULT SQL SECURITY {DEFINER | INVOKER}]
 ```
 
-Schemas may have an optional default character set and SQL security setting, which serve as the defaults for objects 
+Schemas may have optional default character set and SQL security settings, which serve as the defaults for objects 
 contained within them. When these defaults are not specified or are dropped, the database's default character set and 
 SQL security settings are used, as in previous versions.
 
@@ -532,7 +533,7 @@ to utilize these fields where appropriate. For example, consider using `RDB$SCHE
 | RDB$RELATION_FIELDS      | RDB$SCHEMA_NAME                 |
 | RDB$SCHEMAS              | RDB$CHARACTER_SET_NAME          |
 | RDB$SCHEMAS              | RDB$CHARACTER_SET_SCHEMA_NAME   |
-| RDB$SCHEMAS              | RDB$SQL_SECCURITY               |
+| RDB$SCHEMAS              | RDB$SQL_SECURITY                |
 | RDB$SCHEMAS              | RDB$DESCRIPTION                 |
 | RDB$SCHEMAS              | RDB$OWNER_NAME                  |
 | RDB$SCHEMAS              | RDB$SCHEMA_NAME                 |
@@ -605,7 +606,7 @@ name.
 
 ### Built-in plugins
 
-Built-in plugins are migrated by `gbak` to their own schemas. Stored routines referenceing them should be updated to
+Built-in plugins are migrated by `gbak` to their own schemas. Stored routines referencing them should be updated to
 include their schema names before changes.
 
 ## Replication
@@ -618,8 +619,8 @@ all schemas are included by default. Likewise, if `exclude_schema_filter` is not
 
 ### Config parameter `schema_search_path`
 
-A master database running in Firebird < 6.0 can be asynchronously replicated to a slave database using Firebird ≥ 6.0.
-Since the master database has no schema awareness, the `schema_search_path` config parameter is introduced on the
+A primary database running in Firebird < 6.0 can be asynchronously replicated to a slave database using Firebird ≥ 6.0.
+Since the primary database has no schema awareness, the `schema_search_path` config parameter is introduced on the
 slave side. This allows mapping database objects to a specific schema using a search path.
 
 ## System packages and functions
