@@ -100,6 +100,11 @@ namespace
 
 		return lock.release();
 	}
+
+	inline bool swept_at_restore(thread_db* tdbb, const jrd_rel* relation)
+	{
+		return tdbb->getDatabase()->isRestoring() && !relation->isSystem();
+	}
 }
 
 
@@ -2234,7 +2239,7 @@ void DPM_store( thread_db* tdbb, record_param* rpb, PageStack& stack, const Jrd:
 	Ods::pag* page = rpb->getWindow(tdbb).win_buffer;
 
 	// When restoring, mark primary data page as swept, pointer page already marked by locate_space()
-	if (tdbb->getAttachment()->isGbak() && !rpb->rpb_relation->isSystem() && (type == DPM_primary))
+	if (swept_at_restore(tdbb, rpb->rpb_relation) && (type == DPM_primary))
 	{
 		page->pag_flags |= dpg_swept;
 		CCH_RELEASE(tdbb, &rpb->getWindow(tdbb));
@@ -3093,7 +3098,7 @@ static void extend_relation(thread_db* tdbb, jrd_rel* relation, WIN* window, con
 	if (type == DPM_primary)
 	{
 		// When restoring, mark slot as swept, data page will be marked by our caller
-		if (tdbb->getAttachment()->isGbak() && !relation->isSystem())
+		if (swept_at_restore(tdbb, relation))
 			PPG_DP_BIT_SET(bits, slot, ppg_dp_swept);
 	}
 	else
@@ -3553,7 +3558,7 @@ static rhd* locate_space(thread_db* tdbb,
 					PPG_DP_BIT_CLEAR(bits, slot, ppg_dp_secondary);
 
 					// When restoring, mark slot as swept, data page will be marked by our caller
-					if (tdbb->getAttachment()->isGbak() && !relation->isSystem())
+					if (swept_at_restore(tdbb, relation))
 						PPG_DP_BIT_SET(bits, slot, ppg_dp_swept);
 				}
 				else
@@ -3941,7 +3946,7 @@ static void store_big_record(thread_db* tdbb,
 	bool markPP = false;
 
 	// When restoring, mark primary data page as swept, pointer page already marked by locate_space()
-	if (tdbb->getAttachment()->isGbak() && !rpb->rpb_relation->isSystem() && (type == DPM_primary))
+	if (swept_at_restore(tdbb, rpb->rpb_relation) && (type == DPM_primary))
 	{
 		page->dpg_header.pag_flags |= dpg_swept;
 	}
