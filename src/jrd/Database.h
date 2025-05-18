@@ -230,6 +230,7 @@ const ULONG DBB_gc_background			= 0x20000L;		// background garbage collection by
 const ULONG DBB_sweep_starting			= 0x40000L;		// Auto-sweep is starting
 const ULONG DBB_creating				= 0x80000L;		// Database creation is in progress
 const ULONG DBB_shared					= 0x100000L;	// Database object is shared among connections
+const ULONG DBB_restoring				= 0x200000L;	// Database restore is in progress
 
 //
 // dbb_ast_flags
@@ -311,9 +312,6 @@ class Database : public pool_alloc<type_dbb>
 		bool incTempCacheUsage(FB_SIZE_T size);
 		void decTempCacheUsage(FB_SIZE_T size);
 
-		bool getRestoring() const { return m_restoring; }
-		void setRestoring(bool value) { m_restoring = value; }
-
 	private:
 		const Firebird::string m_id;
 		const Firebird::RefPtr<const Firebird::Config> m_config;
@@ -324,7 +322,6 @@ class Database : public pool_alloc<type_dbb>
 		Firebird::Mutex m_mutex;
 		std::atomic<FB_UINT64> m_tempCacheUsage;		// total size of in-memory temp space chunks (see TempSpace class)
 		const FB_UINT64 m_tempCacheLimit;
-		bool m_restoring;
 
 		explicit GlobalObjectHolder(const Firebird::string& id,
 									const Firebird::PathName& filename,
@@ -332,8 +329,7 @@ class Database : public pool_alloc<type_dbb>
 			: m_id(getPool(), id), m_config(config),
 			  m_replConfig(Replication::Config::get(filename)),
 			  m_tempCacheUsage(0),
-			  m_tempCacheLimit(m_config->getTempCacheLimit()),
-			  m_restoring(false)
+			  m_tempCacheLimit(m_config->getTempCacheLimit())
 		{}
 	};
 
@@ -725,12 +721,15 @@ public:
 
 	bool isRestoring() const
 	{
-		return dbb_gblobj_holder->getRestoring();
+		return dbb_flags & DBB_restoring;
 	}
 
 	void setRestoring(bool value)
 	{
-		dbb_gblobj_holder->setRestoring(value);
+		if (value)
+			dbb_flags |= DBB_restoring;
+		else
+			dbb_flags &= ~DBB_restoring;
 	}
 
 private:
