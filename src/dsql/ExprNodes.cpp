@@ -9966,7 +9966,6 @@ dsc* ParameterNode::execute(thread_db* tdbb, Request* request) const
 	{
 		if (!(request->req_flags & req_null))
 		{
-			USHORT maxLen = desc->dsc_length;	// not adjusted length
 
 			if (DTYPE_IS_TEXT(retDesc->dsc_dtype))
 			{
@@ -9976,8 +9975,7 @@ dsc* ParameterNode::execute(thread_db* tdbb, Request* request) const
 				switch (retDesc->dsc_dtype)
 				{
 					case dtype_cstring:
-						len = static_cast<USHORT>(strnlen((const char*) p, maxLen));
-						--maxLen;
+						len = static_cast<USHORT>(strnlen((const char*) p, desc->dsc_length));
 						break;
 
 					case dtype_text:
@@ -9987,7 +9985,6 @@ dsc* ParameterNode::execute(thread_db* tdbb, Request* request) const
 					case dtype_varying:
 						len = reinterpret_cast<const vary*>(p)->vary_length;
 						p += sizeof(USHORT);
-						maxLen -= sizeof(USHORT);
 						break;
 				}
 
