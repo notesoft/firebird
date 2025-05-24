@@ -462,44 +462,7 @@ void EXE_assignment(thread_db* tdbb, const ValueExprNode* to, dsc* from_desc, bo
 			}
 		}
 
-		// Validate text length
-
-		if (DTYPE_IS_TEXT(from_desc->dsc_dtype) && DTYPE_IS_TEXT(to_desc->dsc_dtype))
-		{
-			const CharSet* srcCharSet = INTL_charset_lookup(tdbb, from_desc->getCharSet());
-			const CharSet* tgtCharSet = INTL_charset_lookup(tdbb, to_desc->getCharSet());
-
-			// SQL Standard 4.3.1 Introduction to character strings:
-			// "If a store assignment would result in the loss of non-<truncating whitespace> characters due to truncation, then an exception condition is raised."
-			// Do not count trailing spaces in source.
-
-			// EngineCallbacks::instance->validateLength() cannot be used here because its current implementation ignores charSetId parameter
-			// which (I guess) is supposed to be target's charset
-			const UCHAR* p = from_desc->dsc_address;
-			USHORT len = from_desc->dsc_length;
-
-			switch (from_desc->dsc_dtype)
-			{
-				case dtype_cstring:
-					len = static_cast<USHORT>(strnlen((const char*) p, len));
-					break;
-
-				case dtype_varying:
-					len = reinterpret_cast<const vary*>(p)->vary_length;
-					p += sizeof(USHORT);
-					break;
-			}
-
-			const ULONG srcCharLength = srcCharSet->length(len, p, false);
-			// Here would be better `target->getMaxCharLength()`...
-			const ULONG destCharLength = to_desc->getStringLength() / tgtCharSet->maxBytesPerChar();
-
-			if (srcCharLength > destCharLength)
-			{
-				ERR_post(Arg::Gds(isc_arith_except) << Arg::Gds(isc_string_truncation) <<
-						 Arg::Gds(isc_trunc_limits) << Arg::Num(destCharLength) << Arg::Num(srcCharLength));
-			}
-		}
+		// Strings will be validated in CVT_move()
 
 		if (DTYPE_IS_BLOB_OR_QUAD(from_desc->dsc_dtype) || DTYPE_IS_BLOB_OR_QUAD(to_desc->dsc_dtype))
 		{
@@ -530,6 +493,11 @@ void EXE_assignment(thread_db* tdbb, const ValueExprNode* to, dsc* from_desc, bo
 		}
 		else if (!DSC_EQUIV(from_desc, to_desc, false))
 		{
+			MOV_move(tdbb, from_desc, to_desc);
+		}
+		else if (DTYPE_IS_TEXT(from_desc->dsc_dtype))
+		{
+			// Force slow move to properly handle the case when source string is provided with real length instead of padded length
 			MOV_move(tdbb, from_desc, to_desc);
 		}
 		else if (from_desc->dsc_dtype == dtype_short)
