@@ -889,7 +889,7 @@ bool WindowedStream::WindowStream::internalGetRecord(thread_db* tdbb) const
 				record->setNull(id);
 			else
 			{
-				MOV_move(tdbb, desc, EVL_assign_to(tdbb, *target));
+				MOV_move(tdbb, desc, EVL_assign_to(tdbb, *target), true);
 				record->clearNull(id);
 			}
 

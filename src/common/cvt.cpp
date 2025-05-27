@@ -1648,7 +1648,7 @@ double CVT_get_double(const dsc* desc, DecimalStatus decSt, ErrorFunction err, b
 }
 
 
-void CVT_move_common(const dsc* from, dsc* to, DecimalStatus decSt, Callbacks* cb)
+void CVT_move_common(const dsc* from, dsc* to, DecimalStatus decSt, Callbacks* cb, bool trustedSource)
 {
 /**************************************
  *
@@ -1673,7 +1673,9 @@ void CVT_move_common(const dsc* from, dsc* to, DecimalStatus decSt, Callbacks* c
 	// (real source length must be validated against target maximum length
 	// and this is the first common place where both are present).
 
-	if (DSC_EQUIV(from, to, false) && !DTYPE_IS_TEXT(from->dsc_dtype))
+	// ...unless these strings are coming from a trusted source (for example a cached record buffer)
+
+	if (DSC_EQUIV(from, to, false) && (trustedSource || !DTYPE_IS_TEXT(from->dsc_dtype)))
 	{
 		if (length) {
 			memcpy(p, q, length);
@@ -1987,6 +1989,9 @@ void CVT_move_common(const dsc* from, dsc* to, DecimalStatus decSt, Callbacks* c
 				if (cb->transliterate(from, to, charset2))
 					return;
 
+				// At this point both `from` and `to` are guaranteed to have the same charset and this is stored in charset2
+				// Because of this we can freely use `toCharset` against `from`.
+
 				{ // scope
 					USHORT strtype_unused;
 					UCHAR *ptr;
@@ -1997,8 +2002,23 @@ void CVT_move_common(const dsc* from, dsc* to, DecimalStatus decSt, Callbacks* c
 				const USHORT to_size = TEXT_LEN(to);
 				CharSet* toCharset = cb->getToCharset(charset2);
 
-				cb->validateData(toCharset, length, q);
-				ULONG toLength = cb->validateLength(toCharset, charset2, length, q, to_size);
+				ULONG toLength = length;
+
+				if (!trustedSource)
+				{
+					// Most likely data already has been validated once or twice, but another validation won't hurt much.
+					cb->validateData(toCharset, length, q);
+					toLength = cb->validateLength(toCharset, charset2, length, q, to_size);
+				}
+				else
+				{
+					// Silently truncate. In the wild this should never happen
+					if (length > to_size)
+					{
+						fb_assert(from->dsc_dtype == dtype_text);
+						toLength = to_size;
+					}
+				}
 
 				switch (to->dsc_dtype)
 				{
@@ -3776,7 +3796,7 @@ USHORT CVT_get_string_ptr(const dsc* desc, USHORT* ttype, UCHAR** address,
 }
 
 
-void CVT_move(const dsc* from, dsc* to, DecimalStatus decSt, ErrorFunction err)
+void CVT_move(const dsc* from, dsc* to, DecimalStatus decSt, ErrorFunction err, bool trustedSource)
 {
 /**************************************
  *
@@ -3789,5 +3809,5 @@ void CVT_move(const dsc* from, dsc* to, DecimalStatus decSt, ErrorFunction err)
  *
  **************************************/
 	CommonCallbacks callbacks(err);
-	CVT_move_common(from, to, decSt, &callbacks);
+	CVT_move_common(from, to, decSt, &callbacks, trustedSource);
 }
