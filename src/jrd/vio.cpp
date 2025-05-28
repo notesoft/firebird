@@ -2041,6 +2041,10 @@ bool VIO_erase(thread_db* tdbb, record_param* rpb, jrd_tra* transaction)
 			protect_system_table_delupd(tdbb, relation, "DELETE", true);
 			break;
 
+		case rel_schemas:
+			protect_system_table_delupd(tdbb, relation, "DELETE");
+			break;
+
 		case rel_types:
 		 	if (!tdbb->getAttachment()->locksmith(tdbb, CREATE_USER_TYPES))
 		 		protect_system_table_delupd(tdbb, relation, "DELETE", true);
@@ -3465,6 +3469,11 @@ bool VIO_modify(thread_db* tdbb, record_param* org_rpb, record_param* new_rpb, j
 				desc2.makeLong(0, const_cast<SLONG*>(&nullLinger));
 			if (MOV_compare(tdbb, &desc1, &desc2))
 				DFW_post_work(transaction, dfw_set_linger, &desc2, nullptr, 0);
+			break;
+
+		case rel_schemas:
+			protect_system_table_delupd(tdbb, relation, "UPDATE");
+			check_class(tdbb, transaction, org_rpb, new_rpb, f_sch_class);
 			break;
 
 		case rel_relations:
