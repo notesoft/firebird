@@ -275,7 +275,7 @@ DsqlDmlRequest::DsqlDmlRequest(thread_db* tdbb, MemoryPool& pool, dsql_dbb* dbb,
 		Request* request = parentRequest->getRequest();
 		fb_assert(request->req_rpb.getCount() > 0 && request->req_rpb[0].rpb_relation != nullptr);
 
-		const MetaName& relName = request->req_rpb[0].rpb_relation->rel_name;
+		const auto& relName = request->req_rpb[0].rpb_relation->rel_name;
 		bool found = false;
 		for (FB_SIZE_T i = 0; i < request->req_rpb.getCount(); ++i)
 		{
@@ -286,8 +286,10 @@ DsqlDmlRequest::DsqlDmlRequest(thread_db* tdbb, MemoryPool& pool, dsql_dbb* dbb,
 				if (found)
 				{
 					// Relation is used twice in cursor
-					ERRD_post(Arg::Gds(isc_dsql_cursor_err)
-								<< Arg::Gds(isc_dsql_cursor_rel_ambiguous) << relName << aStatement->parentCursorName);
+					ERRD_post(
+						Arg::Gds(isc_dsql_cursor_err) <<
+						Arg::Gds(isc_dsql_cursor_rel_ambiguous) <<
+							relName.toQuotedString() << aStatement->parentCursorName.toQuotedString());
 				}
 				parentContext = i;
 				found = true;
@@ -297,8 +299,10 @@ DsqlDmlRequest::DsqlDmlRequest(thread_db* tdbb, MemoryPool& pool, dsql_dbb* dbb,
 		if (!found)
 		{
 			// Relation is not in cursor
-			ERRD_post(Arg::Gds(isc_dsql_cursor_err)
-						<< Arg::Gds(isc_dsql_cursor_rel_not_found) << relName << aStatement->parentCursorName);
+			ERRD_post(
+				Arg::Gds(isc_dsql_cursor_err) <<
+				Arg::Gds(isc_dsql_cursor_rel_not_found) <<
+					relName.toQuotedString() << aStatement->parentCursorName.toQuotedString());
 		}
 		parentRequest->cursors.add(this);
 	}
@@ -970,7 +974,10 @@ void DsqlDdlRequest::execute(thread_db* tdbb, jrd_tra** traHandle,
 				(internalScratch->flags & DsqlCompilerScratch::FLAG_INTERNAL_REQUEST);
 
 			if (!isInternalRequest && node->mustBeReplicated())
-				REPL_exec_sql(tdbb, req_transaction, getDsqlStatement()->getOrgText());
+			{
+				REPL_exec_sql(tdbb, req_transaction, getDsqlStatement()->getOrgText(),
+					*getDsqlStatement()->getSchemaSearchPath());
+			}
 		}
 		catch (status_exception& ex)
 		{

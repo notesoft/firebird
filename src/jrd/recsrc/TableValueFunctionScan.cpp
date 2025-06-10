@@ -86,7 +86,7 @@ void TableValueFunctionScan::getLegacyPlan(thread_db* tdbb, string& plan, unsign
 	if (!level)
 		plan += "(";
 
-	plan += printName(tdbb, m_alias, false) + " NATURAL";
+	plan += printName(tdbb, m_alias) + " NATURAL";
 
 	if (!level)
 		plan += ")";
