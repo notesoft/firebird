@@ -705,12 +705,16 @@ using namespace Firebird;
 %token <metaNamePtr> BTRIM
 %token <metaNamePtr> CALL
 %token <metaNamePtr> CURRENT_SCHEMA
+%token <metaNamePtr> DOWNTO
 %token <metaNamePtr> FORMAT
+%token <metaNamePtr> GREATEST
+%token <metaNamePtr> LEAST
 %token <metaNamePtr> LTRIM
 %token <metaNamePtr> NAMED_ARG_ASSIGN
 %token <metaNamePtr> RTRIM
 %token <metaNamePtr> SCHEMA
 %token <metaNamePtr> SEARCH_PATH
+%token <metaNamePtr> UNLIST
 
 // precedence declarations for expression evaluation
 
@@ -868,6 +872,7 @@ using namespace Firebird;
 	Jrd::SetDecFloatTrapsNode* setDecFloatTrapsNode;
 	Jrd::SetBindNode* setBindNode;
 	Jrd::SessionResetNode* sessionResetNode;
+	Jrd::ForRangeNode::Direction forRangeDirection;
 }
 
 %include types.y
@@ -3558,6 +3563,7 @@ complex_proc_statement
 	: in_autonomous_transaction
 	| if_then_else
 	| while
+	| for_range
 	| for_select					{ $$ = $1; }
 	| for_exec_into					{ $$ = $1; }
 	;
@@ -3585,6 +3591,46 @@ excp_statement
 %type <stmtNode> raise_statement
 raise_statement
 	: EXCEPTION		{ $$ = newNode<ExceptionNode>(); }
+	;
+
+%type <stmtNode> for_range
+for_range
+	: label_def_opt FOR for_range_variable '=' value for_range_direction value for_range_by_opt DO proc_block
+		{
+			const auto node = newNode<ForRangeNode>();
+			node->dsqlLabelName = $1;
+			node->variable = $3;
+			node->initialExpr = $5;
+			node->direction = $6;
+			node->finalExpr = $7;
+			node->byExpr = $8;
+			node->statement = $10;
+			node->direction = $6;
+			$$ = node;
+		}
+	;
+
+%type <valueExprNode> for_range_variable
+for_range_variable
+	: symbol_variable_name
+		{
+			const auto node = newNode<VariableNode>();
+			node->dsqlName = *$1;
+			$$ = node;
+		}
+	| variable
+	;
+
+%type <forRangeDirection> for_range_direction
+for_range_direction
+	: TO		{ $$ = ForRangeNode::Direction::TO; }
+	| DOWNTO	{ $$ = ForRangeNode::Direction::DOWNTO; }
+	;
+
+%type <valueExprNode> for_range_by_opt
+for_range_by_opt
+	: /* nothing */	{ $$ = nullptr; }
+	| BY value		{ $$ = $2; }
 	;
 
 %type <forNode> for_select
@@ -4659,6 +4705,8 @@ keyword_or_column
 	| CURRENT_SCHEMA
 	| LTRIM
 	| RTRIM
+	| GREATEST
+	| LEAST
 	;
 
 col_opt
@@ -6545,6 +6593,7 @@ table_primary
 	| derived_table					{ $$ = $1; }
 	| lateral_derived_table			{ $$ = $1; }
 	| parenthesized_joined_table	{ $$ = $1; }
+	| table_value_function			{ $$ = $1; }
 	;
 
 %type <recSourceNode> parenthesized_joined_table
@@ -6718,6 +6767,57 @@ join_type
 outer_noise
 	:
 	| OUTER
+	;
+
+%type <recSourceNode> table_value_function
+table_value_function
+	: table_value_function_clause table_value_function_correlation_name derived_column_list
+		{
+			auto node = nodeAs<TableValueFunctionSourceNode>($1);
+			node->alias = *$2;
+			if ($3)
+				node->dsqlNameColumns = *$3;
+			$$ = node;
+		}
+	;
+
+%type <recSourceNode> table_value_function_clause
+table_value_function_clause
+	: table_value_function_unlist
+		{ $$ = $1; }
+	;
+
+%type <recSourceNode> table_value_function_unlist
+table_value_function_unlist
+	: UNLIST '(' table_value_function_unlist_arg_list table_value_function_returning ')'
+		{
+			auto node = newNode<UnlistFunctionSourceNode>();
+			node->dsqlFlags |= RecordSourceNode::DFLAG_VALUE;
+			node->dsqlName = *$1;
+			node->inputList = $3;
+			node->dsqlField = $4;
+			$$ = node;
+		}
+	;
+
+%type <valueListNode> table_value_function_unlist_arg_list
+table_value_function_unlist_arg_list
+	: value delimiter_opt
+		{
+			$$ = newNode<ValueListNode>($1);
+			$$->add($2);
+		}
+	;
+
+%type <legacyField> table_value_function_returning
+table_value_function_returning
+	: /*nothing*/							{ $$ = NULL; }
+	| RETURNING data_type_descriptor		{ $$ = $2; }
+	;
+
+%type <metaNamePtr> table_value_function_correlation_name
+table_value_function_correlation_name
+	: as_noise symbol_item_alias_name	{ $$ = $2; }
 	;
 
 
@@ -8701,8 +8801,10 @@ system_function_std_syntax
 	| EXP
 	| FLOOR
 	| GEN_UUID
+	| GREATEST
 	| HEX_DECODE
 	| HEX_ENCODE
+	| LEAST
 	| LEFT
 	| LN
 	| LOG
@@ -9835,10 +9937,12 @@ non_reserved_word
 	| UNICODE_VAL
 	// added in FB 6.0
 	| ANY_VALUE
+	| DOWNTO
 	| FORMAT
 	| OWNER
 	| SEARCH_PATH
 	| SCHEMA
+	| UNLIST
 	;
 
 %%

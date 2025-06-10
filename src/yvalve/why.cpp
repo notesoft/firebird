@@ -1430,7 +1430,7 @@ static void setTextType(XSQLVAR* var, unsigned charSet)
 static int sqldaTruncateString(char* buffer, FB_SIZE_T size, const char* s)
 {
 	int ret = fb_utils::snprintf(buffer, size, "%s", s);
-	return MIN(ret, size - 1);
+	return MIN(ret, static_cast<int>(size - 1));
 }
 
 // Describe parameters metadata in an sqlda.
@@ -5347,7 +5347,8 @@ void YTransaction::getInfo(CheckStatusWrapper* status, unsigned int itemsLength,
 		fb_utils::getDbPathInfo(itemsLength, items, bufferLength, buffer,
 								newItemsBuffer, attachment.get()->dbPath);
 
-		entry.next()->getInfo(status, itemsLength, items, bufferLength, buffer);
+		if (itemsLength)
+			entry.next()->getInfo(status, itemsLength, items, bufferLength, buffer);
 	}
 	catch (const Exception& e)
 	{
@@ -6132,7 +6133,7 @@ YTransaction* YAttachment::getTransaction(ITransaction* tra)
 	if (!tra)
 		Arg::Gds(isc_bad_trans_handle).raise();
 
-	// If validation is successfull, this means that this attachment and valid transaction
+	// If validation is successful, this means that this attachment and valid transaction
 	// use same provider. I.e. the following cast is safe.
 	FbLocalStatus status;
 	YTransaction* yt = static_cast<YTransaction*>(tra->validate(&status, this));

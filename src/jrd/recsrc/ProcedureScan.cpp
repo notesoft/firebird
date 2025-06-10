@@ -91,8 +91,8 @@ void ProcedureScan::internalOpen(thread_db* tdbb) const
 
 	if (m_sourceList)
 	{
-		iml = m_message->format->fmt_length;
-		im = request->getImpure<UCHAR>(m_message->impureOffset);
+		iml = m_message->getFormat(request)->fmt_length;
+		im = m_message->getBuffer(request);
 
 		const NestConst<ValueExprNode>* const sourceEnd = m_sourceList->items.end();
 		const NestConst<ValueExprNode>* sourcePtr = m_sourceList->items.begin();
@@ -248,6 +248,12 @@ bool ProcedureScan::refetchRecord(thread_db* /*tdbb*/) const
 WriteLockResult ProcedureScan::lockRecord(thread_db* /*tdbb*/) const
 {
 	status_exception::raise(Arg::Gds(isc_record_lock_not_supp));
+}
+
+bool ProcedureScan::isDependent(const StreamList& streams) const
+{
+	return (m_sourceList && m_sourceList->containsAnyStream(streams)) ||
+		(m_targetList && m_targetList->containsAnyStream(streams));
 }
 
 void ProcedureScan::getLegacyPlan(thread_db* tdbb, string& plan, unsigned level) const

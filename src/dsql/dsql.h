@@ -409,6 +409,21 @@ public:
 	USHORT intlsym_bytes_per_char = 0;
 };
 
+
+// Table value function
+class dsql_tab_func : public pool_alloc<dsql_type_tab_func>
+{
+public:
+	explicit dsql_tab_func(MemoryPool& p)
+		: funName(p),
+		  outputField(nullptr)
+	{
+	}
+
+	MetaName	funName;			// Name of function
+	dsql_fld*	outputField;		// Output parameters
+};
+
 // values used in intlsym_flags
 
 enum intlsym_flags_vals {
@@ -453,6 +468,7 @@ public:
 
 	dsql_rel* ctx_relation = nullptr;			// Relation for context
 	dsql_prc* ctx_procedure = nullptr;			// Procedure for context
+	dsql_tab_func* ctx_table_value_fun = nullptr;	// Table value function context
 	NestConst<ValueListNode> ctx_proc_inputs;	// Procedure input parameters
 	dsql_map* ctx_map = nullptr;				// Maps for aggregates and unions
 	RseNode* ctx_rse = nullptr;					// Sub-rse for aggregates
@@ -474,6 +490,7 @@ public:
 	{
 		ctx_relation = v.ctx_relation;
 		ctx_procedure = v.ctx_procedure;
+		ctx_table_value_fun = v.ctx_table_value_fun;
 		ctx_proc_inputs = v.ctx_proc_inputs;
 		ctx_map = v.ctx_map;
 		ctx_rse = v.ctx_rse;
@@ -534,6 +551,7 @@ const USHORT CTX_view_with_check_store	= 0x20;		// Context of WITH CHECK OPTION 
 const USHORT CTX_view_with_check_modify	= 0x40;		// Context of WITH CHECK OPTION view's modify trigger
 const USHORT CTX_cursor					= 0x80;		// Context is a cursor
 const USHORT CTX_lateral				= 0x100;	// Context is a lateral derived table
+const USHORT CTX_blr_fields				= 0x200;	// Fields of the context are defined inside BLR
 
 //! Aggregate/union map block to map virtual fields to their base
 //! TMN: NOTE! This datatype should definitely be renamed!
@@ -558,7 +576,6 @@ public:
 
 	Firebird::Array<dsql_par*> msg_parameters;	// Parameter list
 	USHORT msg_number = 0;			// Message number
-	USHORT msg_buffer_number = 0;	// Message buffer number (used instead of msg_number for blob msgs)
 	ULONG msg_length = 0;			// Message length
 	USHORT msg_parameter = 0;		// Next parameter number
 	USHORT msg_index = 0;			// Next index into SQLDA
@@ -570,8 +587,6 @@ class dsql_par : public Firebird::PermanentStorage
 public:
 	explicit dsql_par(MemoryPool& p)
 		: PermanentStorage(p),
-		  par_dbkey_relname(p),
-		  par_rec_version_relname(p),
 		  par_name(p),
 		  par_rel_name(p),
 		  par_owner_name(p),
@@ -583,9 +598,6 @@ public:
 	dsql_msg* par_message = nullptr;	// Parent message
 	dsql_par* par_null = nullptr;		// Null parameter, if used
 	ValueExprNode* par_node = nullptr;	// Associated value node, if any
-	dsql_ctx* par_context = nullptr;	// Context for SELECT FOR UPDATE
-	QualifiedName par_dbkey_relname;	// Context of internally requested dbkey
-	QualifiedName par_rec_version_relname;	// Context of internally requested rec. version
 	MetaName par_name;					// Parameter name, if any
 	QualifiedName par_rel_name;			// Relation name, if any
 	MetaName par_owner_name;			// Owner name, if any

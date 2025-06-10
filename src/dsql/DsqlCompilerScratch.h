@@ -53,7 +53,10 @@ typedef Firebird::Pair<
 	Firebird::NonPooled<NestConst<ValueListNode>, NestConst<ValueListNode>>> ReturningClause;
 
 
-// DSQL Compiler scratch block - may be discarded after compilation in the future.
+// DSQL Compiler scratch block.
+// Contains any kind of objects used during DsqlStatement compilation
+// Is deleted with its pool as soon as DsqlStatement is fully formed in prepareStatement()
+// or with the statement itself (if the statement reqested it returning true from shouldPreserveScratch())
 class DsqlCompilerScratch : public BlrDebugWriter
 {
 public:
@@ -72,6 +75,7 @@ public:
 	static const unsigned FLAG_DDL					= 0x2000;
 	static const unsigned FLAG_FETCH				= 0x4000;
 	static const unsigned FLAG_VIEW_WITH_CHECK		= 0x8000;
+	static const unsigned FLAG_EXEC_BLOCK			= 0x010000;
 
 	static const unsigned MAX_NESTING = 512;
 
@@ -108,7 +112,7 @@ public:
 
 protected:
 	// DsqlCompilerScratch should never be destroyed using delete.
-	// It dies together with it's pool in release_request().
+	// It dies together with it's pool.
 	~DsqlCompilerScratch()
 	{
 	}
@@ -334,6 +338,7 @@ public:
 	Firebird::NonPooledMap<USHORT, USHORT> outerVarsMap;		// <outer, inner>
 	MetaName ddlSchema;
 	Firebird::AutoPtr<Firebird::ObjectsArray<Firebird::MetaString>> cachedDdlSchemaSearchPath;
+	dsql_msg* recordKeyMessage = nullptr;	// Side message for positioned DML
 
 private:
 	Firebird::HalfStaticArray<SelectExprNode*, 4> ctes; // common table expressions

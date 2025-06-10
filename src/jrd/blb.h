@@ -154,7 +154,7 @@ private:
 	ULONG blb_temp_id;				// ID of newly created blob in transaction
 	ULONG blb_sequence;				// Blob page sequence
 	ULONG blb_lead_page;			// First page number
-	ULONG blb_seek;					// Seek location
+	FB_UINT64 blb_seek;				// Seek location
 	ULONG blb_max_sequence;			// Number of data pages
 	ULONG blb_count;				// Number of segments
 

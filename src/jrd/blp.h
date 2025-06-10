@@ -261,6 +261,8 @@ static const struct
 	{"select_procedure", invsel_procedure},
 	{"default_arg", zero},
 	{"cast_format", cast_format},
+	{"table_value_fun", table_value_fun},
+	{"for_range", for_range},
 	{"gen_id3", gen_id3},
 	{"default2", default2},
 	{"current_schema", zero},

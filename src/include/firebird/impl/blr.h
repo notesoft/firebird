@@ -505,10 +505,24 @@
 
 #define blr_cast_format				(unsigned char) 228
 
-#define blr_gen_id3					(unsigned char) 229
-#define blr_default2				(unsigned char) 230
-#define blr_current_schema			(unsigned char) 231
-#define blr_flags					(unsigned char) 232
+// Table value function
+#define blr_table_value_fun				(unsigned char) 229
+#define blr_table_value_fun_unlist		(unsigned char) 1
+
+#define blr_for_range								(unsigned char) 230
+#define blr_for_range_variable						(unsigned char) 1
+#define blr_for_range_initial_value					(unsigned char) 2
+#define blr_for_range_final_value					(unsigned char) 3
+#define blr_for_range_by_value						(unsigned char) 4
+#define blr_for_range_statement						(unsigned char) 5
+#define blr_for_range_direction						(unsigned char) 6
+#define blr_for_range_direction_to					(unsigned char) 1
+#define blr_for_range_direction_downto				(unsigned char) 2
+
+#define blr_gen_id3					(unsigned char) 231
+#define blr_default2				(unsigned char) 232
+#define blr_current_schema			(unsigned char) 233
+#define blr_flags					(unsigned char) 234
 
 // subcodes of blr_flags
 #define blr_flags_search_system_schema	(unsigned char) 1

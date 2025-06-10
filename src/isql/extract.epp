@@ -285,7 +285,7 @@ int EXTRACT_list_table(const QualifiedMetaString& relation_name,
  *	relation_name -- Name of table to investigate
  *	new_name -- Name of a new name for a replacement table
  *	domain_flag -- extract needed domains before the table
- *	default_char_set_id -- character set def to supress
+ *	default_char_set_id -- character set def to suppress
  *
  **************************************/
 /**************************************
@@ -415,7 +415,7 @@ int EXTRACT_list_table(const QualifiedMetaString& relation_name,
 			if ((FLD.RDB$FIELD_TYPE == blr_text || FLD.RDB$FIELD_TYPE == blr_varying) &&
 				!RFR.RDB$COLLATION_ID.NULL)
 			{
-				// There is no need to print character set for domain at all because it cannot be overriden.
+				// There is no need to print character set for domain at all because it cannot be overridden.
 				// Collation will be printed later.
 				collation = RFR.RDB$COLLATION_ID;
 				char_set_id = FLD.RDB$CHARACTER_SET_ID;
@@ -2115,7 +2115,7 @@ static void list_domain_table(const QualifiedMetaString& table_name,
  *	for the named table
  *
  *	Parameters:  table_name == only extract domains for this table
- *	default_char_set_id -- character set def to supress
+ *	default_char_set_id -- character set def to suppress
  *
  **************************************/
 	bool first = true;
@@ -2241,7 +2241,7 @@ static void list_domains(GetDefaultCharSetForSchemaFunc getDefaultCharSetForSche
  *	List domains
  *
  *	Parameters:
- *	default_char_set_id -- character set def to supress
+ *	default_char_set_id -- character set def to suppress
  *
  **************************************/
 	bool first = true;

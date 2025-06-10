@@ -64,8 +64,10 @@
 #include "../common/utils_proto.h"
 #include "../jrd/PageToBufferMap.h"
 
+#ifndef CDS_UNAVAILABLE
 // Use lock-free lists in hash table implementation
 #define HASH_USE_CDS_LIST
+#endif
 
 
 #ifdef HASH_USE_CDS_LIST
@@ -544,7 +546,7 @@ bool CCH_exclusive_attachment(thread_db* tdbb, USHORT level, SSHORT wait_flag, S
  *	return false.
  *
  **************************************/
-	const int CCH_EXCLUSIVE_RETRY_INTERVAL = 10;	// retry interval in millseconds
+	const int CCH_EXCLUSIVE_RETRY_INTERVAL = 10;	// retry interval in milliseconds
 
 	SET_TDBB(tdbb);
 	Database* const dbb = tdbb->getDatabase();
@@ -4241,7 +4243,7 @@ static ULONG memory_init(thread_db* tdbb, BufferControl* bcb, ULONG number)
 	{
 		if (!memory)
 		{
-			// Allocate memory block big enough to accomodate BufferDesc's, Lock's and page buffers.
+			// Allocate memory block big enough to accommodate BufferDesc's, Lock's and page buffers.
 
 			ULONG to_alloc = number;
 

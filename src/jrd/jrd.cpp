@@ -385,8 +385,10 @@ static void threadDetach()
 	ThreadSync* thd = ThreadSync::findThread();
 	delete thd;
 
+#ifndef CDS_UNAVAILABLE
 	if (cds::threading::Manager::isThreadAttached())
 		cds::threading::Manager::detachThread();
+#endif
 }
 
 static void shutdownBeforeUnload()
@@ -1641,7 +1643,7 @@ JTransaction* JAttachment::getTransactionInterface(CheckStatusWrapper* status, I
 
 	status->init();
 
-	// If validation is successfull, this means that this attachment and valid transaction
+	// If validation is successful, this means that this attachment and valid transaction
 	// use same provider. I.e. the following cast is safe.
 	JTransaction* jt = static_cast<JTransaction*>(tra->validate(status, this));
 	if (status->getState() & IStatus::STATE_ERRORS)
@@ -1735,7 +1737,7 @@ JAttachment* JProvider::internalAttach(CheckStatusWrapper* user_status, const ch
 #ifdef WIN_NT
 			guardDbInit.enter();		// Required to correctly expand name of just created database
 
-			// Need to re-expand under lock to take into an account file existance (or not)
+			// Need to re-expand under lock to take into an account file existence (or not)
 			is_alias = expandDatabaseName(org_filename, expanded_name, &config);
 			if (!is_alias)
 			{
@@ -2966,7 +2968,7 @@ JAttachment* JProvider::createDatabase(CheckStatusWrapper* user_status, const ch
 #ifdef WIN_NT
 			guardDbInit.enter();		// Required to correctly expand name of just created database
 
-			// Need to re-expand under lock to take into an account file existance (or not)
+			// Need to re-expand under lock to take into an account file existence (or not)
 			is_alias = expandDatabaseName(org_filename, expanded_name, &config);
 			if (!is_alias)
 			{
@@ -4890,7 +4892,7 @@ void JAttachment::transactRequest(CheckStatusWrapper* user_status, ITransaction*
 
 			if (in_msg_length)
 			{
-				const ULONG len = inMessage ? inMessage->format->fmt_length : 0;
+				const ULONG len = inMessage ? inMessage->getFormat(request)->fmt_length : 0;
 
 				if (in_msg_length != len)
 				{
@@ -4898,12 +4900,12 @@ void JAttachment::transactRequest(CheckStatusWrapper* user_status, ITransaction*
 													   Arg::Num(len));
 				}
 
-				memcpy(request->getImpure<UCHAR>(inMessage->impureOffset), in_msg, in_msg_length);
+				memcpy(inMessage->getBuffer(request), in_msg, in_msg_length);
 			}
 
 			EXE_start(tdbb, request, transaction);
 
-			const ULONG len = outMessage ? outMessage->format->fmt_length : 0;
+			const ULONG len = outMessage ? outMessage->getFormat(request)->fmt_length : 0;
 
 			if (out_msg_length != len)
 			{
@@ -4913,8 +4915,7 @@ void JAttachment::transactRequest(CheckStatusWrapper* user_status, ITransaction*
 
 			if (out_msg_length)
 			{
-				memcpy(out_msg, request->getImpure<UCHAR>(outMessage->impureOffset),
-					out_msg_length);
+				memcpy(out_msg, outMessage->getBuffer(request), out_msg_length);
 			}
 
 			check_autocommit(tdbb, request);
