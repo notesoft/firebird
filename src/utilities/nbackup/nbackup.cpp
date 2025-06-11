@@ -298,6 +298,9 @@ public:
 				pr_error(status, "nbackup needs local access to database file");
 		}
 
+		if (uSvc->utf8FileNames())
+			ISC_utf8ToSystem(db);
+
 		expandDatabaseName(db, dbname, NULL);
 
 		if (!uSvc->isService())
