@@ -143,6 +143,8 @@ enum UndoDataRet
 	udNone			// record was not changed under current savepoint, use it as is
 };
 
+static void gbak_put_search_system_schema_flag(thread_db* tdbb, record_param* rpb, jrd_tra* transaction);
+
 static UndoDataRet get_undo_data(thread_db* tdbb, jrd_tra* transaction,
 	record_param* rpb, MemoryPool* pool);
 
@@ -3354,6 +3356,7 @@ bool VIO_modify(thread_db* tdbb, record_param* org_rpb, record_param* new_rpb, j
 	SET_TDBB(tdbb);
 
 	QualifiedName object_name;
+	const auto attachment = tdbb->getAttachment();
 	jrd_rel* relation = org_rpb->rpb_relation;
 
 #ifdef VIO_DEBUG
@@ -3409,6 +3412,13 @@ bool VIO_modify(thread_db* tdbb, record_param* org_rpb, record_param* new_rpb, j
 	}
 
 	check_gbak_cheating_insupd(tdbb, relation, "UPDATE");
+
+	if (attachment->isGbak() &&
+		!(attachment->att_flags & ATT_gbak_restore_has_schema) &&
+		!(attachment->att_database->dbb_flags & DBB_creating))
+	{
+		gbak_put_search_system_schema_flag(tdbb, new_rpb, transaction);
+	}
 
 	// If we're about to modify a system relation, check to make sure
 	// everything is completely kosher.
@@ -4109,7 +4119,9 @@ void VIO_store(thread_db* tdbb, record_param* rpb, jrd_tra* transaction)
 
 	check_gbak_cheating_insupd(tdbb, relation, "INSERT");
 
-	if (attachment->isGbak() && !(attachment->att_flags & ATT_gbak_restore_has_schema))
+	if (attachment->isGbak() &&
+		!(attachment->att_flags & ATT_gbak_restore_has_schema) &&
+		!(attachment->att_database->dbb_flags & DBB_creating))
 	{
 		struct ObjTypeFieldId
 		{
@@ -4297,82 +4309,7 @@ void VIO_store(thread_db* tdbb, record_param* rpb, jrd_tra* transaction)
 			desc2.setNull();
 		}
 
-		static const std::unordered_map<USHORT, std::vector<USHORT>> schemaBlrFields = {
-			{rel_args, {f_arg_default}},
-			{rel_fields, {f_fld_v_blr, f_fld_computed, f_fld_default, f_fld_missing}},
-			{rel_funs, {f_fun_blr}},
-			{rel_indices, {f_idx_exp_blr, f_idx_cond_blr}},
-			{rel_prc_prms, {f_prm_default}},
-			{rel_procedures, {f_prc_blr}},
-			{rel_relations, {f_rel_blr}},
-			{rel_rfr, {f_rfr_default}},
-			{rel_triggers, {f_trg_blr}}
-		};
-
-		static const UCHAR bpb[] = {
-			isc_bpb_version1,
-			isc_bpb_type, 1, isc_bpb_type_stream
-		};
-
-		if (const auto relBlrFields = schemaBlrFields.find(relation->rel_id); relBlrFields != schemaBlrFields.end())
-		{
-			UCHAR buffer[BUFFER_MEDIUM];
-
-			for (const auto field : relBlrFields->second)
-			{
-				if (EVL_field(0, rpb->rpb_record, field, &desc))
-				{
-					AutoBlb blob(tdbb, blb::open(tdbb, transaction, reinterpret_cast<bid*>(desc.dsc_address)));
-					bid newBid;
-					const auto newBlob = blb::create2(tdbb, transaction, &newBid, sizeof(bpb), bpb);
-					bool firstSegment = true;
-					UCHAR newHeader[] = {
-						0,
-						blr_flags,
-						blr_flags_search_system_schema,
-						0, 0,
-						blr_end
-					};
-
-					while (!(blob->blb_flags & BLB_eof))
-					{
-						const auto len = blob->BLB_get_data(tdbb, buffer, sizeof(buffer), false);
-
-						if (len > 1 && firstSegment)
-						{
-							newHeader[0] = buffer[0];
-							fb_assert(newHeader[0] == blr_version4 || newHeader[0] == blr_version5);
-
-							if ((newHeader[0] == blr_version4 || newHeader[0] == blr_version5) &&
-								buffer[1] != blr_flags)
-							{
-								newBlob->BLB_put_data(tdbb, newHeader, sizeof(newHeader));
-								newBlob->BLB_put_data(tdbb, buffer + 1, len - 1);
-
-								firstSegment = false;
-							}
-							else
-							{
-								newBid.clear();
-								break;
-							}
-						}
-						else
-							newBlob->BLB_put_data(tdbb, buffer, len);
-					}
-
-					newBlob->BLB_close(tdbb);
-
-					if (!newBid.isEmpty())
-					{
-						desc2.makeBlob(isc_blob_untyped, 0, reinterpret_cast<ISC_QUAD*>(&newBid));
-						blb::move(tdbb, &desc2, &desc, relation, rpb->rpb_record, field);
-					}
-				}
-			}
-		}
-
-		desc2.setNull();
+		gbak_put_search_system_schema_flag(tdbb, rpb, transaction);
 	}
 
 	desc.setNull();
@@ -5970,6 +5907,90 @@ void Database::exceptionHandler(const Firebird::Exception& ex,
 	FbLocalStatus status_vector;
 	ex.stuffException(&status_vector);
 	iscDbLogStatus(dbb_filename.c_str(), &status_vector);
+}
+
+
+static void gbak_put_search_system_schema_flag(thread_db* tdbb, record_param* rpb, jrd_tra* transaction)
+{
+	static const std::unordered_map<USHORT, std::vector<USHORT>> schemaBlrFields = {
+		{rel_args, {f_arg_default}},
+		{rel_fields, {f_fld_v_blr, f_fld_computed, f_fld_default, f_fld_missing}},
+		{rel_funs, {f_fun_blr}},
+		{rel_indices, {f_idx_exp_blr, f_idx_cond_blr}},
+		{rel_prc_prms, {f_prm_default}},
+		{rel_procedures, {f_prc_blr}},
+		{rel_relations, {f_rel_blr}},
+		{rel_rfr, {f_rfr_default}},
+		{rel_triggers, {f_trg_blr}}
+	};
+
+	static const UCHAR bpb[] = {
+		isc_bpb_version1,
+		isc_bpb_type, 1, isc_bpb_type_stream
+	};
+
+	SET_TDBB(tdbb);
+
+	const auto relation = rpb->rpb_relation;
+	dsc desc, desc2;
+
+	if (const auto relBlrFields = schemaBlrFields.find(relation->rel_id); relBlrFields != schemaBlrFields.end())
+	{
+		UCHAR buffer[BUFFER_MEDIUM];
+
+		for (const auto field : relBlrFields->second)
+		{
+			if (EVL_field(0, rpb->rpb_record, field, &desc))
+			{
+				AutoBlb blob(tdbb, blb::open(tdbb, transaction, reinterpret_cast<bid*>(desc.dsc_address)));
+				bid newBid;
+				const auto newBlob = blb::create2(tdbb, transaction, &newBid, sizeof(bpb), bpb);
+				bool firstSegment = true;
+				UCHAR newHeader[] = {
+					0,
+					blr_flags,
+					blr_flags_search_system_schema,
+					0, 0,
+					blr_end
+				};
+
+				while (!(blob->blb_flags & BLB_eof))
+				{
+					const auto len = blob->BLB_get_data(tdbb, buffer, sizeof(buffer), false);
+
+					if (len > 1 && firstSegment)
+					{
+						newHeader[0] = buffer[0];
+						fb_assert(newHeader[0] == blr_version4 || newHeader[0] == blr_version5);
+
+						if ((newHeader[0] == blr_version4 || newHeader[0] == blr_version5) &&
+							buffer[1] != blr_flags)
+						{
+							newBlob->BLB_put_data(tdbb, newHeader, sizeof(newHeader));
+							newBlob->BLB_put_data(tdbb, buffer + 1, len - 1);
+
+							firstSegment = false;
+						}
+						else
+						{
+							newBid.clear();
+							break;
+						}
+					}
+					else
+						newBlob->BLB_put_data(tdbb, buffer, len);
+				}
+
+				newBlob->BLB_close(tdbb);
+
+				if (!newBid.isEmpty())
+				{
+					desc2.makeBlob(isc_blob_untyped, 0, reinterpret_cast<ISC_QUAD*>(&newBid));
+					blb::move(tdbb, &desc2, &desc, relation, rpb->rpb_record, field);
+				}
+			}
+		}
+	}
 }
 
 
