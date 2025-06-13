@@ -8661,7 +8661,6 @@ bool get_sql_roles(BurpGlobals* tdgbl)
  **************************************/
 	att_type		attribute;
 	scan_attr_t		scan_next_attr;
-	SSHORT			l;
 
 	if (tdgbl->runtimeODS >= DB_VERSION_DDL11)
 	{
