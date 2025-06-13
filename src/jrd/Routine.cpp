@@ -191,7 +191,7 @@ void Routine::parseMessages(thread_db* tdbb, CompilerScratch* csb, BlrReader blr
 	csb->csb_schema = name.schema;
 	csb->csb_blr_reader = blrReader;
 
-	csb->csb_blr_reader.parseHeader();
+	PAR_getBlrVersionAndFlags(csb);
 
 	if (csb->csb_blr_reader.getByte() != blr_begin)
 		status_exception::raise(Arg::Gds(isc_metadata_corrupt));

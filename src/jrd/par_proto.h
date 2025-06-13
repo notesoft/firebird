@@ -62,6 +62,7 @@ USHORT			PAR_desc(Jrd::thread_db*, Jrd::CompilerScratch*, dsc*, Jrd::ItemInfo* =
 void			PAR_error(Jrd::CompilerScratch*, const Firebird::Arg::StatusVector&, bool isSyntaxError = true);
 SSHORT			PAR_find_proc_field(const Jrd::jrd_prc*, const Jrd::MetaName&);
 Jrd::ValueExprNode* PAR_gen_field(Jrd::thread_db* tdbb, StreamType stream, USHORT id, bool byId = false);
+void PAR_getBlrVersionAndFlags(Jrd::CompilerScratch* csb);
 Jrd::ValueExprNode* PAR_make_field(Jrd::thread_db*, Jrd::CompilerScratch*, USHORT, const Jrd::MetaName&);
 Jrd::CompoundStmtNode*	PAR_make_list(Jrd::thread_db*, Jrd::StmtNodeStack&);
 ULONG			PAR_marks(Jrd::CompilerScratch*);

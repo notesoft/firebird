@@ -79,7 +79,6 @@ static NodeParseFunc blr_parsers[256] = {NULL};
 
 static void par_error(BlrReader& blrReader, const Arg::StatusVector& v, bool isSyntaxError = true);
 static PlanNode* par_plan(thread_db*, CompilerScratch*);
-static void getBlrVersionAndFlags(CompilerScratch* csb);
 static void parseSubRoutines(thread_db* tdbb, CompilerScratch* csb);
 static void setNodeLineColumn(CompilerScratch* csb, DmlNode* node, ULONG blrOffset);
 
@@ -186,7 +185,7 @@ DmlNode* PAR_blr(thread_db* tdbb, const MetaName* schema, jrd_rel* relation, con
 
 	csb->csb_blr_reader = BlrReader(blr, blr_length);
 
-	getBlrVersionAndFlags(csb);
+	PAR_getBlrVersionAndFlags(csb);
 
 	csb->csb_node = PAR_parse_node(tdbb, csb);
 
@@ -239,7 +238,7 @@ BoolExprNode* PAR_validation_blr(thread_db* tdbb, const MetaName* schema, jrd_re
 
 	csb->csb_blr_reader = BlrReader(blr, blr_length);
 
-	getBlrVersionAndFlags(csb);
+	PAR_getBlrVersionAndFlags(csb);
 
 	if (csb->csb_blr_reader.peekByte() == blr_stmt_expr)
 	{
@@ -621,6 +620,38 @@ ValueExprNode* PAR_gen_field(thread_db* tdbb, StreamType stream, USHORT id, bool
 }
 
 
+// Get the BLR version from the CSB stream and complain if it's unknown.
+void PAR_getBlrVersionAndFlags(CompilerScratch* csb)
+{
+	BlrReader::Flags flags;
+	const SSHORT version = csb->csb_blr_reader.parseHeader(&flags);
+
+	switch (version)
+	{
+		case blr_version4:
+			csb->blrVersion = 4;
+			break;
+
+		case blr_version5:
+			csb->blrVersion = 5;
+			break;
+
+		//case blr_version6:
+		//	csb->blrVersion = 6;
+		//	break;
+
+		default:
+			PAR_error(csb,
+				Arg::Gds(isc_metadata_corrupt) <<
+				Arg::Gds(isc_wroblrver2) <<
+					Arg::Num(blr_version4) << Arg::Num(blr_version5/*6*/) << Arg::Num(version));
+	}
+
+	if (flags.searchSystemSchema)
+		csb->csb_g_flags |= csb_search_system_schema;
+}
+
+
 ValueExprNode* PAR_make_field(thread_db* tdbb, CompilerScratch* csb, USHORT context,
 	const MetaName& base_field)
 {
@@ -726,7 +757,7 @@ CompilerScratch* PAR_parse(thread_db* tdbb, const UCHAR* blr, ULONG blr_length,
 		csb->csb_schema = SYSTEM_SCHEMA;
 	}
 
-	getBlrVersionAndFlags(csb);
+	PAR_getBlrVersionAndFlags(csb);
 
 	if (dbginfo_length > 0)
 		DBG_parse_debug_info(dbginfo_length, dbginfo, *csb->csb_dbg_info);
@@ -1660,34 +1691,6 @@ void PAR_warning(const Arg::StatusVector& v)
  **************************************/
 	fb_assert(v.value()[0] == isc_arg_warning);
 	ERR_post_warning(v);
-}
-
-
-// Get the BLR version from the CSB stream and complain if it's unknown.
-static void getBlrVersionAndFlags(CompilerScratch* csb)
-{
-	BlrReader::Flags flags;
-	const SSHORT version = csb->csb_blr_reader.parseHeader(&flags);
-
-	switch (version)
-	{
-	case blr_version4:
-		csb->blrVersion = 4;
-		break;
-	case blr_version5:
-		csb->blrVersion = 5;
-		break;
-	//case blr_version6:
-	//	csb->blrVersion = 6;
-	//	break;
-	default:
-		PAR_error(csb, Arg::Gds(isc_metadata_corrupt) <<
-				   Arg::Gds(isc_wroblrver2) << Arg::Num(blr_version4) << Arg::Num(blr_version5/*6*/) <<
-						Arg::Num(version));
-	}
-
-	if (flags.searchSystemSchema)
-		csb->csb_g_flags |= csb_search_system_schema;
 }
 
 
