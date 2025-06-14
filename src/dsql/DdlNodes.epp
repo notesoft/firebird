@@ -6428,8 +6428,8 @@ DdlNode* RelationNode::dsqlPass(DsqlCompilerScratch* dsqlScratch)
 			{
 				const auto alterColTypeClause = static_cast<AlterColTypeClause*>(clause.getObject());
 				dsqlScratch->qualifyExistingName(alterColTypeClause->field->typeOfName, obj_field);
-				dsqlScratch->qualifyExistingName(alterColTypeClause->field->charSet, obj_field);
-				dsqlScratch->qualifyExistingName(alterColTypeClause->field->collate, obj_field);
+				dsqlScratch->qualifyExistingName(alterColTypeClause->field->charSet, obj_charset);
+				dsqlScratch->qualifyExistingName(alterColTypeClause->field->collate, obj_collation);
 				break;
 			}
 
