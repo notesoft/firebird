@@ -8916,7 +8916,7 @@ void DerivedFieldNode::setParameterName(dsql_par* parameter) const
 	value->setParameterName(parameter);
 
 	parameter->par_alias = name;
-	parameter->par_rel_alias = context->getConcatenatedAlias();
+	parameter->par_rel_alias = context->ctx_alias.hasData() ? context->ctx_alias.front().object : MetaName();
 }
 
 void DerivedFieldNode::genBlr(DsqlCompilerScratch* dsqlScratch)
@@ -14593,7 +14593,7 @@ static void setParameterInfo(dsql_par* parameter, const dsql_ctx* context)
 		parameter->par_owner_name = context->ctx_procedure->prc_owner;
 	}
 
-	parameter->par_rel_alias = context->getConcatenatedAlias();
+	parameter->par_rel_alias = context->ctx_alias.hasData() ? context->ctx_alias.front().object : MetaName();
 }
 
 

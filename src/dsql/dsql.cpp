@@ -1284,9 +1284,9 @@ static UCHAR* var_info(const dsql_msg* message,
 				case isc_info_sql_relation_alias:
 					if (param->par_rel_alias.hasData())
 					{
-						str = attachment->stringToUserCharSet(tdbb, param->par_rel_alias);
-						length = str.length();
-						buffer = reinterpret_cast<const UCHAR*>(str.c_str());
+						name = attachment->nameToUserCharSet(tdbb, param->par_rel_alias);
+						length = name.length();
+						buffer = reinterpret_cast<const UCHAR*>(name.c_str());
 					}
 					else
 						length = 0;
