@@ -55,6 +55,20 @@ static ValueExprNode* resolveUsingField(DsqlCompilerScratch* dsqlScratch, const 
 
 namespace
 {
+	void appendContextAlias(DsqlCompilerScratch* dsqlScratch, const string& alias)
+	{
+		const auto len = alias.length();
+		if (len <= MAX_UCHAR)
+			dsqlScratch->appendMetaString(alias.c_str());
+		else
+		{
+			string truncatedAlias(alias);
+			truncatedAlias.resize(MAX_UCHAR - 3);
+			truncatedAlias += "...";
+			dsqlScratch->appendMetaString(truncatedAlias.c_str());
+		}
+	}
+
 	// Search through the list of ANDed booleans to find comparisons
 	// referring streams of parent select expressions.
 	// Extract those booleans and return them to the caller.
@@ -677,7 +691,7 @@ void LocalTableSourceNode::genBlr(DsqlCompilerScratch* dsqlScratch)
 {
 	dsqlScratch->appendUChar(blr_local_table_id);
 	dsqlScratch->appendUShort(tableNumber);
-	dsqlScratch->appendMetaString(alias.c_str());	// dsqlContext->ctx_alias?
+	appendContextAlias(dsqlScratch, alias); // dsqlContext->ctx_alias?
 
 	GEN_stuff_context(dsqlScratch, dsqlContext);
 }
@@ -893,7 +907,7 @@ void RelationSourceNode::genBlr(DsqlCompilerScratch* dsqlScratch)
 	if (dsqlContext->ctx_alias.hasData())
 	{
 		const auto& contextAliases = dsqlContext->getConcatenatedAlias();
-		dsqlScratch->appendMetaString(contextAliases.c_str());
+		appendContextAlias(dsqlScratch, contextAliases);
 	}
 
 	GEN_stuff_context(dsqlScratch, dsqlContext);
@@ -1546,7 +1560,7 @@ void ProcedureSourceNode::genBlr(DsqlCompilerScratch* dsqlScratch)
 			dsqlScratch->appendUChar(blr_invsel_procedure_alias);
 
 			const auto& contextAliases = dsqlContext->getConcatenatedAlias();
-			dsqlScratch->appendMetaString(contextAliases.c_str());
+			appendContextAlias(dsqlScratch, contextAliases);
 		}
 
 		dsqlScratch->appendUChar(blr_end);
@@ -1560,7 +1574,7 @@ void ProcedureSourceNode::genBlr(DsqlCompilerScratch* dsqlScratch)
 		dsqlScratch->appendMetaString(dsqlProcedure->prc_name.object.c_str());
 
 		const auto& contextAliases = dsqlContext->getConcatenatedAlias();
-		dsqlScratch->appendMetaString(contextAliases.c_str());
+		appendContextAlias(dsqlScratch, contextAliases);
 	}
 	else
 	{
@@ -1589,7 +1603,7 @@ void ProcedureSourceNode::genBlr(DsqlCompilerScratch* dsqlScratch)
 		if (dsqlContext->ctx_alias.hasData())
 		{
 			const auto& contextAliases = dsqlContext->getConcatenatedAlias();
-			dsqlScratch->appendMetaString(contextAliases.c_str());
+			appendContextAlias(dsqlScratch, contextAliases);
 		}
 	}
 
@@ -4150,11 +4164,8 @@ void TableValueFunctionSourceNode::genBlr(DsqlCompilerScratch* dsqlScratch)
 
 	GEN_stuff_context(dsqlScratch, dsqlContext);
 
-	if (dsqlContext->ctx_alias.hasData())
-	{
-		const auto& contextAliases = dsqlContext->getConcatenatedAlias();
-		dsqlScratch->appendMetaString(contextAliases.c_str());
-	}
+	const auto& contextAliases = dsqlContext->getConcatenatedAlias();
+	appendContextAlias(dsqlScratch, contextAliases);
 
 	dsqlScratch->appendUShort(dsqlContext->ctx_proc_inputs->items.getCount());
 	for (auto& arg : dsqlContext->ctx_proc_inputs->items)

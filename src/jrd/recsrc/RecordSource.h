@@ -126,7 +126,7 @@ namespace Jrd
 		Firebird::ObjectsArray<PlanEntry> children{getPool()};
 		std::optional<ObjectType> objectType;
 		QualifiedName objectName;
-		MetaName alias;
+		Firebird::string alias{getPool()};
 		const AccessPath* accessPath = nullptr;
 		ULONG recordLength = 0;
 		ULONG keyLength = 0;
