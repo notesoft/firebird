@@ -4032,23 +4032,23 @@ TableValueFunctionSourceNode* TableValueFunctionSourceNode::parse(thread_db* tdb
 	MemoryPool& pool = *tdbb->getDefaultPool();
 
 	const auto funcId = csb->csb_blr_reader.getByte();
-	auto node = TableValueFunctionSourceNode::parseTableValueFunctions(tdbb, csb, funcId);
+	const auto node = TableValueFunctionSourceNode::parseFunction(tdbb, csb, funcId);
 
 	node->stream = PAR_context(csb, nullptr);
 
 	CompilerScratch::csb_repeat& element = csb->csb_rpt[node->stream];
-	auto tableValueFunctionCsb = node->m_csbTableValueFun = FB_NEW_POOL(pool) jrd_table_value_fun(pool);
+	const auto tableValueFunctionCsb = node->m_csbTableValueFun = FB_NEW_POOL(pool) jrd_table_value_fun(pool);
 
 	tableValueFunctionCsb->funcId = funcId;
+	tableValueFunctionCsb->name = node->getName();
 
-	string aliasString;
-	csb->csb_blr_reader.getString(aliasString);
-	if (aliasString.hasData())
-		node->alias = aliasString;
+	AutoPtr<string> aliasString(FB_NEW_POOL(csb->csb_pool) string(csb->csb_pool));
+	csb->csb_blr_reader.getString(*aliasString);
+
+	if (aliasString->hasData())
+		node->alias = *aliasString;
 	else
 		fb_assert(false);
-
-	tableValueFunctionCsb->name = aliasString;
 
 	auto count = csb->csb_blr_reader.getWord();
 	node->inputList = FB_NEW_POOL(pool) ValueListNode(pool, 0U);
@@ -4057,7 +4057,7 @@ TableValueFunctionSourceNode* TableValueFunctionSourceNode::parse(thread_db* tdb
 
 	count = csb->csb_blr_reader.getWord();
 
-	auto recordFormat = Format::newFormat(pool, count);
+	const auto recordFormat = Format::newFormat(pool, count);
 	ULONG& offset = recordFormat->fmt_length = FLAG_BYTES(recordFormat->fmt_count);
 	Format::fmt_desc_iterator descIt = recordFormat->fmt_desc.begin();
 	SSHORT fieldId = 0;
@@ -4081,16 +4081,18 @@ TableValueFunctionSourceNode* TableValueFunctionSourceNode::parse(thread_db* tdb
 
 	element.csb_format = tableValueFunctionCsb->recordFormat = recordFormat;
 	element.csb_table_value_fun = tableValueFunctionCsb;
+	element.csb_alias = aliasString.release();
 
 	return node;
 }
 
-TableValueFunctionSourceNode* TableValueFunctionSourceNode::parseTableValueFunctions(thread_db* tdbb,
-																					 CompilerScratch* csb,
-																					 const SSHORT blrOp)
+TableValueFunctionSourceNode* TableValueFunctionSourceNode::parseFunction(thread_db* tdbb,
+																		  CompilerScratch* csb,
+																		  const SSHORT blrOp)
 {
 	MemoryPool& pool = *tdbb->getDefaultPool();
 	TableValueFunctionSourceNode* node = nullptr;
+
 	switch (blrOp)
 	{
 		case blr_table_value_fun_unlist:
@@ -4145,7 +4147,7 @@ void TableValueFunctionSourceNode::genBlr(DsqlCompilerScratch* dsqlScratch)
 {
 	dsqlScratch->appendUChar(blr_table_value_fun);
 
-	auto tableValueFunctionContext = dsqlContext->ctx_table_value_fun;
+	const auto tableValueFunctionContext = dsqlContext->ctx_table_value_fun;
 
 	if (tableValueFunctionContext->funName == UnlistFunctionSourceNode::FUNC_NAME)
 		dsqlScratch->appendUChar(blr_table_value_fun_unlist);
@@ -4182,17 +4184,17 @@ TableValueFunctionSourceNode* TableValueFunctionSourceNode::copy(thread_db* tdbb
 
 	MemoryPool& pool = *tdbb->getDefaultPool();
 
-	auto newStream = copier.csb->nextStream();
+	const auto newStream = copier.csb->nextStream();
 	copier.remap[stream] = newStream;
 
-	auto element = CMP_csb_element(copier.csb, newStream);
+	const auto element = CMP_csb_element(copier.csb, newStream);
 	element->csb_view_stream = copier.remap[0];
 	element->csb_format = m_csbTableValueFun->recordFormat;
 	element->csb_table_value_fun = m_csbTableValueFun;
 	if (alias.hasData())
 		element->csb_alias = FB_NEW_POOL(pool) string(pool, alias.c_str());
 
-	auto newSource = TableValueFunctionSourceNode::parseTableValueFunctions(
+	const auto newSource = TableValueFunctionSourceNode::parseFunction(
 		tdbb, copier.csb, m_csbTableValueFun->funcId);
 
 	newSource->inputList = copier.copy(tdbb, inputList);
@@ -4213,7 +4215,7 @@ void TableValueFunctionSourceNode::pass1Source(thread_db* tdbb, CompilerScratch*
 	jrd_rel* const parentView = csb->csb_view;
 	const StreamType viewStream = csb->csb_view_stream;
 
-	auto element = CMP_csb_element(csb, stream);
+	const auto element = CMP_csb_element(csb, stream);
 	element->csb_view = parentView;
 	element->csb_view_stream = viewStream;
 
@@ -4291,7 +4293,7 @@ void TableValueFunctionSourceNode::setDefaultNameField(DsqlCompilerScratch* /*ds
 {
 	if (const auto tableValueFunctionContext = dsqlContext->ctx_table_value_fun)
 	{
-		MetaName nameFunc = tableValueFunctionContext->funName;
+		const auto nameFunc = tableValueFunctionContext->funName;
 
 		auto i = 0U;
 
@@ -4313,9 +4315,9 @@ RecordSource* UnlistFunctionSourceNode::compile(thread_db* tdbb, Optimizer* opt,
 {
 	MemoryPool& pool = *tdbb->getDefaultPool();
 	const auto csb = opt->getCompilerScratch();
-	auto aliasOpt = opt->makeAlias(stream);
+	const auto alias = opt->makeAlias(stream);
 
-	return FB_NEW_POOL(pool) UnlistFunctionScan(csb, stream, aliasOpt, inputList);
+	return FB_NEW_POOL(pool) UnlistFunctionScan(csb, stream, alias, inputList);
 }
 
 dsql_fld* UnlistFunctionSourceNode::makeField(DsqlCompilerScratch* dsqlScratch)

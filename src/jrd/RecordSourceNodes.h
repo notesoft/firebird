@@ -982,9 +982,9 @@ public:
 	}
 	static TableValueFunctionSourceNode* parse(thread_db* tdbb, CompilerScratch* csb,
 											   const SSHORT blrOp);
-	static TableValueFunctionSourceNode* parseTableValueFunctions(thread_db* tdbb,
-																  CompilerScratch* csb,
-																  const SSHORT blrOp);
+	static TableValueFunctionSourceNode* parseFunction(thread_db* tdbb,
+													   CompilerScratch* csb,
+													   const SSHORT blrOp);
 
 	Firebird::string internalPrint(NodePrinter& printer) const override;
 	RecordSourceNode* dsqlPass(DsqlCompilerScratch* dsqlScratch) override;
@@ -1011,6 +1011,11 @@ public:
 	virtual dsql_fld* makeField(DsqlCompilerScratch* dsqlScratch);
 	void setDefaultNameField(DsqlCompilerScratch* dsqlScratch);
 
+	virtual const char* getName() const
+	{
+		return nullptr;
+	}
+
 public:
 	MetaName dsqlName;
 	MetaName alias;
@@ -1034,6 +1039,11 @@ public:
 
 	static constexpr char const* FUNC_NAME = "UNLIST";
 	static constexpr USHORT DEFAULT_UNLIST_TEXT_LENGTH = 32;
+
+	const char* getName() const override
+	{
+		return FUNC_NAME;
+	}
 };
 
 } // namespace Jrd

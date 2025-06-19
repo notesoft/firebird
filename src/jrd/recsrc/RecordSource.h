@@ -1520,6 +1520,7 @@ namespace Jrd
 
 		virtual bool nextBuffer(thread_db* tdbb) const = 0;
 
+		MetaName m_name;
 		const Firebird::string m_alias;
 	};
 
