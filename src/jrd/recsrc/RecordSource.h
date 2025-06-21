@@ -1215,11 +1215,6 @@ namespace Jrd
 				arg->nullRecords(tdbb);
 		}
 
-	protected:
-		const JoinType m_joinType;
-		const NestConst<BoolExprNode> m_boolean;
-		Firebird::Array<NestConst<Arg> > m_args;
-
 		void getLegacyPlan(thread_db* tdbb, Firebird::string& plan, unsigned level) const override
 		{
 			for (const auto& arg : m_args)
@@ -1231,7 +1226,8 @@ namespace Jrd
 			}
 		}
 
-		void getPlan(thread_db* tdbb, PlanEntry& planEntry, unsigned level, bool recurse) const
+	protected:
+		void internalGetPlan(thread_db* tdbb, PlanEntry& planEntry, unsigned level, bool recurse) const override
 		{
 			if (recurse)
 			{
@@ -1264,6 +1260,11 @@ namespace Jrd
 
 			return "";
 		}
+
+	protected:
+		const JoinType m_joinType;
+		const NestConst<BoolExprNode> m_boolean;
+		Firebird::Array<NestConst<Arg>> m_args;
 	};
 
 	class NestedLoopJoin : public Join<RecordSource>
