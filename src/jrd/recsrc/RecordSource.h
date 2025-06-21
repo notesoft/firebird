@@ -1164,7 +1164,7 @@ namespace Jrd
 			fb_assert(!m_boolean || m_joinType == JoinType::OUTER);
 		}
 
-		virtual void close(thread_db* tdbb) const
+		void close(thread_db* tdbb) const override
 		{
 			for (const auto& arg : m_args)
 				arg->close(tdbb);
@@ -1220,7 +1220,7 @@ namespace Jrd
 		const NestConst<BoolExprNode> m_boolean;
 		Firebird::Array<NestConst<Arg> > m_args;
 
-		void getLegacyPlan(thread_db* tdbb, Firebird::string& plan, unsigned level) const
+		void getLegacyPlan(thread_db* tdbb, Firebird::string& plan, unsigned level) const override
 		{
 			for (const auto& arg : m_args)
 			{
