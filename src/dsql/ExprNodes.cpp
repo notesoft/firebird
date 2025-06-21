@@ -653,8 +653,9 @@ void ArithmeticNode::setParameterName(dsql_par* parameter) const
 bool ArithmeticNode::setParameterType(DsqlCompilerScratch* dsqlScratch,
 	std::function<void (dsc*)> makeDesc, bool forceVarChar)
 {
-	return PASS1_set_parameter_type(dsqlScratch, arg1, makeDesc, forceVarChar) |
-		PASS1_set_parameter_type(dsqlScratch, arg2, makeDesc, forceVarChar);
+	const bool arg1Type = PASS1_set_parameter_type(dsqlScratch, arg1, makeDesc, forceVarChar);
+	const bool arg2Type = PASS1_set_parameter_type(dsqlScratch, arg2, makeDesc, forceVarChar);
+	return arg1Type || arg2Type;
 }
 
 void ArithmeticNode::genBlr(DsqlCompilerScratch* dsqlScratch)
@@ -3273,8 +3274,10 @@ bool AtNode::setParameterType(DsqlCompilerScratch* dsqlScratch,
 			desc->setNullable(true);
 		};
 
-	return PASS1_set_parameter_type(dsqlScratch, dateTimeArg, makeDesc, forceVarChar) |
-		PASS1_set_parameter_type(dsqlScratch, zoneArg, makeZoneDesc, forceVarChar);
+	const bool dateTimeArgType = PASS1_set_parameter_type(dsqlScratch, dateTimeArg, makeDesc, forceVarChar);
+	const bool zoneArgType = PASS1_set_parameter_type(dsqlScratch, zoneArg, makeZoneDesc, forceVarChar);
+
+	return dateTimeArgType || zoneArgType;
 }
 
 void AtNode::genBlr(DsqlCompilerScratch* dsqlScratch)
@@ -4107,8 +4110,9 @@ void ConcatenateNode::setParameterName(dsql_par* parameter) const
 bool ConcatenateNode::setParameterType(DsqlCompilerScratch* dsqlScratch,
 	std::function<void (dsc*)> makeDesc, bool forceVarChar)
 {
-	return PASS1_set_parameter_type(dsqlScratch, arg1, makeDesc, forceVarChar) |
-		PASS1_set_parameter_type(dsqlScratch, arg2, makeDesc, forceVarChar);
+	const bool arg1Type = PASS1_set_parameter_type(dsqlScratch, arg1, makeDesc, forceVarChar);
+	const bool arg2Type = PASS1_set_parameter_type(dsqlScratch, arg2, makeDesc, forceVarChar);
+	return arg1Type || arg2Type;
 }
 
 void ConcatenateNode::genBlr(DsqlCompilerScratch* dsqlScratch)
@@ -11893,9 +11897,10 @@ void SubstringNode::setParameterName(dsql_par* parameter) const
 bool SubstringNode::setParameterType(DsqlCompilerScratch* dsqlScratch,
 	std::function<void (dsc*)> makeDesc, bool forceVarChar)
 {
-	return PASS1_set_parameter_type(dsqlScratch, expr, makeDesc, forceVarChar) |
-		PASS1_set_parameter_type(dsqlScratch, start, makeDesc, forceVarChar) |
-		PASS1_set_parameter_type(dsqlScratch, length, makeDesc, forceVarChar);
+	const bool exprType = PASS1_set_parameter_type(dsqlScratch, expr, makeDesc, forceVarChar);
+	const bool startType = PASS1_set_parameter_type(dsqlScratch, start, makeDesc, forceVarChar);
+	const bool lengthType = PASS1_set_parameter_type(dsqlScratch, length, makeDesc, forceVarChar);
+	return exprType || startType || lengthType;
 }
 
 void SubstringNode::genBlr(DsqlCompilerScratch* dsqlScratch)
@@ -12217,9 +12222,10 @@ void SubstringSimilarNode::setParameterName(dsql_par* parameter) const
 bool SubstringSimilarNode::setParameterType(DsqlCompilerScratch* dsqlScratch,
 	std::function<void (dsc*)> makeDesc, bool forceVarChar)
 {
-	return PASS1_set_parameter_type(dsqlScratch, expr, makeDesc, forceVarChar) |
-		PASS1_set_parameter_type(dsqlScratch, pattern, makeDesc, forceVarChar) |
-		PASS1_set_parameter_type(dsqlScratch, escape, makeDesc, forceVarChar);
+	const bool exprType = PASS1_set_parameter_type(dsqlScratch, expr, makeDesc, forceVarChar);
+	const bool patternType = PASS1_set_parameter_type(dsqlScratch, pattern, makeDesc, forceVarChar);
+	const bool escapeType = PASS1_set_parameter_type(dsqlScratch, escape, makeDesc, forceVarChar);
+	return exprType || patternType || escapeType;
 }
 
 void SubstringSimilarNode::genBlr(DsqlCompilerScratch* dsqlScratch)
@@ -12745,8 +12751,9 @@ void TrimNode::setParameterName(dsql_par* parameter) const
 bool TrimNode::setParameterType(DsqlCompilerScratch* dsqlScratch,
 	std::function<void (dsc*)> makeDesc, bool forceVarChar)
 {
-	return PASS1_set_parameter_type(dsqlScratch, value, makeDesc, forceVarChar) |
-		PASS1_set_parameter_type(dsqlScratch, trimChars, makeDesc, forceVarChar);
+	const bool valueType = PASS1_set_parameter_type(dsqlScratch, value, makeDesc, forceVarChar);
+	const bool trimCharsType = PASS1_set_parameter_type(dsqlScratch, trimChars, makeDesc, forceVarChar);
+	return valueType || trimCharsType;
 }
 
 void TrimNode::genBlr(DsqlCompilerScratch* dsqlScratch)
@@ -14118,8 +14125,9 @@ void ValueIfNode::setParameterName(dsql_par* parameter) const
 bool ValueIfNode::setParameterType(DsqlCompilerScratch* dsqlScratch,
 	std::function<void (dsc*)> makeDesc, bool forceVarChar)
 {
-	return PASS1_set_parameter_type(dsqlScratch, trueValue, makeDesc, forceVarChar) |
-		PASS1_set_parameter_type(dsqlScratch, falseValue, makeDesc, forceVarChar);
+	const bool trueValueType = PASS1_set_parameter_type(dsqlScratch, trueValue, makeDesc, forceVarChar);
+	const bool falseValueType = PASS1_set_parameter_type(dsqlScratch, falseValue, makeDesc, forceVarChar);
+	return trueValueType || falseValueType;
 }
 
 void ValueIfNode::genBlr(DsqlCompilerScratch* dsqlScratch)
