@@ -55,7 +55,16 @@ static ValueExprNode* resolveUsingField(DsqlCompilerScratch* dsqlScratch, const 
 
 namespace
 {
-	void appendContextAlias(DsqlCompilerScratch* dsqlScratch, const string& alias)
+	struct SpecialJoinItem
+	{
+		RseNode* rse;
+		bool semiJoin;
+		BoolExprNode* boolean;
+	};
+
+	typedef HalfStaticArray<SpecialJoinItem, 4> SpecialJoinList;
+
+  void appendContextAlias(DsqlCompilerScratch* dsqlScratch, const string& alias)
 	{
 		const auto len = alias.length();
 		if (len <= MAX_UCHAR)
@@ -126,8 +135,7 @@ namespace
 	bool findPossibleJoins(CompilerScratch* csb,
 						   const StreamList& rseStreams,
 						   BoolExprNode** parentBoolean,
-						   RecordSourceNodeStack& rseStack,
-						   BoolExprNodeStack& booleanStack)
+						   SpecialJoinList& result)
 	{
 		auto boolNode = *parentBoolean;
 
@@ -135,9 +143,9 @@ namespace
 		if (binaryNode && binaryNode->blrOp == blr_and)
 		{
 			const bool found1 = findPossibleJoins(csb, rseStreams,
-				binaryNode->arg1.getAddress(), rseStack, booleanStack);
+				binaryNode->arg1.getAddress(), result);
 			const bool found2 = findPossibleJoins(csb, rseStreams,
-				binaryNode->arg2.getAddress(), rseStack, booleanStack);
+				binaryNode->arg2.getAddress(), result);
 
 			if (!binaryNode->arg1 && !binaryNode->arg2)
 				*parentBoolean = nullptr;
@@ -156,7 +164,7 @@ namespace
 			auto rse = rseNode->rse;
 			fb_assert(rse && (rse->flags & RseNode::FLAG_SUB_QUERY));
 
-			if (rse->rse_boolean && rse->rse_jointype == blr_inner &&
+			if (rse->rse_boolean && rse->isInnerJoin() &&
 				!rse->rse_first && !rse->rse_skip && !rse->rse_plan)
 			{
 				// Find booleans convertable into semi-joins
@@ -201,9 +209,7 @@ namespace
 					if (!dependent)
 					{
 						rse->flags &= ~RseNode::FLAG_SUB_QUERY;
-						rse->flags |= RseNode::FLAG_SEMI_JOINED;
-						rseStack.push(rse);
-						booleanStack.push(boolean);
+						result.push({rse, true, boolean});
 						*parentBoolean = nullptr;
 						return true;
 					}
@@ -1019,7 +1025,7 @@ void RelationSourceNode::pass1Source(thread_db* tdbb, CompilerScratch* csb, RseN
 	// 1) If the view has a projection, sort, first/skip or explicit plan.
 	// 2) If it's part of an outer join.
 
-	if (rse->rse_jointype != blr_inner || // viewRse->rse_jointype != blr_inner || ???
+	if (!rse->isInnerJoin() || // !viewRse->isInnerJoin() || ???
 		viewRse->rse_sorted || viewRse->rse_projection || viewRse->rse_first ||
 		viewRse->rse_skip || viewRse->rse_plan)
 	{
@@ -2970,19 +2976,19 @@ RseNode* RseNode::dsqlPass(DsqlCompilerScratch* dsqlScratch)
 
 	switch (rse_jointype)
 	{
-		case blr_inner:
+		case INNER_JOIN:
 			streamList->items[0] = doDsqlPass(dsqlScratch, fromList->items[0]);
 			streamList->items[1] = doDsqlPass(dsqlScratch, fromList->items[1]);
 			break;
 
-		case blr_left:
+		case LEFT_JOIN:
 			streamList->items[0] = doDsqlPass(dsqlScratch, fromList->items[0]);
 			++dsqlScratch->inOuterJoin;
 			streamList->items[1] = doDsqlPass(dsqlScratch, fromList->items[1]);
 			--dsqlScratch->inOuterJoin;
 			break;
 
-		case blr_right:
+		case RIGHT_JOIN:
 			++dsqlScratch->inOuterJoin;
 			streamList->items[0] = doDsqlPass(dsqlScratch, fromList->items[0]);
 			--dsqlScratch->inOuterJoin;
@@ -2993,7 +2999,7 @@ RseNode* RseNode::dsqlPass(DsqlCompilerScratch* dsqlScratch)
 			streamList->items[1] = doDsqlPass(dsqlScratch, fromList->items[1]);
 			break;
 
-		case blr_full:
+		case FULL_JOIN:
 			++dsqlScratch->inOuterJoin;
 			streamList->items[0] = doDsqlPass(dsqlScratch, fromList->items[0]);
 			// Temporarily remove just created context(s) from the stack,
@@ -3065,7 +3071,7 @@ RseNode* RseNode::dsqlPass(DsqlCompilerScratch* dsqlScratch)
 			if (matched->items.isEmpty())
 			{
 				// There is no match. Transform to CROSS JOIN.
-				node->rse_jointype = blr_inner;
+				node->rse_jointype = INNER_JOIN;
 				usingList = NULL;
 
 				delete matched;
@@ -3280,14 +3286,14 @@ RseNode* RseNode::pass1(thread_db* tdbb, CompilerScratch* csb)
 	ValueExprNode* skip = rse_skip;
 	PlanNode* plan = rse_plan;
 
-	if (rse_jointype == blr_inner)
+	if (isInnerJoin())
 		csb->csb_inner_booleans.push(rse_boolean);
 
 	// zip thru RseNode expanding views and inner joins
 	for (auto sub : rse_relations)
 		processSource(tdbb, csb, this, sub, &boolean, stack);
 
-	if (rse_jointype == blr_inner)
+	if (isInnerJoin())
 		csb->csb_inner_booleans.pop();
 
 	// Now, rebuild the RseNode block.
@@ -3362,7 +3368,7 @@ void RseNode::pass1Source(thread_db* tdbb, CompilerScratch* csb, RseNode* rse,
 		return;
 	}
 
-	if (rse_jointype != blr_inner)
+	if (isOuterJoin())
 	{
 		// Check whether any of the upper level booleans (those belonging to the WHERE clause)
 		// is able to filter out rows from the "inner" streams. If this is the case,
@@ -3377,7 +3383,7 @@ void RseNode::pass1Source(thread_db* tdbb, CompilerScratch* csb, RseNode* rse,
 		StreamList streams;
 
 		// First check the left stream of the full outer join
-		if (rse_jointype == blr_full)
+		if (isFullJoin())
 		{
 			rse1->computeRseStreams(streams);
 
@@ -3385,7 +3391,7 @@ void RseNode::pass1Source(thread_db* tdbb, CompilerScratch* csb, RseNode* rse,
 			{
 				if (boolean && boolean->ignoreNulls(streams))
 				{
-					rse_jointype = blr_left;
+					rse_jointype = LEFT_JOIN;
 					break;
 				}
 			}
@@ -3399,16 +3405,16 @@ void RseNode::pass1Source(thread_db* tdbb, CompilerScratch* csb, RseNode* rse,
 		{
 			if (boolean && boolean->ignoreNulls(streams))
 			{
-				if (rse_jointype == blr_full)
+				if (isFullJoin())
 				{
 					// We should transform FULL join to RIGHT join,
 					// but as we don't allow them inside the engine
 					// just swap the sides and insist it's LEFT join
 					std::swap(rse_relations[0], rse_relations[1]);
-					rse_jointype = blr_left;
+					rse_jointype = LEFT_JOIN;
 				}
 				else
-					rse_jointype = blr_inner;
+					rse_jointype = INNER_JOIN;
 
 				break;
 			}
@@ -3423,11 +3429,9 @@ void RseNode::pass1Source(thread_db* tdbb, CompilerScratch* csb, RseNode* rse,
 	// where we are just trying to inner join more than 2 streams. If possible,
 	// try to flatten the tree out before we go any further.
 
-	if (!isLateral() && !isSemiJoined() &&
-		rse->rse_jointype == blr_inner &&
-		rse_jointype == blr_inner &&
-		!rse_sorted && !rse_projection &&
-		!rse_first && !rse_skip && !rse_plan)
+	if (!isLateral() &&
+		rse->isInnerJoin() && isInnerJoin() &&
+		!rse_sorted && !rse_projection && !rse_first && !rse_skip && !rse_plan)
 	{
 		for (auto sub : rse_relations)
 			processSource(tdbb, csb, rse, sub, boolean, stack);
@@ -3518,10 +3522,11 @@ RecordSource* RseNode::compile(thread_db* tdbb, Optimizer* opt, bool innerSubStr
 	computeRseStreams(rseStreams);
 
 	BoolExprNodeStack conjunctStack;
+	StreamStateHolder stateHolder(csb, opt->getOuterStreams());
 
-	// pass RseNode boolean only to inner substreams because join condition
+	// Pass RseNode boolean only to inner substreams because join condition
 	// should never exclude records from outer substreams
-	if (opt->isInnerJoin() || (opt->isLeftJoin() && innerSubStream))
+	if (opt->isInnerJoin() || ((opt->isLeftJoin() || opt->isSpecialJoin()) && innerSubStream))
 	{
 		// AB: For an (X LEFT JOIN Y) mark the outer-streams (X) as
 		// active because the inner-streams (Y) are always "dependent"
@@ -3529,39 +3534,27 @@ RecordSource* RseNode::compile(thread_db* tdbb, Optimizer* opt, bool innerSubStr
 		//
 		// dimitr: the same for lateral derived tables in inner joins
 
-		StreamStateHolder stateHolder(csb, opt->getOuterStreams());
-
-		if (opt->isLeftJoin() || isLateral() || isSemiJoined())
-		{
+		if (!opt->isInnerJoin() || isLateral())
 			stateHolder.activate();
 
-			if (opt->isLeftJoin() || isSemiJoined())
-			{
-				// Push all conjuncts except "missing" ones (e.g. IS NULL)
-				for (auto iter = opt->getConjuncts(false, true); iter.hasData(); ++iter)
-				{
-					if (iter->containsAnyStream(rseStreams))
-						conjunctStack.push(iter);
-				}
-			}
-		}
-		else
+		// For the LEFT JOIN, push all conjuncts except "missing" ones (e.g. IS NULL)
+		for (auto iter = opt->getConjuncts(false, opt->isLeftJoin()); iter.hasData(); ++iter)
 		{
-			for (auto iter = opt->getConjuncts(); iter.hasData(); ++iter)
-			{
-				if (iter->containsAnyStream(rseStreams))
-					conjunctStack.push(iter);
-			}
+			if (iter->containsAnyStream(rseStreams))
+				conjunctStack.push(iter);
 		}
 
-		return opt->compile(this, &conjunctStack);
+		if (opt->isSpecialJoin() && !opt->deliverJoinConjuncts(conjunctStack))
+			conjunctStack.clear();
 	}
-
-	// Push only parent conjuncts to the outer stream
-	for (auto iter = opt->getConjuncts(true, false); iter.hasData(); ++iter)
+	else
 	{
-		if (iter->containsAnyStream(rseStreams))
-			conjunctStack.push(iter);
+		// Push only parent conjuncts to the outer stream
+		for (auto iter = opt->getConjuncts(true, false); iter.hasData(); ++iter)
+		{
+			if (iter->containsAnyStream(rseStreams))
+				conjunctStack.push(iter);
+		}
 	}
 
 	return opt->compile(this, &conjunctStack);
@@ -3569,7 +3562,7 @@ RecordSource* RseNode::compile(thread_db* tdbb, Optimizer* opt, bool innerSubStr
 
 RseNode* RseNode::processPossibleJoins(thread_db* tdbb, CompilerScratch* csb)
 {
-	if (rse_jointype != blr_inner || !rse_boolean || rse_plan)
+	if (!isInnerJoin() || !rse_boolean || rse_plan)
 		return nullptr;
 
 	// If the sub-query is nested inside the other sub-query which wasn't converted into semi-join,
@@ -3589,19 +3582,16 @@ RseNode* RseNode::processPossibleJoins(thread_db* tdbb, CompilerScratch* csb)
 		}
 	}
 
-	RecordSourceNodeStack rseStack;
-	BoolExprNodeStack booleanStack;
-
 	// Find possibly joinable sub-queries
 
 	StreamList rseStreams;
 	computeRseStreams(rseStreams);
+	SpecialJoinList specialJoins;
 
-	if (!findPossibleJoins(csb, rseStreams, rse_boolean.getAddress(), rseStack, booleanStack))
+	if (!findPossibleJoins(csb, rseStreams, rse_boolean.getAddress(), specialJoins))
 		return nullptr;
 
-	fb_assert(rseStack.hasData() && booleanStack.hasData());
-	fb_assert(rseStack.getCount() == booleanStack.getCount());
+	fb_assert(specialJoins.hasData());
 
 	// Create joins between the original node and detected joinable nodes.
 	// Preserve FIRST/SKIP nodes at their original position, i.e. outside semi-joins.
@@ -3616,16 +3606,18 @@ RseNode* RseNode::processPossibleJoins(thread_db* tdbb, CompilerScratch* csb)
 	flags = 0;
 
 	auto rse = this;
-	while (rseStack.hasData())
+	while (specialJoins.hasData())
 	{
 		const auto newRse = FB_NEW_POOL(*tdbb->getDefaultPool())
 			RseNode(*tdbb->getDefaultPool());
 
-		newRse->rse_relations.add(rse);
-		newRse->rse_relations.add(rseStack.pop());
+		const auto item = specialJoins.pop();
 
-		newRse->rse_jointype = blr_inner;
-		newRse->rse_boolean = booleanStack.pop();
+		newRse->rse_relations.add(rse);
+		newRse->rse_relations.add(item.rse);
+
+		newRse->rse_jointype = item.semiJoin ? SEMI_JOIN : ANTI_JOIN;
+		newRse->rse_boolean = item.boolean;
 
 		rse = newRse;
 	}
@@ -3636,7 +3628,7 @@ RseNode* RseNode::processPossibleJoins(thread_db* tdbb, CompilerScratch* csb)
 			RseNode(*tdbb->getDefaultPool());
 
 		newRse->rse_relations.add(rse);
-		newRse->rse_jointype = blr_inner;
+		newRse->rse_jointype = INNER_JOIN;
 		newRse->rse_first = first;
 		newRse->rse_skip = skip;
 
