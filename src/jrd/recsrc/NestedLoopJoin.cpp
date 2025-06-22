@@ -249,7 +249,7 @@ void NestedLoopJoin::internalGetPlan(thread_db* tdbb, PlanEntry& planEntry, unsi
 	planEntry.lines.add().text = "Nested Loop Join " + printType();
 	printOptInfo(planEntry.lines);
 
-	Join::getPlan(tdbb, planEntry, level, recurse);
+	Join::internalGetPlan(tdbb, planEntry, level, recurse);
 }
 
 bool NestedLoopJoin::fetchRecord(thread_db* tdbb, FB_SIZE_T n) const
