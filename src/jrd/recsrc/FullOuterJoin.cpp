@@ -139,5 +139,5 @@ void FullOuterJoin::internalGetPlan(thread_db* tdbb, PlanEntry& planEntry, unsig
 	planEntry.lines.add().text = "Full Outer Join";
 	printOptInfo(planEntry.lines);
 
-	Join::getPlan(tdbb, planEntry, level, recurse);
+	Join::internalGetPlan(tdbb, planEntry, level, recurse);
 }
