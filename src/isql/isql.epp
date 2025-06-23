@@ -1457,7 +1457,7 @@ bool ISQL_get_character_sets(SSHORT char_set_id, SSHORT collation,
 			// Default colation is not printed to allow easy global change
 			if (!collationIsDefault)
 			{
-				text.printf("%s COLLATE %s%s", notNullStr, IUTILS_name_to_string(collationName).c_str());
+				text.printf("%s COLLATE %s", notNullStr, IUTILS_name_to_string(collationName).c_str());
 				return true;
 			}
 			break;
