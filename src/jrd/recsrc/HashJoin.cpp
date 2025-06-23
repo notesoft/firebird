@@ -551,7 +551,7 @@ void HashJoin::internalGetPlan(thread_db* tdbb, PlanEntry& planEntry, unsigned l
 
 	printOptInfo(planEntry.lines);
 
-	Join::getPlan(tdbb, planEntry, level, recurse);
+	Join::internalGetPlan(tdbb, planEntry, level, recurse);
 }
 
 ULONG HashJoin::computeHash(thread_db* tdbb,

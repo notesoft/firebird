@@ -344,7 +344,7 @@ void MergeJoin::internalGetPlan(thread_db* tdbb, PlanEntry& planEntry, unsigned 
 
 	printOptInfo(planEntry.lines);
 
-	Join::getPlan(tdbb, planEntry, level, recurse);
+	Join::internalGetPlan(tdbb, planEntry, level, recurse);
 }
 
 int MergeJoin::compare(thread_db* tdbb, const NestValueArray* node1,
