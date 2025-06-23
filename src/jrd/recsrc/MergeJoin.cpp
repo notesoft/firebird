@@ -350,30 +350,25 @@ void MergeJoin::internalGetPlan(thread_db* tdbb, PlanEntry& planEntry, unsigned 
 int MergeJoin::compare(thread_db* tdbb, const NestValueArray* node1,
 	const NestValueArray* node2) const
 {
-	Request* const request = tdbb->getRequest();
+	const auto request = tdbb->getRequest();
 
 	const NestConst<ValueExprNode>* ptr1 = node1->begin();
 	const NestConst<ValueExprNode>* ptr2 = node2->begin();
 
 	for (const NestConst<ValueExprNode>* const end = node1->end(); ptr1 != end; ++ptr1, ++ptr2)
 	{
-		const dsc* const desc1 = EVL_expr(tdbb, request, *ptr1);
-		const bool null1 = (request->req_flags & req_null);
+		const auto desc1 = EVL_expr(tdbb, request, *ptr1);
+		const auto desc2 = EVL_expr(tdbb, request, *ptr2);
 
-		const dsc* const desc2 = EVL_expr(tdbb, request, *ptr2);
-		const bool null2 = (request->req_flags & req_null);
-
-		if (null1 && !null2)
+		if (!desc1 && desc2)
 			return -1;
 
-		if (null2 && !null1)
+		if (desc1 && !desc2)
 			return 1;
 
-		if (!null1 && !null2)
+		if (desc1 && desc2)
 		{
-			const int result = MOV_compare(tdbb, desc1, desc2);
-
-			if (result != 0)
+			if (const int result = MOV_compare(tdbb, desc1, desc2))
 				return result;
 		}
 	}
