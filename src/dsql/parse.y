@@ -8398,7 +8398,10 @@ sql_string
 %type <stringPtr> utf_string
 utf_string
 	: sql_string
-		{ $$ = newString($1->toUtf8(scratch->getTransaction())); }
+		{
+			$1->dsqlPass(scratch);
+			$$ = newString($1->toUtf8(scratch->getTransaction()));
+		}
 	;
 
 %type <int32Val> signed_short_integer

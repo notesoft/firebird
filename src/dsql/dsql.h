@@ -648,6 +648,8 @@ public:
 		  s(p)
 	{ }
 
+	void dsqlPass(DsqlCompilerScratch* dsqlScratch);
+
 	Firebird::string toUtf8(jrd_tra* transaction) const;
 
 	const QualifiedName& getCharSet() const

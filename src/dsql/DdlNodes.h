@@ -2244,6 +2244,14 @@ public:
 	void validateAdmin();
 
 public:
+	DdlNode* dsqlPass(DsqlCompilerScratch* dsqlScratch) override
+	{
+		if (from)
+			from->dsqlPass(dsqlScratch);
+
+		return DdlNode::dsqlPass(dsqlScratch);
+	}
+
 	Firebird::string internalPrint(NodePrinter& printer) const override;
 	void checkPermission(thread_db* tdbb, jrd_tra* transaction) override;
 	void execute(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_tra* transaction) override;

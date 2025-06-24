@@ -718,6 +718,12 @@ static UCHAR* put_item(	UCHAR	item,
 }
 
 
+void IntlString::dsqlPass(DsqlCompilerScratch* dsqlScratch)
+{
+	if (charset.object.hasData())
+		dsqlScratch->qualifyExistingName(charset, obj_charset);
+}
+
 // Return as UTF8
 string IntlString::toUtf8(jrd_tra* transaction) const
 {
