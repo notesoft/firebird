@@ -260,7 +260,6 @@ public:
 	DdlNode* dsqlPass(DsqlCompilerScratch* dsqlScratch) override
 	{
 		dsqlScratch->qualifyExistingName(charSet, obj_charset);
-		protectSystemSchema(charSet.schema, obj_charset);
 		dsqlScratch->ddlSchema = charSet.schema;
 
 		dsqlScratch->qualifyExistingName(defaultCollation, obj_collation);
