@@ -6943,7 +6943,17 @@ static processing_state parse_arg(int argc, SCHAR** argv, QualifiedMetaString& t
 					break;
 
 				case IN_SW_ISQL_CHARSET:
-					setValues.ISQL_charset = QualifiedMetaString::parseSchemaObject(swarg_str);
+					try
+					{
+						setValues.ISQL_charset = QualifiedMetaString::parseSchemaObject(swarg_str);
+					}
+					catch (const status_exception&)
+					{
+						// hack for aliases like utf-8
+						string str(swarg_str);
+						str.upper();
+						setValues.ISQL_charset = QualifiedMetaString(str);
+					}
 					break;
 
 				case IN_SW_ISQL_QUIET:
