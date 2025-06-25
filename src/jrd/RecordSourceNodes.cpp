@@ -3702,7 +3702,8 @@ void RseNode::planSet(CompilerScratch* csb, PlanNode* plan)
 	fb_assert(planRelation || planProcedure);
 
 	ObjectsArray<QualifiedMetaString> planAliasList;
-	QualifiedMetaString::parseSchemaObjectListNoSep(planAlias, planAliasList);
+	if (planAlias.hasData())
+		QualifiedMetaString::parseSchemaObjectListNoSep(planAlias, planAliasList);
 
 	const auto name = planRelation ? planRelation->rel_name :
 		planProcedure ? planProcedure->getName() :
