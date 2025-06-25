@@ -6241,6 +6241,7 @@ const StmtNode* ForRangeNode::execute(thread_db* tdbb, Request* request, ExeStat
 		}
 
 		case Request::req_return:
+		case Request::req_sync:
 		{
 			const auto variableDesc = EVL_expr(tdbb, request, variable);
 
@@ -6250,7 +6251,7 @@ const StmtNode* ForRangeNode::execute(thread_db* tdbb, Request* request, ExeStat
 				return parentStmt;
 			}
 
-			if (request->req_operation == Request::req_return)
+			if (request->req_operation != Request::req_evaluate)
 			{
 				impure_value nextValue;
 
