@@ -43,6 +43,7 @@ static const UCHAR DESCRIBE_VARS[] =
 	isc_info_sql_scale,
 	isc_info_sql_length,
 	isc_info_sql_field,
+	isc_info_sql_relation_schema,
 	isc_info_sql_relation,
 	isc_info_sql_owner,
 	isc_info_sql_alias,
@@ -55,6 +56,7 @@ static const unsigned INFO_BUFFER_SIZE = MemoryPool::MAX_MEDIUM_BLOCK_SIZE;
 static USHORT getLen(const UCHAR** ptr, const UCHAR* bufferEnd);
 static int getNumericInfo(const UCHAR** ptr, const UCHAR* bufferEnd);
 static void getStringInfo(const UCHAR** ptr, const UCHAR* bufferEnd, string* str);
+static ISC_STATUS getErrorInfo(const UCHAR** ptr, const UCHAR* bufferEnd, UCHAR* item = nullptr);
 
 
 // Build a list of info codes based on a prepare flags bitmask.
@@ -337,6 +339,10 @@ void StatementMetadata::parse(unsigned bufferLength, const UCHAR* buffer)
 							getStringInfo(&buffer, bufferEnd, &param->field);
 							break;
 
+						case isc_info_sql_relation_schema:
+							getStringInfo(&buffer, bufferEnd, &param->schema);
+							break;
+
 						case isc_info_sql_relation:
 							getStringInfo(&buffer, bufferEnd, &param->relation);
 							break;
@@ -353,6 +359,14 @@ void StatementMetadata::parse(unsigned bufferLength, const UCHAR* buffer)
 							--buffer;
 							finishDescribe = true;
 							break;
+
+						case isc_info_error:
+						{
+							const ISC_STATUS errorCode = getErrorInfo(&buffer, bufferEnd);
+							if (errorCode != isc_infunk)
+								Arg::Gds(errorCode).raise();
+							break;
+						}
 
 						default:
 							--buffer;
@@ -401,6 +415,14 @@ void StatementMetadata::parse(unsigned bufferLength, const UCHAR* buffer)
 					}
 				}
 
+				break;
+			}
+
+			case isc_info_error:
+			{
+				const ISC_STATUS errorCode = getErrorInfo(&buffer, bufferEnd);
+				if (errorCode != isc_infunk)
+					Arg::Gds(errorCode).raise();
 				break;
 			}
 
@@ -523,5 +545,27 @@ static void getStringInfo(const UCHAR** ptr, const UCHAR* bufferEnd, string* str
 	*ptr += len;
 }
 
+// Get error code and, optional, info item that caused the error.
+static ISC_STATUS getErrorInfo(const UCHAR** ptr, const UCHAR* bufferEnd, UCHAR* item)
+{
+	// Expected error code in the buffer encoded as follows:
+	// (short) clumplet lenght, (byte) item code, (long) error code
+
+	const USHORT len = getLen(ptr, bufferEnd);
+
+	if (len != 1 + sizeof(ULONG))
+		fatal_exception::raiseFmt("Invalid info structure - expected error info length %d, actual %d",
+			1 + sizeof(ULONG), len);
+
+	if (item)
+		*item = **ptr;
+
+	(*ptr)++;
+
+	const ISC_STATUS err = gds__vax_integer(*ptr, sizeof(ULONG));
+	*ptr += sizeof(ULONG);
+
+	return err;
+}
 
 }	// namespace Firebird
