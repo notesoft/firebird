@@ -5838,6 +5838,7 @@ const
 	 isc_missing_value_for_format_pattern = 335545315;
 	 isc_invalid_name = 335545316;
 	 isc_invalid_unqualified_name_list = 335545317;
+	 isc_no_user_att_while_restore = 335545318;
 	 isc_gfix_db_name = 335740929;
 	 isc_gfix_invalid_sw = 335740930;
 	 isc_gfix_incmp_sw = 335740932;
