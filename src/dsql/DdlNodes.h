@@ -351,7 +351,7 @@ private:
 class CommentOnNode final : public DdlNode
 {
 public:
-	CommentOnNode(MemoryPool& pool, int aObjType,
+	CommentOnNode(MemoryPool& pool, ObjectType aObjType,
 				const QualifiedName& aName, const MetaName& aSubName,
 				const Firebird::string aText)
 		: DdlNode(pool),
@@ -381,7 +381,7 @@ protected:
 	}
 
 private:
-	int objType;
+	ObjectType objType;
 	QualifiedName name;
 	MetaName subName;
 	Firebird::string text, str;

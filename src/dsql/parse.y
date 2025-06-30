@@ -6161,9 +6161,9 @@ comment
 		{ $$ = newNode<CommentOnNode>($3, QualifiedName(*$4), "", *$6); }
 	| COMMENT ON COLUMN symbol_ddl_name '.' valid_symbol_name IS ddl_desc
 		{ $$ = newNode<CommentOnNode>(obj_relation, *$4, *$6, *$8); }
-	| COMMENT ON ddl_type3 qualified_name '.' valid_symbol_name IS ddl_desc
+	| COMMENT ON ddl_type3 scoped_qualified_name '.' valid_symbol_name IS ddl_desc
 		{ $$ = newNode<CommentOnNode>($3, *$4, *$6, *$8); }
-	| COMMENT ON ddl_type4 qualified_name IS ddl_desc
+	| COMMENT ON ddl_type4 scoped_qualified_name IS ddl_desc
 		{ $$ = newNode<CommentOnNode>($3, *$4, "", *$6); }
 	| comment_on_user
 		{ $$ = $1; }
