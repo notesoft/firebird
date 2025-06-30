@@ -7412,7 +7412,7 @@ static unsigned print_item(TEXT** s, const IsqlVar* var, const unsigned length)
 					char hex[3];
 					for (unsigned i = 0; i < avary->vary_length; i++)
 					{
-						snprintf(hex, sizeof(hex), "%02X", 
+						snprintf(hex, sizeof(hex), "%02X",
 							static_cast<UCHAR>(avary->vary_string[i]));
 						hexStr.append(hex);
 					}

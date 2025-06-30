@@ -13208,7 +13208,7 @@ void GrantRevokeNode::setFieldClassName(thread_db* tdbb, jrd_tra* transaction,
 		MODIFY RFR
 			while (!unique)
 		    {
-				snprintf(RFR.RDB$SECURITY_CLASS, sizeof(RFR.RDB$SECURITY_CLASS), "%s%" SQUADFORMAT, 
+				snprintf(RFR.RDB$SECURITY_CLASS, sizeof(RFR.RDB$SECURITY_CLASS), "%s%" SQUADFORMAT,
 					SQL_FLD_SECCLASS_PREFIX,
 					DPM_gen_id(tdbb,
 						MET_lookup_generator(tdbb, QualifiedName(SQL_SECCLASS_GENERATOR, SYSTEM_SCHEMA)), false, 1));
