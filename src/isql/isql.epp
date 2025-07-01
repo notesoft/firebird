@@ -7505,7 +7505,7 @@ static unsigned print_item(TEXT** s, const IsqlVar* var, const unsigned length)
 				isc_decode_sql_time(var->value.asTime, &times);
 				ULONG fractions = (*var->value.asTime) % ISC_TIME_SECONDS_PRECISION;
 
-				snprintf(d, sizeof(s), "%2.2d:%2.2d:%2.2d.%4.4" ULONGFORMAT,
+				snprintf(d, sizeof(d), "%2.2d:%2.2d:%2.2d.%4.4" ULONGFORMAT,
 					times.tm_hour, times.tm_min, times.tm_sec, fractions);
 
 				snprintf(p, bufSize, "%-*.*s ", length, length, d);

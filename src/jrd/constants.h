@@ -96,7 +96,7 @@ inline constexpr const char* NULL_ROLE = "NONE";
 // User name assigned to any user granted USR_locksmith rights.
 // If this name is changed, modify also the trigger in
 // jrd/grant.gdl (which turns into jrd/trig.h.
-inline constexpr char* DBA_USER_NAME = "SYSDBA";
+inline constexpr const char* DBA_USER_NAME = "SYSDBA";
 
 inline constexpr const char* PRIMARY_KEY		= "PRIMARY KEY";
 inline constexpr const char* FOREIGN_KEY		= "FOREIGN KEY";
