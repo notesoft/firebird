@@ -750,7 +750,7 @@ static void set_grantee(int user_type, const QualifiedMetaString& name, string& 
 		format = "FUNCTION %s";
 		break;
 	case obj_user:
-		if (name.object == "PUBLIC")
+		if (!(name.schema.isEmpty() && name.object == "PUBLIC"))
 			format = "USER %s";
 		else
 			format = "%s";
