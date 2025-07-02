@@ -7073,8 +7073,9 @@ static unsigned print_item(TEXT** s, const IsqlVar* var, const unsigned length)
  *
  **************************************/
 	// We're working under the assumption that length is the maximum number of characters to
-	// produce, and that the available buffer is at least 1 byte longer for nul-termination.
-	const size_t bufSize = static_cast<size_t>(length) + 1;
+	// produce of the value, and that the available buffer is at least 2 bytes longer for 
+	// a space (column separator) and nul-termination.
+	const size_t bufSize = static_cast<size_t>(length) + 2;
 	const char* convErr = "Conversion error";
 	TEXT d[64];
 	TEXT* p = *s;
@@ -8301,7 +8302,7 @@ static unsigned process_message_display(Firebird::IMessageMetadata* message, uns
 		else if (isqlGlob.att_charset == CS_UTF8)
 			disp_length = MAX(disp_length, namelength * 4);
 
-		// The total line length
+		// The total line length (display length of value + space, i.e. column separator)
 		linelength += disp_length + 1;
 	}
 
