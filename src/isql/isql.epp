@@ -7073,7 +7073,7 @@ static unsigned print_item(TEXT** s, const IsqlVar* var, const unsigned length)
  *
  **************************************/
 	// We're working under the assumption that length is the maximum number of characters to
-	// produce of the value, and that the available buffer is at least 2 bytes longer for 
+	// produce of the value, and that the available buffer is at least 2 bytes longer for
 	// a space (column separator) and nul-termination.
 	const size_t bufSize = static_cast<size_t>(length) + 2;
 	const char* convErr = "Conversion error";
