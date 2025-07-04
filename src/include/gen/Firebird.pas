@@ -10016,7 +10016,7 @@ end;
 procedure IProfilerSession.defineStatement2(status: IStatus; statementId: Int64; parentStatementId: Int64; type_: PAnsiChar; schemaName: PAnsiChar; packageName: PAnsiChar; routineName: PAnsiChar; sqlText: PAnsiChar);
 begin
 	if (vTable.version < 4) then begin
-		deprecatedDefineStatement(status, statementId, parentStatementId, type, packageName, routineName, sqlText);
+		deprecatedDefineStatement(status, statementId, parentStatementId, type_, packageName, routineName, sqlText);
 	end
 	else begin
 		ProfilerSessionVTable(vTable).defineStatement2(Self, status, statementId, parentStatementId, type_, schemaName, packageName, routineName, sqlText);
