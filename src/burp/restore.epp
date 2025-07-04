@@ -10159,6 +10159,9 @@ bool get_user_privilege(BurpGlobals* tdgbl)
 		}
 	}
 
+	if (relation.schema.isEmpty() && tdgbl->runtimeODS >= DB_VERSION_DDL14 && isSchemaBoundObject(object_type))
+		relation.schema = PUBLIC_SCHEMA;
+
 	// Check if object exists
 	Firebird::ITransaction*	local_trans = nullptr;
 	bool exists = false;
