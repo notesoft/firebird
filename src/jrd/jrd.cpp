@@ -4152,6 +4152,26 @@ void JRequest::getInfo(CheckStatusWrapper* user_status, int level, unsigned int 
 
 		try
 		{
+			for (unsigned i = 0; i < itemsLength; ++i)
+			{
+				if (items[i] == isc_info_message_number || items[i] == isc_info_message_size)
+				{
+					// For proper return these items require request operation req_send or req_receive
+					// Run request from stale status until we get one of these (or end of program)
+					// It is up to caller to make sure that there is no heavy operations between req_next
+					// and the next SuspendNode/ReceiveNode/SelectMessageNode
+					while ((request->req_flags & req_active)
+							&& request->req_operation != Request::req_receive
+							&& request->req_operation != Request::req_send)
+					{
+						request->req_flags &= ~req_stall;
+						request->req_operation = Request::req_sync;
+						EXE_looper(tdbb, request, request->req_next);
+					}
+					break;
+				}
+			}
+
 			INF_request_info(request, itemsLength, items, bufferLength, buffer);
 		}
 		catch (const Exception& ex)
@@ -4851,6 +4871,7 @@ void JAttachment::transactRequest(CheckStatusWrapper* user_status, ITransaction*
 		JTransaction* const jt = getTransactionInterface(user_status, tra);
 		EngineContextHolder tdbb(user_status, this, FB_FUNCTION);
 
+		Request* request = nullptr;
 		jrd_tra* transaction = jt->getHandle();
 		validateHandle(tdbb, transaction);
 		check_database(tdbb);
@@ -4862,7 +4883,6 @@ void JAttachment::transactRequest(CheckStatusWrapper* user_status, ITransaction*
 			const MessageNode* inMessage = NULL;
 			const MessageNode* outMessage = NULL;
 
-			Request* request = NULL;
 			MemoryPool* new_pool = att->createPool();
 
 			try
@@ -4888,9 +4908,7 @@ void JAttachment::transactRequest(CheckStatusWrapper* user_status, ITransaction*
 			}
 			catch (const Exception&)
 			{
-				if (request)
-					CMP_release(tdbb, request);
-				else
+				if (!request)
 					att->deletePool(new_pool);
 
 				throw;
@@ -4923,6 +4941,15 @@ void JAttachment::transactRequest(CheckStatusWrapper* user_status, ITransaction*
 
 			if (out_msg_length)
 			{
+				// Workaround for GPRE that generated unneeded blr_send
+				if ((request->req_flags & req_active)
+					&& request->req_operation == Request::req_send)
+				{
+					request->req_flags &= ~req_stall;
+					request->req_operation = Request::req_proceed;
+					EXE_looper(tdbb, request, request->req_next);
+				}
+
 				memcpy(out_msg, outMessage->getBuffer(request), out_msg_length);
 			}
 
@@ -4932,6 +4959,9 @@ void JAttachment::transactRequest(CheckStatusWrapper* user_status, ITransaction*
 		}
 		catch (const Exception& ex)
 		{
+			if (request)
+				CMP_release(tdbb, request);
+
 			transliterateException(tdbb, ex, user_status, "JAttachment::transactRequest");
 			return;
 		}

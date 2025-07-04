@@ -1205,12 +1205,6 @@ static void cmp_procedure( gpre_req* request)
 	for (gpre_port* port = request->req_ports; port; port = port->por_next)
 		cmp_port(port, request);
 
-	if (request->req_values)
-	{
-		request->add_byte(blr_begin);
-		make_send(request->req_vport, request);
-	}
-
 	if (gpreGlob.sw_ids)
 	{
 		request->add_byte(blr_exec_pid);
@@ -1247,8 +1241,6 @@ static void cmp_procedure( gpre_req* request)
 	else
 		request->add_word(0);
 
-	if (request->req_values)
-		request->add_byte(blr_end);
 	request->add_byte(blr_end);
 	request->add_byte(blr_eoc);
 	request->req_length = request->req_blr - request->req_base;
