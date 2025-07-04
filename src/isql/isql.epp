@@ -7051,9 +7051,10 @@ static bool checkSpecial(TEXT* const p, const int length, const double value)
 	if (setValues.List) {
 		isqlGlob.printf("%s%s", t, NEWLINE);
 	}
-	// We're working under the assumption that length is the maximum number of characters to produce,
-	// and that the available buffer is at least 1 byte longer for nul-termination.
-	const size_t bufSize = static_cast<size_t>(length) + 1;
+	// We're working under the assumption that length is the maximum number of characters to
+	// produce of the value, and that the available buffer is at least 2 bytes longer for
+	// a space (column separator) and nul-termination.
+	const size_t bufSize = static_cast<size_t>(length) + 2;
 	snprintf(p, bufSize, "%*.*s ", length, length, t);
 
 	return true;
@@ -7139,7 +7140,7 @@ static unsigned print_item(TEXT** s, const IsqlVar* var, const unsigned length)
 			blobid = var->value.blobid;
 			snprintf(blobbuf, sizeof(blobbuf), "%" xLONGFORMAT":%" xLONGFORMAT,
 				blobid->gds_quad_high, blobid->gds_quad_low);
-			snprintf(p, bufSize, "%*s ", MIN(17, length), blobbuf);
+			snprintf(p, bufSize, "%*s ", MAX(17, length), blobbuf);
 			break;
 
 		case SQL_BLOB:
@@ -7149,7 +7150,7 @@ static unsigned print_item(TEXT** s, const IsqlVar* var, const unsigned length)
 			blobid = var->value.blobid;
 			snprintf(blobbuf, sizeof(blobbuf), "%" xLONGFORMAT":%" xLONGFORMAT,
 				blobid->gds_quad_high, blobid->gds_quad_low);
-			snprintf(p, bufSize, "%*s ", MIN(17, length), blobbuf);
+			snprintf(p, bufSize, "%*s ", MAX(17, length), blobbuf);
 			if (setValues.List)
 			{
 				isqlGlob.printf("%s%s", blobbuf, NEWLINE);
@@ -7718,6 +7719,7 @@ static void print_item_numeric(SINT64 value, int length, int scale, TEXT* buf)
  **************************************/
 	// We're working under the assumption that length is the maximum number of characters to
 	// produce, and that the available buffer is at least 1 byte longer for nul-termination.
+	// Contrary to elsewhere, here we don't need to add one byte for a column separator.
 	const size_t bufSize = static_cast<size_t>(length) + 1;
 	// Handle special case of no negative scale, no '.' required!
 	if (scale >= 0)
