@@ -1061,7 +1061,7 @@ static void readNextInputLine(const char* prompt)
 		{
 			buffer = charBuffer->getBuffer(MAX_USHORT);
 			if (fgets(buffer, charBuffer->getCapacity(), Filelist->Ifp().indev_fpointer) != NULL)
-				lineSize = strlen(buffer);
+				lineSize = static_cast<int>(strlen(buffer));
 			else
 				lineSize = -1;
 		}
@@ -1708,8 +1708,6 @@ SLONG ISQL_get_index_segments(TEXT* segs,
  *	returns the list of columns in an index.
  *
  **************************************/
-	TEXT SQL_identifier[BUFFER_LENGTH256];
-
 	*segs = '\0';
 
 	if (!frontendTransaction())
@@ -4107,8 +4105,9 @@ static processing_state create_db(const FrontendParser::CreateDatabaseNode& node
 
 		dpb.insertString(isc_dpb_blr_request_search_path, SYSTEM_SCHEMA);
 
-		DB = UtilInterfacePtr()->executeCreateDatabase2(fbStatus, statement.length(),
-			statement.c_str(), dialect, dpb.getBufferLength(), dpb.getBuffer(), nullptr);
+		DB = UtilInterfacePtr()->executeCreateDatabase2(fbStatus, 
+			static_cast<unsigned>(statement.length()), statement.c_str(), dialect,
+			dpb.getBufferLength(), dpb.getBuffer(), nullptr);
 
 		if (!DB && createWithRole && fbStatus->getErrors()[1] == isc_dsql_error)
 		{
@@ -6190,8 +6189,8 @@ static processing_state newdb(const TEXT* dbname,
 	// out.  We will restore it after the disconnect.  The save_database buffer
 	// will also be used to translate dbname to the proper character set.
 
-	const SLONG len = strnlen(dbname, MAXPATHLEN - 1);
-	SCHAR* save_database = (SCHAR*) ISQL_ALLOC(len + 1);
+	const size_t len = strnlen(dbname, MAXPATHLEN - 1);
+	SCHAR* save_database = (SCHAR*) ISQL_ALLOC(static_cast<SLONG>(len + 1));
 	if (!save_database)
 		return ps_ERR;
 

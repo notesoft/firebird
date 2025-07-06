@@ -1067,7 +1067,6 @@ processing_state SHOW_grants(const std::optional<QualifiedMetaString>& name,
 	BASED_ON RDB$USER_PRIVILEGES.RDB$GRANT_OPTION prev_grant_option;
 	MetaString prev_grantor;
 	string user_string;
-	SCHAR obj_string[QUOTED_NAME_SIZE + 20];
 
 	PrivilegeFields priv_fields[] =
 	{
@@ -1657,10 +1656,6 @@ void SHOW_grant_roles(const SCHAR* terminator, bool* first, const TEXT* optional
  *	All membership privilege may have the with_admin or/and default options set.
  *
  **************************************/
-	BASED_ON RDB$USER_PRIVILEGES.RDB$GRANTOR dummy;	// used to declare buf_grantor
-	FB_UNUSED_VAR(dummy); // Silence compiler warning about unused variable
-	SCHAR buf_grantor[sizeof(dummy) + 20];
-
 	// process role "object"
 
 	FOR PRV IN RDB$USER_PRIVILEGES WITH
