@@ -100,7 +100,7 @@ unsigned DSQL_debug = 0;
 
 namespace
 {
-	const UCHAR record_info[] =
+	inline constexpr UCHAR record_info[] =
 	{
 		isc_info_req_update_count, isc_info_req_delete_count,
 		isc_info_req_select_count, isc_info_req_insert_count
@@ -1029,7 +1029,7 @@ static void sql_info(thread_db* tdbb,
 								[](void* arg, SSHORT offset, const char* line)
 								{
 									auto& localPath = *static_cast<decltype(path)*>(arg);
-									auto lineLen = strlen(line);
+									auto lineLen = fb_strlen(line);
 
 									// Trim trailing spaces.
 									while (lineLen > 0 && line[lineLen - 1] == ' ')
@@ -1097,7 +1097,7 @@ static void sql_info(thread_db* tdbb,
 					items++;
 				break;
 			}
-			// else fall into
+			[[fallthrough]];
 
 		default:
 			buffer[0] = item;

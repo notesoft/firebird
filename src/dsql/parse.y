@@ -101,12 +101,12 @@
 // since UNIX isn't standard, we have to define
 // stuff which is in <limits.h> (which isn't available on all UNIXes...
 
-const long SHRT_POS_MAX			= 32767;
-const long SHRT_UNSIGNED_MAX	= 65535;
-const long SHRT_NEG_MAX			= 32768;
-const int POSITIVE	= 0;
-const int NEGATIVE	= 1;
-const int UNSIGNED	= 2;
+inline constexpr long SHRT_POS_MAX		= 32767;
+inline constexpr long SHRT_UNSIGNED_MAX	= 65535;
+inline constexpr long SHRT_NEG_MAX		= 32768;
+inline constexpr int POSITIVE	= 0;
+inline constexpr int NEGATIVE	= 1;
+inline constexpr int UNSIGNED	= 2;
 
 //const int MIN_CACHE_BUFFERS	= 250;
 //const int DEF_CACHE_BUFFERS	= 1000;
