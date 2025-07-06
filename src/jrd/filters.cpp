@@ -55,7 +55,7 @@ static void string_put(BlobControl*, const char*);
  *	  For V3 historical reasons, only ASCII byte values are passed
  *	  through.  All other byte values are mapped to ascii '.'
  */
-static const UCHAR char_tab[128] =
+static inline constexpr UCHAR char_tab[128] =
 {
 	0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0,
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -77,10 +77,10 @@ struct filter_tmp
 	TEXT tmp_string[1];
 };
 
-const char* const WILD_CARD_UIC = "(*.*)";
+inline constexpr const char* WILD_CARD_UIC = "(*.*)";
 
 // TXNN: Used on filter of internal data structure to text
-static const TEXT* acl_privs[priv_max] =
+static inline constexpr const TEXT* acl_privs[priv_max] =
 {
 	"?",
 	"control",
@@ -100,7 +100,7 @@ static const TEXT* acl_privs[priv_max] =
 	"drop_any"
 };
 
-static const TEXT* acl_ids[id_max] =
+static inline constexpr const TEXT* acl_ids[id_max] =
 {
 	"?: ",
 	"group: ",
@@ -119,7 +119,7 @@ static const TEXT* acl_ids[id_max] =
 };
 
 // TXNN: Used on filter of internal data structure to text
-static const TEXT dtypes[DTYPE_TYPE_MAX][36] =
+static inline constexpr TEXT dtypes[DTYPE_TYPE_MAX][36] =
 {
 	"none",
 	"CHAR",
@@ -474,11 +474,10 @@ ISC_STATUS filter_runtime(USHORT action, BlobControl* control)
 	// Loop thru descriptors looking for one with a data type
 	UCHAR temp[BUFFER_SMALL];
 	UCHAR* buff = temp;
-	const USHORT buff_len = sizeof(temp);
 	control->ctl_data[3] = 8;
 
 	USHORT length;
-	const ISC_STATUS status = caller(isc_blob_filter_get_segment, control, buff_len, buff, &length);
+	const ISC_STATUS status = caller(isc_blob_filter_get_segment, control, sizeof(temp), buff, &length);
 
 	if (status == isc_segment)
 		return isc_segstr_eof;
@@ -814,7 +813,7 @@ ISC_STATUS filter_transliterate_text(USHORT action, BlobControl* control)
 	thread_db* tdbb = NULL;
 	// Note: Cannot pass tdbb without API change to user filters
 
-	const USHORT EXP_SCALE		= 128;		// to keep expansion non-floating
+	constexpr USHORT EXP_SCALE = 128; // to keep expansion non-floating
 
 	ctlaux* aux = (ctlaux*) control->ctl_data[0];
 
@@ -1305,7 +1304,7 @@ static void dump_blr(void* arg, SSHORT /*offset*/, const char* line)
 	}
 
 	// Pad out to indent length with spaces
-	snprintf(temp, l + 1, "%-*s%s", data_len, "", line);
+	snprintf(temp, l + 1, "%-*s%s", static_cast<int>(data_len), "", line);
 	string_put(control, temp);
 
 	if (temp != buffer)
