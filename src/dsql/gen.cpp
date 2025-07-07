@@ -233,7 +233,7 @@ void GEN_port(DsqlCompilerScratch* dsqlScratch, dsql_msg* message)
 			parameter->par_is_text = true;
 			parameter->par_desc.dsc_dtype = dtype_varying;
 			parameter->par_desc.dsc_length = static_cast<USHORT>(
-				dataTypeUtil.fixLength(&parameter->par_desc, parameter->par_desc.dsc_length) 
+				dataTypeUtil.fixLength(&parameter->par_desc, parameter->par_desc.dsc_length)
 				+ sizeof(USHORT));
 		}
 
