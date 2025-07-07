@@ -339,6 +339,14 @@
     <ClInclude Include="..\..\..\src\jrd\recsrc\RecordSource.h" />
     <ClInclude Include="..\..\..\src\jrd\Relation.h" />
     <ClInclude Include="..\..\..\src\jrd\relations.h" />
+    <ClInclude Include="..\..\..\src\jrd\replication\Applier.h" />
+    <ClInclude Include="..\..\..\src\jrd\replication\ChangeLog.h" />
+    <ClInclude Include="..\..\..\src\jrd\replication\Config.h" />
+    <ClInclude Include="..\..\..\src\jrd\replication\Manager.h" />
+    <ClInclude Include="..\..\..\src\jrd\replication\Protocol.h" />
+    <ClInclude Include="..\..\..\src\jrd\replication\Publisher.h" />
+    <ClInclude Include="..\..\..\src\jrd\replication\Replicator.h" />
+    <ClInclude Include="..\..\..\src\jrd\replication\Utils.h" />
     <ClInclude Include="..\..\..\src\jrd\req.h" />
     <ClInclude Include="..\..\..\src\jrd\ResultSet.h" />
     <ClInclude Include="..\..\..\src\jrd\rlck_proto.h" />
