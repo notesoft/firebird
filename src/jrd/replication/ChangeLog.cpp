@@ -680,7 +680,7 @@ bool ChangeLog::archiveExecute(Segment* segment)
 		const auto archpathname = m_config->archiveDirectory.hasData() ?
 			m_config->archiveDirectory + filename : "";
 
-		size_t pos;
+		string::size_type pos;
 
 		while ( (pos = archiveCommand.find(FILENAME_WILDCARD)) != string::npos)
 			archiveCommand.replace(pos, fb_strlen(FILENAME_WILDCARD), filename);
