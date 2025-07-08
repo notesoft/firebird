@@ -1529,7 +1529,7 @@ static bool getMappedFileName(void* addr, PathName& mappedName)
 				//system_call_failed::raise("QueryDosDevice");
 				return false;
 
-			ntLen = strlen(ntDevice);
+			ntLen = static_cast<DWORD>(strlen(ntDevice));
 
 			if (ntLen <= mapLen &&
 				_memicmp(ntDevice, mapName, ntLen) == 0 &&
@@ -2095,11 +2095,11 @@ void SharedMemoryBase::unmapObject(CheckStatusWrapper* statusVector,
 
 #ifdef WIN_NT
 
-static const LPCSTR FAST_MUTEX_EVT_NAME	= "%s_FM_EVT";
-static const LPCSTR FAST_MUTEX_MAP_NAME	= "%s_FM_MAP";
+static constexpr LPCSTR FAST_MUTEX_EVT_NAME	= "%s_FM_EVT";
+static constexpr LPCSTR FAST_MUTEX_MAP_NAME	= "%s_FM_MAP";
 
-static const int DEFAULT_INTERLOCKED_SPIN_COUNT	= 0;
-static const int DEFAULT_INTERLOCKED_SPIN_COUNT_SMP	= 200;
+static constexpr int DEFAULT_INTERLOCKED_SPIN_COUNT	= 0;
+static constexpr int DEFAULT_INTERLOCKED_SPIN_COUNT_SMP	= 200;
 
 static SLONG pid = 0;
 
