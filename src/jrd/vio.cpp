@@ -151,8 +151,8 @@ static UndoDataRet get_undo_data(thread_db* tdbb, jrd_tra* transaction,
 static void invalidate_cursor_records(jrd_tra*, record_param*);
 
 // flags to pass into list_staying
-const int LS_ACTIVE_RPB		= 0x01;
-const int LS_NO_RESTART		= 0x02;
+inline constexpr int LS_ACTIVE_RPB	= 0x01;
+inline constexpr int LS_NO_RESTART	= 0x02;
 
 static void list_staying(thread_db*, record_param*, RecordStack&, int flags = 0);
 static void list_staying_fast(thread_db*, record_param*, RecordStack&, record_param* = NULL, int flags = 0);
@@ -3229,7 +3229,7 @@ bool VIO_get_current(thread_db* tdbb,
 				// Cannot use Arg::Num here because transaction number is 64-bit unsigned integer
 				ERR_post(Arg::Gds(isc_rec_in_limbo) << Arg::Int64(rpb->rpb_transaction_nr));
 			}
-			// fall thru
+			[[fallthrough]];
 
 		case tra_active:
 			// clear lock error from status vector
@@ -3427,7 +3427,7 @@ bool VIO_modify(thread_db* tdbb, record_param* org_rpb, record_param* new_rpb, j
 
 	if (needDfw(tdbb, transaction))
 	{
-		const SLONG nullLinger = 0;
+		constexpr SLONG nullLinger = 0;
 
 		switch ((RIDS) relation->rel_id)
 		{
@@ -4245,7 +4245,8 @@ void VIO_store(thread_db* tdbb, record_param* rpb, jrd_tra* transaction)
 							schemaName = depName.schema.c_str();
 					}
 
-					desc.makeText(strlen(schemaName), CS_METADATA, (UCHAR*) schemaName);
+					desc.makeText(static_cast<USHORT>(strlen(schemaName)), CS_METADATA,
+						(UCHAR*) schemaName);
 
 					MOV_move(tdbb, &desc, &schemaDesc);
 					rpb->rpb_record->clearNull(fieldId);
@@ -4296,7 +4297,8 @@ void VIO_store(thread_db* tdbb, record_param* rpb, jrd_tra* transaction)
 						case obj_package_body:
 							EVL_field(0, rpb->rpb_record, schemaFieldId, &desc2);
 
-							desc.makeText(strlen(PUBLIC_SCHEMA), CS_METADATA, (UCHAR*) PUBLIC_SCHEMA);
+							desc.makeText(static_cast<USHORT>(strlen(PUBLIC_SCHEMA)), CS_METADATA,
+								(UCHAR*) PUBLIC_SCHEMA);
 
 							MOV_move(tdbb, &desc, &desc2);
 							rpb->rpb_record->clearNull(schemaFieldId);
@@ -4956,7 +4958,7 @@ WriteLockResult VIO_writelock(thread_db* tdbb, record_param* org_rpb, jrd_tra* t
 		case PrepareResult::DELETED:
 			if (skipLocked && (transaction->tra_flags & TRA_read_committed))
 				return WriteLockResult::SKIPPED;
-			// fall thru
+			[[fallthrough]];
 
 		case PrepareResult::CONFLICT:
 			if ((transaction->tra_flags & TRA_read_consistency))
@@ -4982,7 +4984,7 @@ WriteLockResult VIO_writelock(thread_db* tdbb, record_param* org_rpb, jrd_tra* t
 			fb_assert(skipLocked);
 			if (skipLocked)
 				return WriteLockResult::SKIPPED;
-			// fall thru
+			[[fallthrough]];
 
 		case PrepareResult::LOCK_ERROR:
 			// We got some kind of locking error (deadlock, timeout or lock_conflict)
@@ -6818,7 +6820,7 @@ static PrepareResult prepare_update(thread_db* tdbb, jrd_tra* transaction, TraNu
 					// Cannot use Arg::Num here because transaction number is 64-bit unsigned integer
 					ERR_post(Arg::Gds(isc_rec_in_limbo) << Arg::Int64(rpb->rpb_transaction_nr));
 				}
-				// fall thru
+				[[fallthrough]];
 
 			case tra_active:
 				return skipLocked ? PrepareResult::SKIP_LOCKED : PrepareResult::LOCK_ERROR;
