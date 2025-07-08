@@ -7295,6 +7295,9 @@ void VIO_update_in_place(thread_db* tdbb,
 	{
 		stack = &org_rpb->rpb_record->getPrecedence();
 	}
+	// According to DS on firebird-devel: it is not possible update non-existing record so stack is
+	// unavoidable assigned to some value
+	fb_assert(stack);
 
 	Record* const old_data = org_rpb->rpb_record;
 
@@ -7327,11 +7330,8 @@ void VIO_update_in_place(thread_db* tdbb,
 		temp2.rpb_number = org_rpb->rpb_number;
 		DPM_store(tdbb, &temp2, *stack, DPM_secondary);
 
-		if (stack)
-		{
-			const USHORT pageSpaceID = temp2.getWindow(tdbb).win_page.getPageSpaceID();
-			stack->push(PageNumber(pageSpaceID, temp2.rpb_page));
-		}
+		const USHORT pageSpaceID = temp2.getWindow(tdbb).win_page.getPageSpaceID();
+		stack->push(PageNumber(pageSpaceID, temp2.rpb_page));
 	}
 
 	if (!DPM_get(tdbb, org_rpb, LCK_write))
