@@ -387,6 +387,7 @@
     <ClInclude Include="..\..\..\src\jrd\types.h" />
     <ClInclude Include="..\..\..\src\jrd\UserManagement.h" />
     <ClInclude Include="..\..\..\src\jrd\val.h" />
+    <ClInclude Include="..\..\..\src\jrd\validation.h" />
     <ClInclude Include="..\..\..\src\jrd\val_proto.h" />
     <ClInclude Include="..\..\..\src\jrd\vio_debug.h" />
     <ClInclude Include="..\..\..\src\jrd\vio_proto.h" />

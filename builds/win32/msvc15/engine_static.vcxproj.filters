@@ -1137,6 +1137,9 @@
     <ClInclude Include="..\..\..\src\jrd\replication\Utils.h">
       <Filter>Replication\Headers</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\src\jrd\validation.h">
+      <Filter>Header files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\src\dsql\DdlNodes.epp">
