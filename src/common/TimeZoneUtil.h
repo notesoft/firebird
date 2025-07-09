@@ -176,17 +176,17 @@ public:
 	IcuCalendarWrapper& operator=(const IcuCalendarWrapper&) = delete;
 
 public:
-	UCalendar* operator->()
+	UCalendar* operator->() noexcept
 	{
 		return wrapped;
 	}
 
-	operator UCalendar*()
+	operator UCalendar*() noexcept
 	{
 		return wrapped;
 	}
 
-	bool operator!() const
+	bool operator!() const noexcept
 	{
 		return !wrapped;
 	}
