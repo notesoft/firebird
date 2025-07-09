@@ -89,7 +89,7 @@ void Tokens::parse(FB_SIZE_T length, const char* toParse)
 						p2 = str.length();
 					}
 					else
-						p2 += strlen(comm->stop);
+						p2 += fb_strlen(comm->stop);
 
 					str.erase(p, p2 - p);
 					origin += (p2 - p);
