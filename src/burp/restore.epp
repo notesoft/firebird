@@ -2483,7 +2483,7 @@ bool get_character_set(BurpGlobals* tdgbl)
 	{
 	};
 
-	QualifiedMetaString name;
+	QualifiedMetaString charset, collate;
 	att_type		attribute;
 	scan_attr_t		scan_next_attr;
 
@@ -2492,7 +2492,7 @@ bool get_character_set(BurpGlobals* tdgbl)
 		if (tdgbl->runtimeODS >= DB_VERSION_DDL12)
 		{
 			if (tdgbl->runtimeODS >= DB_VERSION_DDL14)
-				name.schema = PUBLIC_SCHEMA;
+				collate.schema = charset.schema = PUBLIC_SCHEMA;
 
 			bool securityClass = false;
 
@@ -2522,14 +2522,14 @@ bool get_character_set(BurpGlobals* tdgbl)
 					case att_charset_schema_name:
 						X.RDB$SCHEMA_NAME.NULL = FALSE;
 						GET_TEXT(X.RDB$SCHEMA_NAME);
-						name.schema = X.RDB$SCHEMA_NAME;
+						charset.schema = X.RDB$SCHEMA_NAME;
 						break;
 
 					case att_charset_name:
 						X.RDB$CHARACTER_SET_NAME.NULL = FALSE;
 						GET_TEXT(X.RDB$CHARACTER_SET_NAME);
-						name.object = X.RDB$CHARACTER_SET_NAME;
-						BURP_verbose(msgVerbose_restore_charset, name.toQuotedString());
+						charset.object = X.RDB$CHARACTER_SET_NAME;
+						BURP_verbose(msgVerbose_restore_charset, charset.toQuotedString());
 						break;
 
 					case att_charset_form:
@@ -2545,11 +2545,13 @@ bool get_character_set(BurpGlobals* tdgbl)
 					case att_charset_coll_schema_name:
 						X.RDB$DEFAULT_COLLATE_SCHEMA_NAME.NULL = FALSE;
 						GET_TEXT(X.RDB$DEFAULT_COLLATE_SCHEMA_NAME);
+						collate.schema = X.RDB$DEFAULT_COLLATE_SCHEMA_NAME;
 						break;
 
 					case att_charset_coll:
 						X.RDB$DEFAULT_COLLATE_NAME.NULL = FALSE;
 						GET_TEXT(X.RDB$DEFAULT_COLLATE_NAME);
+						collate.object = X.RDB$DEFAULT_COLLATE_NAME;
 						break;
 
 					case att_charset_id:
@@ -2609,10 +2611,7 @@ bool get_character_set(BurpGlobals* tdgbl)
 				if (X.RDB$CHARACTER_SET_ID.NULL && !X.RDB$DEFAULT_COLLATE_NAME.NULL &&
 					!X.RDB$CHARACTER_SET_NAME.NULL)
 				{
-					tdgbl->defaultCollations.put(
-						QualifiedMetaString(X.RDB$CHARACTER_SET_NAME, X.RDB$SCHEMA_NAME),
-						QualifiedMetaString(X.RDB$DEFAULT_COLLATE_NAME, X.RDB$DEFAULT_COLLATE_SCHEMA_NAME));
-
+					tdgbl->defaultCollations.put(charset, collate);
 					throw AbortException();	// prevent the STORE
 				}
 			}
@@ -2621,7 +2620,7 @@ bool get_character_set(BurpGlobals* tdgbl)
 				general_on_error ();
 			END_ERROR
 
-			collect_missing_privs(tdgbl, obj_charset, name, securityClass);
+			collect_missing_privs(tdgbl, obj_charset, charset, securityClass);
 		}
 		else
 		{
@@ -2646,8 +2645,8 @@ bool get_character_set(BurpGlobals* tdgbl)
 					case att_charset_name:
 						X.RDB$CHARACTER_SET_NAME.NULL = FALSE;
 						GET_TEXT(X.RDB$CHARACTER_SET_NAME);
-						name.object = X.RDB$CHARACTER_SET_NAME;
-						BURP_verbose(msgVerbose_restore_charset, name.toQuotedString());
+						charset.object = X.RDB$CHARACTER_SET_NAME;
+						BURP_verbose(msgVerbose_restore_charset, charset.toQuotedString());
 						break;
 
 					case att_charset_form:
@@ -2708,10 +2707,7 @@ bool get_character_set(BurpGlobals* tdgbl)
 				if (X.RDB$CHARACTER_SET_ID.NULL && !X.RDB$DEFAULT_COLLATE_NAME.NULL &&
 					!X.RDB$CHARACTER_SET_NAME.NULL)
 				{
-					tdgbl->defaultCollations.put(
-						QualifiedMetaString(X.RDB$CHARACTER_SET_NAME),
-						QualifiedMetaString(X.RDB$DEFAULT_COLLATE_NAME));
-
+					tdgbl->defaultCollations.put(charset, collate);
 					throw AbortException();	// prevent the STORE
 				}
 
