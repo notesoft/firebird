@@ -349,13 +349,13 @@ static USHORT do_msgs(const TEXT* filename)
 
 		prior_code = leaf_node->msgrec_code;
 
-		leaf_node->msgrec_length = textLen;
+		leaf_node->msgrec_length = static_cast<USHORT>(textLen);
 		// Let's not store trash in flags.
 		leaf_node->msgrec_flags = 0;
 		//n = offsetof(msgrec, msgrec_text) + textLen; // useless? See assignment below.
 		TEXT* p = leaf_node->msgrec_text;
 		memcpy(p, message.text, textLen);
-		n = p + textLen - (SCHAR*) leaf; // For the next iteration.
+		n = static_cast<USHORT>(p + textLen - (SCHAR*) leaf); // For the next iteration.
 		leaf_node = leaf_node->next();
 	}
 
