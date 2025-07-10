@@ -47,10 +47,10 @@
 #include "../common/utils_proto.h"
 
 
-const int DEFAULT_BLOB_SEGMENT_LENGTH	= 80;	// bytes
+constexpr int DEFAULT_BLOB_SEGMENT_LENGTH = 80;	// bytes
 
-const char* const OLD_CONTEXT = "OLD";
-const char* const NEW_CONTEXT = "NEW";
+constexpr const char* OLD_CONTEXT = "OLD";
+constexpr const char* NEW_CONTEXT = "NEW";
 
 static act* act_alter();
 static act* act_alter_database();
@@ -138,19 +138,19 @@ static void			to_upcase(const TEXT*, TEXT*, int);
 static swe* global_whenever[SWE_max];
 static swe* global_whenever_list;
 
-static inline bool end_of_command()
+static inline bool end_of_command() noexcept
 {
 	return
 		(gpreGlob.sw_language != lang_cobol && gpreGlob.token_global.tok_keyword == KW_SEMI_COLON) ||
 		(gpreGlob.sw_language == lang_cobol && gpreGlob.token_global.tok_keyword == KW_END_EXEC);
 }
 
-static inline bool range_short_integer(const SLONG x)
+static inline bool range_short_integer(const SLONG x) noexcept
 {
 	return (x < 32768 && x >= -32768);
 }
 
-static inline bool range_positive_short_integer(const SLONG x)
+static inline bool range_positive_short_integer(const SLONG x) noexcept
 {
 	return (x < 32768 && x >= 0);
 }
@@ -469,7 +469,7 @@ void SQL_adjust_field_dtype( gpre_fld* field)
 //		Initialize (or re-initialize) to process a module.
 //
 
-void SQL_init()
+void SQL_init() noexcept
 {
 	global_whenever_list = NULL;
 
@@ -673,7 +673,7 @@ void SQL_par_field_dtype(gpre_req* request, gpre_fld* field, bool is_udf)
 			CPR_s_error("CHARACTER");
 		PAR_get_token();
 		field->fld_flags |= FLD_national;
-		// Fall into KW_CHAR
+		[[fallthrough]];
 	case KW_CHAR:
 		if (MSC_match(KW_VARYING))
 		{
@@ -683,6 +683,7 @@ void SQL_par_field_dtype(gpre_req* request, gpre_fld* field, bool is_udf)
 			EXP_match_paren();
 			break;
 		}
+		[[fallthrough]];
 	case KW_CSTRING:
 		if (keyword == KW_CSTRING)
 		{
@@ -4786,10 +4787,12 @@ static act* act_update()
 
 		gpre_nod* var_list = SQE_list(SQE_variable, request, false);
 
-		gpre_sym* old_ctx_sym = MSC_symbol(SYM_context, OLD_CONTEXT, strlen(OLD_CONTEXT), input_context);
+		gpre_sym* old_ctx_sym = MSC_symbol(SYM_context, OLD_CONTEXT,
+			static_cast<USHORT>(strlen(OLD_CONTEXT)), input_context);
 		HSH_insert(old_ctx_sym);
 
-		gpre_sym* new_ctx_sym = MSC_symbol(SYM_context, NEW_CONTEXT, strlen(NEW_CONTEXT), update_context);
+		gpre_sym* new_ctx_sym = MSC_symbol(SYM_context, NEW_CONTEXT,
+			static_cast<USHORT>(strlen(NEW_CONTEXT)), update_context);
 		HSH_insert(new_ctx_sym);
 
 		ret_list = return_values(request, value_list, var_list);
@@ -5049,7 +5052,8 @@ static act* act_upsert(void)
 
 		gpre_nod* var_list = SQE_list(SQE_variable, request, false);
 
-		gpre_sym* old_ctx_sym = MSC_symbol(SYM_context, OLD_CONTEXT, strlen(OLD_CONTEXT), context);
+		gpre_sym* old_ctx_sym = MSC_symbol(SYM_context, OLD_CONTEXT,
+			static_cast<USHORT>(strlen(OLD_CONTEXT)), context);
 		HSH_insert(old_ctx_sym);
 
 		// temporarily hide the insertion context
@@ -5057,7 +5061,8 @@ static act* act_upsert(void)
 		fb_assert(request->req_contexts == insert_context);
 		request->req_contexts = request->req_contexts->ctx_next;
 
-		gpre_sym* new_ctx_sym = MSC_symbol(SYM_context, NEW_CONTEXT, strlen(NEW_CONTEXT), update_context);
+		gpre_sym* new_ctx_sym = MSC_symbol(SYM_context, NEW_CONTEXT,
+			static_cast<USHORT>(strlen(NEW_CONTEXT)), update_context);
 		HSH_insert(new_ctx_sym);
 
 		upd_ret_list = return_values(request, value_list, var_list);
