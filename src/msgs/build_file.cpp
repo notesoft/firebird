@@ -40,7 +40,7 @@
 #include <unistd.h>
 #endif
 
-const int max_levels = 4;
+constexpr int max_levels = 4;
 typedef msgnod* msgnod_ptr_array[max_levels];
 
 static char* copy_terminate(char* dest, const char* src, size_t bufsize);
@@ -342,7 +342,7 @@ static USHORT do_msgs(const TEXT* filename)
 
 		if (leaf_node->msgrec_code <= prior_code && prior_code != 0)
 		{
-			fprintf(stderr, "Out of order messages (src/include/firebird/impl/msg/*.h): %d x %d\n",
+			fprintf(stderr, "Out of order messages (src/include/firebird/impl/msg/*.h): %" ULONGFORMAT " x %" ULONGFORMAT "\n",
 				leaf_node->msgrec_code, prior_code);
 			exit(FINI_ERROR);
 		}
@@ -465,7 +465,7 @@ static SLONG write_bucket(const msgnod* bucket, USHORT length)
 		exit(FINI_ERROR);
 	}
 
-	const SLONG zero_bytes = 0;
+	constexpr SLONG zero_bytes = 0;
 	n = write(global_file, &zero_bytes, padded_length - length);
 	if (n == -1)
 	{
