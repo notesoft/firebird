@@ -1130,8 +1130,8 @@ void exactNumericToStr(SINT64 value, int scale, Firebird::string& target, bool a
 		return;
 	}
 
-	const int MAX_SCALE = 25;
-	const int MAX_BUFFER = 50;
+	constexpr int MAX_SCALE = 25;
+	constexpr int MAX_BUFFER = 50;
 
 	if (scale < -MAX_SCALE || scale > MAX_SCALE)
 	{
@@ -1233,7 +1233,7 @@ Firebird::PathName getPrefix(unsigned int prefType, const char* name)
 #else
 	char tmp[MAXPATHLEN];
 
-	const char* configDir[] = {
+	static constexpr const char* configDir[] = {
 		FB_BINDIR, FB_SBINDIR, FB_CONFDIR, FB_LIBDIR, FB_INCDIR, FB_DOCDIR, "", FB_SAMPLEDIR,
 		FB_SAMPLEDBDIR, "", FB_INTLDIR, FB_MISCDIR, FB_SECDBDIR, FB_MSGDIR, FB_LOGDIR,
 		FB_GUARDDIR, FB_PLUGDIR, FB_TZDATADIR
@@ -1470,10 +1470,10 @@ bool cmpStatus(unsigned int len, const ISC_STATUS* a, const ISC_STATUS* b) noexc
 		if (i > len)		// arg does not fit
 			return false;
 
-		unsigned l1, l2;
-		const char *s1, *s2;
 		if (isStr(*op1))
 		{
+			FB_SIZE_T l1, l2;
+			const char* s1, * s2;
 			if (*op1 == isc_arg_cstring)
 			{
 				l1 = op1[1];
@@ -1485,8 +1485,8 @@ bool cmpStatus(unsigned int len, const ISC_STATUS* a, const ISC_STATUS* b) noexc
 			{
 				s1 = (const char*)(op1[1]);
 				s2 = (const char*)(op2[1]);
-				l1 = strlen(s1);
-				l2 = strlen(s2);
+				l1 = fb_strlen(s1);
+				l2 = fb_strlen(s2);
 			}
 
 			if (l1 != l2)
@@ -1520,7 +1520,7 @@ unsigned int subStatus(const ISC_STATUS* in, unsigned int cin,
 
 			if (isStr(*op1))
 			{
-				unsigned l1, l2;
+				FB_SIZE_T l1, l2;
 				const char *s1, *s2;
 				if (*op1 == isc_arg_cstring)
 				{
@@ -1533,8 +1533,8 @@ unsigned int subStatus(const ISC_STATUS* in, unsigned int cin,
 				{
 					s1 = (const char*) (op1[1]);
 					s2 = (const char*) (op2[1]);
-					l1 = strlen(s1);
-					l2 = strlen(s2);
+					l1 = fb_strlen(s1);
+					l2 = fb_strlen(s2);
 				}
 
 				if (l1 != l2)
