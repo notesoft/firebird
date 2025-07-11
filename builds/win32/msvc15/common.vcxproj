@@ -188,7 +188,6 @@
     <ClInclude Include="..\..\..\src\common\dllinst.h" />
     <ClInclude Include="..\..\..\src\common\dsc.h" />
     <ClInclude Include="..\..\..\src\common\dsc_proto.h" />
-    <ClInclude Include="..\..\..\src\common\dsc_pub.h" />
     <ClInclude Include="..\..\..\src\common\DynamicStrings.h" />
     <ClInclude Include="..\..\..\src\common\dyntable.h" />
     <ClInclude Include="..\..\..\src\common\enc_proto.h" />
@@ -237,6 +236,7 @@
     <ClInclude Include="..\..\..\src\common\utils_proto.h" />
     <ClInclude Include="..\..\..\src\common\xdr.h" />
     <ClInclude Include="..\..\..\src\common\xdr_proto.h" />
+    <ClInclude Include="..\..\..\src\include\firebird\impl\dsc_pub.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{15605F44-BFFD-444F-AD4C-55DC9D704465}</ProjectGuid>
