@@ -10039,6 +10039,7 @@ void CreateAlterViewNode::createCheckTrigger(thread_db* tdbb, DsqlCompilerScratc
 
 	TriggerDefinition trigger(pool);
 	trigger.systemFlag = fb_sysflag_view_check;
+	trigger.name.schema = name.schema;
 	trigger.relationName = name;
 	trigger.type = triggerType;
 	trigger.blrData = dsqlScratch->getBlrData();
