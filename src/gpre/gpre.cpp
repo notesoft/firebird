@@ -193,7 +193,7 @@ struct ext_table_t
 };
 
 
-static const ext_table_t dml_ext_table[] =
+static constexpr ext_table_t dml_ext_table[] =
 {
 	{ lang_c, IN_SW_GPRE_C, ".e", ".c" },
 
@@ -234,13 +234,13 @@ static const ext_table_t dml_ext_table[] =
 	{ lang_undef, IN_SW_GPRE_0, NULL, NULL }
 };
 
-const UCHAR CHR_LETTER	= 1;
-const UCHAR	CHR_DIGIT	= 2;
-const UCHAR CHR_IDENT	= 4;
-const UCHAR CHR_QUOTE	= 8;
-const UCHAR CHR_WHITE	= 16;
-const UCHAR CHR_INTRODUCER	= 32;
-const UCHAR CHR_DBLQUOTE	= 64;
+constexpr UCHAR CHR_LETTER	= 1;
+constexpr UCHAR	CHR_DIGIT	= 2;
+constexpr UCHAR CHR_IDENT	= 4;
+constexpr UCHAR CHR_QUOTE	= 8;
+constexpr UCHAR CHR_WHITE	= 16;
+constexpr UCHAR CHR_INTRODUCER	= 32;
+constexpr UCHAR CHR_DBLQUOTE	= 64;
 
 
 static void atexit_fb_shutdown()
@@ -891,7 +891,7 @@ int main(int argc, char* argv[])
 //		Abort this silly program.
 //
 
-void CPR_abort()
+[[noreturn]] void CPR_abort()
 {
 	++fatals_global;
 	//throw Firebird::Exception();
@@ -905,11 +905,11 @@ void CPR_abort()
 //		Report an assertion failure and abort this silly program.
 //
 
-void CPR_assert(const TEXT* file, int line)
+[[noreturn]] void CPR_assert(const TEXT* file, int line)
 {
 	TEXT buffer[MAXPATHLEN << 1];
 
-	fb_utils::snprintf(buffer, sizeof(buffer),
+	snprintf(buffer, sizeof(buffer),
 		"GPRE assertion failure file '%s' line '%d'", file, line);
 	CPR_bugcheck(buffer);
 }
@@ -921,7 +921,7 @@ void CPR_assert(const TEXT* file, int line)
 //		Issue an error message.
 //
 
-void CPR_bugcheck(const TEXT* string)
+[[noreturn]] void CPR_bugcheck(const TEXT* string)
 {
 	fprintf(stderr, "*** INTERNAL BUGCHECK: %s ***\n", string);
 	MET_fini(0);
@@ -959,7 +959,7 @@ int CPR_error(const TEXT* string)
 //		Exit with status.
 //
 
-void CPR_exit( int stat)
+[[noreturn]] void CPR_exit( int stat)
 {
 #ifdef LINUX
 
@@ -1137,12 +1137,12 @@ void CPR_get_text( TEXT* buffer, const gpre_txt* text)
 //		Generate a syntax error.
 //
 
-void CPR_s_error(const TEXT* string)
+[[noreturn]] void CPR_s_error(const TEXT* string)
 {
 	TEXT s[512];
 
-	fb_utils::snprintf(s, sizeof(s),
-					   "expected %s, encountered \"%s\"", string, gpreGlob.token_global.tok_string);
+	snprintf(s, sizeof(s),
+		"expected %s, encountered \"%s\"", string, gpreGlob.token_global.tok_string);
 	CPR_error(s);
 	PAR_unwind();
 }
