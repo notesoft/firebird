@@ -311,7 +311,7 @@ void TDR_list_limbo(FB_API_HANDLE handle, const TEXT* name, const SINT64 switche
 				ALICE_print(71, SafeArg() << id);
 				// msg 71: Transaction %d is in limbo.
 			}
-			if (trans = MET_get_transaction(status_vector, handle, id))
+			if ((trans = MET_get_transaction(status_vector, handle, id)))
 			{
 				if (id > TraNumber(MAX_SLONG))
 					tdgbl->uSvc->putSInt64(isc_spb_multi_tra_id_64, id);
