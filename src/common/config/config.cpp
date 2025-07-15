@@ -282,7 +282,7 @@ void Config::loadValues(const ConfigFile& file, const char* srcName)
 	checkValues();
 }
 
-static const char* txtServerModes[6] =
+static constexpr const char* txtServerModes[6] =
 {
 	"Super", "ThreadedDedicated",
 	"SuperClassic", "ThreadedShared",
@@ -445,6 +445,9 @@ Config::~Config()
 			break;
 		//case TYPE_STRING_VECTOR:
 		//	break;
+		default:
+			// nothing to free
+			break;
 		}
 	}
 
@@ -580,6 +583,9 @@ ConfigValue Config::specialProcessing(ConfigKey key, ConfigValue val)
 			if (!val.strVal)
 				val.strVal = "security.db";
 		}
+		break;
+	default:
+		// no special processing
 		break;
 	}
 
@@ -724,7 +730,7 @@ int Config::getWireCrypt(WireCryptMode wcMode) const
 ///	class FirebirdConf
 
 // array format: major, minor, release, build
-static unsigned short fileVerNumber[4] = {FILE_VER_NUMBER};
+static constexpr unsigned short fileVerNumber[4] = {FILE_VER_NUMBER};
 
 static inline unsigned int getPartialVersion()
 {
@@ -738,8 +744,8 @@ static inline unsigned int getFullVersion()
 	return getPartialVersion() | fileVerNumber[3];
 }
 
-static unsigned int PARTIAL_MASK = 0xFFFF0000;
-static unsigned int KEY_MASK = 0xFFFF;
+static constexpr unsigned int PARTIAL_MASK = 0xFFFF0000;
+static constexpr unsigned int KEY_MASK = 0xFFFF;
 
 static inline void checkKey(unsigned int& key)
 {

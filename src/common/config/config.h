@@ -78,17 +78,17 @@ extern const char*	GCPolicyCooperative;
 extern const char*	GCPolicyBackground;
 extern const char*	GCPolicyCombined;
 
-const int WIRE_CRYPT_DISABLED = 0;
-const int WIRE_CRYPT_ENABLED = 1;
-const int WIRE_CRYPT_REQUIRED = 2;
+inline constexpr int WIRE_CRYPT_DISABLED = 0;
+inline constexpr int WIRE_CRYPT_ENABLED = 1;
+inline constexpr int WIRE_CRYPT_REQUIRED = 2;
 
 enum WireCryptMode {WC_CLIENT, WC_SERVER};		// Have different defaults
 
-const int MODE_SUPER = 0;
-const int MODE_SUPERCLASSIC = 1;
-const int MODE_CLASSIC = 2;
+inline constexpr int MODE_SUPER = 0;
+inline constexpr int MODE_SUPERCLASSIC = 1;
+inline constexpr int MODE_CLASSIC = 2;
 
-const char* const CONFIG_FILE = "firebird.conf";
+constexpr const char* CONFIG_FILE = "firebird.conf";
 
 struct ConfigValue
 {
@@ -209,7 +209,7 @@ struct ConfigEntry
 	ConfigValue default_value;
 };
 
-constexpr ConfigEntry entries[MAX_CONFIG_KEY] =
+inline constexpr ConfigEntry entries[MAX_CONFIG_KEY] =
 {
 	{TYPE_INTEGER,	"TempBlockSize",			true,	1048576},	// bytes
 	{TYPE_INTEGER,	"TempCacheLimit",			false,	-1},		// bytes
