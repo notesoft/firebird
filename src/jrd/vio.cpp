@@ -4955,6 +4955,9 @@ WriteLockResult VIO_writelock(thread_db* tdbb, record_param* org_rpb, jrd_tra* t
 	switch (prepare_update(tdbb, transaction, org_rpb->rpb_transaction_nr, org_rpb, &temp, &new_rpb,
 						   stack, true))
 	{
+		case PrepareResult::SUCCESS:
+			break;
+
 		case PrepareResult::DELETED:
 			if (skipLocked && (transaction->tra_flags & TRA_read_committed))
 				return WriteLockResult::SKIPPED;
