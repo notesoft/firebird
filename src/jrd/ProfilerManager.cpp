@@ -1182,8 +1182,9 @@ void ProfilerListener::processCommand(thread_db* tdbb, ProfilerIpc::Tag tag, UCh
 			const string pluginOptions(in->pluginOptions.str,
 				in->pluginOptionsNull ? 0 : in->pluginOptions.length);
 
-			const auto out = reinterpret_cast<ProfilerPackage::StartSessionOutput::Type*>(buffer.begin());
+			ProfilerPackage::StartSessionOutput::Type* out;
 			buffer.resize(sizeof(*out));
+			out = reinterpret_cast<decltype(out)>(buffer.begin());
 
 			out->sessionIdNull = FB_FALSE;
 			out->sessionId = profilerManager->startSession(tdbb, flushInterval,
