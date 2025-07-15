@@ -102,12 +102,12 @@ struct sig
 typedef sig *SIG;
 
 // flags
-const USHORT SIG_user		= 0;		// Our routine
-const USHORT SIG_client		= 1;		// Not our routine
-const USHORT SIG_informs	= 2;		// routine tells us whether to chain
+constexpr USHORT SIG_user		= 0;		// Our routine
+constexpr USHORT SIG_client		= 1;		// Not our routine
+constexpr USHORT SIG_informs	= 2;		// routine tells us whether to chain
 
-//const SLONG SIG_informs_continue	= 0;	// continue on signal processing
-const SLONG SIG_informs_stop		= 1;	// stop signal processing
+//constexpr SLONG SIG_informs_continue	= 0;	// continue on signal processing
+constexpr SLONG SIG_informs_stop		= 1;	// stop signal processing
 
 namespace {
 	SIG volatile signals = NULL;
@@ -281,7 +281,7 @@ void ISC_signal_cancel(int signal_number, FPTR_VOID_PTR handler, void* arg)
 
 	Firebird::MutexLockGuard guard(sigMutex->mutex, "ISC_signal_cancel");
 
-	for (ptr = &signals; sig = *ptr;) {
+	for (ptr = &signals; (sig = *ptr);) {
 		if (sig->sig_signal == signal_number &&
 			(handler == NULL ||
 			 (sig->sig_routine.user == handler && sig->sig_arg == arg)))
