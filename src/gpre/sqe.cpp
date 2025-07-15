@@ -4041,6 +4041,8 @@ static bool validate_references(const gpre_nod* fields, const gpre_nod* group_by
 		case nod_cast:
 			invalid |= validate_references(*ptr, group_by);
 			break;
+		default:
+			break;
 		}
 	}
 
