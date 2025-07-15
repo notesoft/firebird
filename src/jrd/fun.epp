@@ -761,6 +761,8 @@ void FUN_evaluate(thread_db* tdbb, const Function* function, const NestValueArra
 
 	switch (udfError)
 	{
+	case UeNone:
+		break;
 	case UeUnsupDtype:
 		IBERROR(169);			// msg 169 return data type not supported
 		break;
