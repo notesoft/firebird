@@ -1994,7 +1994,7 @@ static SLONG get_number( const SCHAR* string)
 	SCHAR c;
 	SLONG value = 0;
 
-	for (const SCHAR* p = string; c = *p++;)
+	for (const SCHAR* p = string; (c = *p++);)
 	{
 		if (c < '0' || c > '9')
 			return 0;
@@ -2612,7 +2612,7 @@ static ULONG get_size(const SCHAR* string, burp_fil* file)
 	bool digit = false;
 
 	file->fil_size_code = size_n;
-	for (const SCHAR *num = string; c = *num++;)
+	for (const SCHAR *num = string; (c = *num++);)
 	{
 		if (isdigit(c))
 		{
