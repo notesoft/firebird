@@ -609,9 +609,12 @@ static const char* getRelationScopeName(const rel_t type)
 		return REL_SCOPE_VIEW;
 	case rel_virtual:
 		return REL_SCOPE_VIRTUAL;
+	case rel_persistent:
+		return REL_SCOPE_PERSISTENT;
+	default:
+		fb_assert(false);
+		return REL_SCOPE_PERSISTENT; // keep compiler happy
 	}
-
-	return REL_SCOPE_PERSISTENT;
 }
 
 // Check, can relation of given type be used in FK?
@@ -7127,6 +7130,9 @@ void RelationNode::defineConstraint(thread_db* tdbb, DsqlCompilerScratch* dsqlSc
 
 				break;
 			}
+			default:
+				// no index needed
+				break;
 		}
 	}
 	END_STORE
@@ -11395,6 +11401,9 @@ void MappingNode::runInSecurityDb(SecDbContext* secDbContext)
 			case MAP_DROP:
 				sql = "delete from RDBAUTH_MAPPING where RDB$MAP_NAME = ?";
 				msg = &msgCheck;
+				break;
+			default:
+				// handled by assert below
 				break;
 			}
 
