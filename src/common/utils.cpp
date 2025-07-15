@@ -1445,7 +1445,7 @@ void random64(Firebird::string& randomValue, FB_SIZE_T length)
 	randomValue.resize(length, '$');
 }
 
-void logAndDie(const char* text)
+[[noreturn]] void logAndDie(const char* text)
 {
 	gds__log(text);
 	Firebird::Syslog::Record(Firebird::Syslog::Error, text);
