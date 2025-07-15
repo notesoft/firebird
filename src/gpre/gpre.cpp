@@ -1396,7 +1396,7 @@ static bool file_rename(TEXT* file_nameL, const TEXT* extension, const TEXT* new
 
 	if (*p != '.')
 	{
-		while (*terminator++ = *extension++)
+		while ((*terminator++ = *extension++))
 			;
 		return true;
 	}
@@ -1412,7 +1412,7 @@ static bool file_rename(TEXT* file_nameL, const TEXT* extension, const TEXT* new
 		{
 			if (new_extension)
 			{
-				while (*ext++ = *new_extension++)
+				while ((*ext++ = *new_extension++))
 					;
 			}
 			return false;
@@ -1649,7 +1649,7 @@ static bool get_switches(int			argc,
 				sw_table_iterator->sw_in_sw = IN_SW_GPRE_0;
 				const TEXT* q;
 				for (const Switches::in_sw_tab_t* in_sw_table_iterator = in_sw_table;
-					 q = in_sw_table_iterator->in_sw_name;
+					 (q = in_sw_table_iterator->in_sw_name);
 					 in_sw_table_iterator++)
 				{
 					const TEXT* p = string + 1;
@@ -2380,7 +2380,7 @@ static SLONG pass1(const TEXT* base_directory)
 				do
 				{
 					global_last_action = action;
-					if (action = action->act_rest)
+					if ((action = action->act_rest))
 					{
 						if (action->act_type == ACT_database)
 						{
