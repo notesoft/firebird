@@ -174,6 +174,9 @@ public:
 			curs = NULL;
 			break;
 		  }
+		case NONE:
+			// nothing to do
+			break;
 		}
 
 		if (tra)
