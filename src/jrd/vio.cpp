@@ -696,6 +696,8 @@ inline void check_gbak_cheating_delete(thread_db* tdbb, const jrd_rel* relation)
 			case rel_triggers:
 			case rel_indices:
 			case rel_gens:
+			case rel_classes:
+			case rel_priv:
 				return;
 			}
 		}
