@@ -291,6 +291,7 @@
 #define debug_str=""
 #endif
 
+#define InstallTimeStamp GetDateTimeString('yyyymmdd-hhnnss','','')
 
 [Setup]
 AppName={#MyAppName}
@@ -423,11 +424,11 @@ Name: CopyFbClientAsGds32Task; Description: {cm:CopyFbClientAsGds32Task}; Compon
 ; due to the changes required to support MSVC15 support for earlier versions is now broken.
 #if Int(msvc_runtime_major_version,14) >= 14
 #if PlatformTarget != "arm64"
-Filename: msiexec.exe; Parameters: "/qn /norestart /i ""{tmp}\vccrt{#msvc_runtime_library_version}_Win32.msi"" /L*v ""{tmp}\vccrt{#msvc_runtime_library_version}_Win32.log"" "; StatusMsg: "Installing MSVC 32-bit runtime libraries to system directory"; Check: HasWI30; Components: ClientComponent;
+Filename: msiexec.exe; Parameters: "/qn /norestart /i ""{tmp}\vccrt{#msvc_runtime_library_version}_Win32.msi"" /l*v ""{code:MsiexecLogDir}\vccrt{#msvc_runtime_library_version}_Win32-{#InstallTimeStamp}.log"" "; StatusMsg: "Installing MSVC 32-bit runtime libraries to system directory"; Check: InstallVCRT; Components: ClientComponent;
 #elif PlatformTarget == "x64"
-Filename: msiexec.exe; Parameters: "/qn /norestart /i ""{tmp}\vccrt{#msvc_runtime_library_version}_x64.msi"" /L*v ""{tmp}\vccrt{#msvc_runtime_library_version}_x64.log"" ";  StatusMsg: "Installing MSVC 64-bit runtime libraries to system directory"; Check: HasWI30; Components: ClientComponent;
+Filename: msiexec.exe; Parameters: "/qn /norestart /i ""{tmp}\vccrt{#msvc_runtime_library_version}_x64.msi"" /l*v ""{code:MsiexecLogDir}\vccrt{#msvc_runtime_library_version}_x64-{#InstallTimeStamp}.log"" ";  StatusMsg: "Installing MSVC 64-bit runtime libraries to system directory"; Check: InstallVCRT; Components: ClientComponent;
 #elif PlatformTarget == "arm64"
-; Filename: msiexec.exe; Parameters: "/qn /norestart /i ""{tmp}\vccrt{#msvc_runtime_library_version}_arm64.msi"" /L*v ""{tmp}\vccrt{#msvc_runtime_library_version}_arm64.log"" ";  StatusMsg: "Installing MSVC ARM64 runtime libraries to system directory"; Check: HasWI30; Components: ClientComponent;
+;Filename: msiexec.exe; Parameters: "/qn /norestart /i ""{tmp}\vccrt{#msvc_runtime_library_version}_arm64.msi"" /L*v ""{code:MsiexecLogDir}\vccrt{#msvc_runtime_library_version}_arm64-{#InstallTimeStamp}.log"" ";  StatusMsg: "Installing MSVC ARM64 runtime libraries to system directory"; Check: InstallVCRT; Components: ClientComponent;
 #endif
 #endif
 
