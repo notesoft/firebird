@@ -5954,7 +5954,7 @@ bool get_global_field(BurpGlobals* tdgbl)
 			if (X.RDB$FIELD_TYPE <= DTYPE_BLR_MAX)
 			{
 				SSHORT l = gds_cvt_blr_dtype[X.RDB$FIELD_TYPE];
-				if (l = type_lengths[l])
+				if ((l = type_lengths[l]) != 0)
 					X.RDB$FIELD_LENGTH = l;
 			}
 
@@ -9303,7 +9303,7 @@ void get_source_blob(BurpGlobals* tdgbl, ISC_QUAD& blob_id, bool glb_trans)
 	while (length > 0)
 	{
 		UCHAR* p = buffer;
-		while (*p++ = get(tdgbl))
+		while ((*p++ = get(tdgbl)))
 			length--;
 		--p;
 		--length; // -- or ++ ??? p is decremented, will have to test.
