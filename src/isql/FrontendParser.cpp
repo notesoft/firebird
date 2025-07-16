@@ -423,6 +423,9 @@ FrontendParser::AnySetNode FrontendParser::parseSet()
 
 			break;
 		}
+
+		default:
+			break;
 	}
 
 	return InvalidNode();
@@ -654,6 +657,9 @@ FrontendParser::AnyShowNode FrontendParser::parseShow()
 
 			break;
 		}
+
+		default:
+			break;
 	}
 
 	return InvalidNode();
