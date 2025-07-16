@@ -726,6 +726,7 @@ begin
 end;
 
 
+
 function InitializeSetup(): Boolean;
 var
   i: Integer;
@@ -749,9 +750,9 @@ begin
 
   if ((pos('HELP',Uppercase(CommandLine)) > 0) or
     (pos('--',Uppercase(CommandLine)) > 0) )
-//	or
-//    (pos('/?',Uppercase(CommandLine)) > 0) or		// InnoSetup displays its own help if these switches are passed.
-//    (pos('/H',Uppercase(CommandLine)) > 0) ) 		// Note also that our help scren only appears after the Choose Language dialogue :-(
+//  or
+//    (pos('/?',Uppercase(CommandLine)) > 0) or // InnoSetup displays its own help if these switches are passed.
+//    (pos('/H',Uppercase(CommandLine)) > 0) )  // Note also that our help screen only appears after the Choose Language dialogue :-(
   then begin
     ShowHelpDlg;
     result := False;
@@ -1157,7 +1158,7 @@ begin
       //Move lang specific readme from doc dir to root of install.
       if NonDefaultLanguage then begin
         ReadMeFileStr := ExpandConstant('{cm:ReadMeFile}');
-        if FileCopy(GetAppPath+'\doc\'+ReadMeFileStr, GetAppPath+'\'+ReadMeFileStr, false) then
+        if CopyFile(GetAppPath+'\doc\'+ReadMeFileStr, GetAppPath+'\'+ReadMeFileStr, false) then
           DeleteFile(GetAppPath+'\doc\'+ReadMeFileStr);
       end;
 
@@ -1306,7 +1307,7 @@ begin
   Result := True;
   case CurPageID of
     AdminUserPage.ID : begin
-    { check user has entered new sysdba password correctly. }
+      { check user has entered new sysdba password correctly. }
       i := CompareStr(AdminUserPage.Values[0],AdminUserPage.Values[1]);
       If  not (i = 0) then begin
         Result := False;
