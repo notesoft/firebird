@@ -673,6 +673,19 @@ Var
 
   init_secdb: integer;          // Is set to UNDEFINED by default in InitializeSetup
 
+  msilogdir: String;               // Path to store logs from msiexec
+
+  novcrt: Boolean;              // Do not install the VC runtime libs
+
+  AdminUserPage: TInputQueryWizardPage;
+
+  DonorPage: TWizardPage;
+  RichEditViewer: TRichEditViewer;
+  DonateButton: TNewButton;
+
+  initWizardHeight: Integer;    // In prev. version - the wizard form was resized to new size every time when go back button pressed
+
+
 #ifdef setuplogging
 // Not yet implemented - leave log in %TEMP%
 //  OkToCopyLog : Boolean;        // Set when installation is complete.
@@ -684,25 +697,15 @@ Var
 
 #include "FirebirdInstallGUIFunctions.inc"
 
-
-var
-  AdminUserPage: TInputQueryWizardPage;
-  initWizardHeight: Integer; //In prev. version - the wizard form was resized to new size every time when go back button pressed
-
 procedure InitializeWizard;
 begin
   initWizardHeight := wizardform.height;
 
-  { Create a page to grab the new SYSDBA password }
-  AdminUserPage := CreateInputQueryPage(wpSelectTasks,
-      ExpandConstant( '{cm:CreateSYSDBAPassword}' )
-    , ExpandConstant( '{cm:ClickThroughPWCreation}' ) + #13#10 +
-      ExpandConstant( '{cm:PasswordNote}' ) , '' );
-  AdminUserPage.Add( ExpandConstant( '{cm:SYSDBAPassword}' ), True);
-  AdminUserPage.Add( ExpandConstant( '{cm:RetypeSYSDBAPassword}' ), True);
+  // Create a page to grab the new SYSDBA password
+  CreateAdminUserPage;
 
-  AdminUserPage.Values[0] := SYSDBAPassword;
-  AdminUserPage.Values[1] := SYSDBAPassword;
+  // Create a page to ask for donations
+  CreateDonorPage;
 
 end;
 
@@ -733,13 +736,17 @@ begin
   if pos('FORCE',Uppercase(CommandLine)) > 0 then
     ForceInstall:=True;
 
+  if pos('NOMSVCRT', Uppercase(CommandLine) ) > 0 then
+    novcrt := true;
 
-    cmdParams := TStringList.create;
-    for i:=0 to ParamCount do begin
-      cmdParams.add(ParamStr(i));
-      if pos('SYSDBAPASSWORD', Uppercase(ParamStr(i)) ) > 0 then
-        SYSDBAPassword := Copy(ParamStr(i),Length('/SYSDBAPASSWORD=')+1,Length(ParamStr(i))-Length('/SYSDBAPASSWORD=') );
-    end;
+  cmdParams := TStringList.create;
+  for i:=0 to ParamCount do begin
+    cmdParams.add(ParamStr(i));
+    if pos('SYSDBAPASSWORD', Uppercase(ParamStr(i)) ) > 0 then
+      SYSDBAPassword := SplitKeyValue( ParamStr(i), false );
+    if pos('MSILOGDIR', Uppercase( ParamStr(i) ) ) > 0 then
+      msilogdir := SplitKeyValue( ParamStr(i), false );
+  end;
 #ifdef iss_debug
     ShowDebugDlg(cmdParams.text,'');
 #endif
@@ -1068,6 +1075,12 @@ begin
   case CurPage of
     wpInfoBefore:   WizardForm.INFOBEFOREMEMO.font.name:='Courier New';
     wpInfoAfter:    WizardForm.INFOAFTERMEMO.font.name:='Courier New';
+    DonorPage.ID:   begin
+        DonateButton.Visible := True;
+        WizardForm.BackButton.Visible := False;
+      end;
+  else
+    DonateButton.Visible := False;
   end;
 end;
 
@@ -1277,6 +1290,26 @@ begin
       end;
     end;
   end;
+end;
+
+function MsiexecLogDir( nullstr: String ): String;
+begin
+  if msilogdir = '' then
+    msilogdir := ExpandConstant('{tmp}');
+  Result := msilogdir;
+end;
+
+function InstallVCRT: boolean;
+begin
+  if novcrt then begin
+    Result := false;
+    exit;
+  end;
+  if HasNotWI30 then
+    Result := false
+  else
+    Result := true;
+
 end;
 
 begin
