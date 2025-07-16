@@ -23,7 +23,7 @@
 
 ;   Usage Notes:
 ;
-;   This script has been designed to work with Inno Setup v6.2.1
+;   This script has been designed to work with Inno Setup v6.4.3
 ;   It is available as a quick start pack from here:
 ;     https://www.jrsoftware.org/isdl.php
 ;
@@ -39,6 +39,17 @@
 ;   o The uninstaller does not know how to stop multiple instances of a classic
 ;     server. They must be stopped manually.
 ;
+;
+;   Debugging this script
+;
+;   You need to run BuildExecutableInstall.bat to create the correct environment.
+;   If you have built firebird from run_all.bat you need to switch to the install
+;   script directory:
+;     pushd ..\install\arch-specific\win32
+;
+;   After that you should be able to compile and debug the script from the command
+;   line thus:
+;     "%INNO6_SETUP_PATH%"\compil32.exe FirebirdInstall.iss
 ;
 ;
 #define MyAppPublisher "Firebird Project"
@@ -335,8 +346,8 @@ PrivilegesRequired=admin
 SetupMutex={#MyAppName}
 
 #if PlatformTarget == "x64"
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesAllowed=x64os
+ArchitecturesInstallIn64BitMode=x64os
 #elif PlatformTarget == "arm64"
 ArchitecturesAllowed=arm64
 ArchitecturesInstallIn64BitMode=arm64
@@ -720,6 +731,16 @@ var
   CommandLine: String;
   cmdParams: TStringList;
 begin
+
+  // This snippet from the InnoSetup help might be useful for testing.
+  if IsArm32Compatible then Log('IsArm32Compatible');
+  if IsArm64 then Log('IsArm64');
+  if IsX64OS then Log('IsX64OS');
+  if IsX64Compatible then Log('IsX64Compatible');
+  if IsX86 then Log('IsX86');
+  if IsX86OS then Log('IsX86OS');
+  if IsX86Compatible then Log('IsX86Compatible');
+  if IsWin64 then Log('IsWin64');
 
   result := true;
 
