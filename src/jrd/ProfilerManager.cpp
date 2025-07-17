@@ -75,34 +75,13 @@ namespace
 			START_SESSION
 		};
 
-		class Guard
-		{
-		public:
-			explicit Guard(ProfilerIpc* ipc)
-				: sharedMemory(ipc->sharedMemory)
-			{
-				sharedMemory->mutexLock();
-			}
-
-			~Guard()
-			{
-				sharedMemory->mutexUnlock();
-			}
-
-			Guard(const Guard&) = delete;
-			Guard& operator=(const Guard&) = delete;
-
-		private:
-			SharedMemoryBase* const sharedMemory;
-		};
-
 		struct Header : public MemoryHeader
 		{
 			event_t serverEvent;
 			event_t clientEvent;
 			USHORT bufferSize;
 			std::atomic<Tag> tag;
-			std::atomic_uint seq;
+			unsigned seq;
 			SpinLock bufferMutex;
 			char userName[USERNAME_LENGTH + 1];	// \0 if has PROFILE_ANY_ATTACHMENT
 			alignas(FB_ALIGNMENT) UCHAR buffer[4096];
@@ -738,9 +717,7 @@ ProfilerIpc::ProfilerIpc(thread_db* tdbb, MemoryPool& pool, AttNumber aAttachmen
 
 	if (isServer)
 	{
-		Guard guard(this);
-
-		header->seq = 0;
+		SharedMutexGuard guard(sharedMemory);
 
 		if (sharedMemory->eventInit(&header->serverEvent) != FB_SUCCESS)
 			(Arg::Gds(isc_random) << "ProfilerIpc eventInit(serverEvent) failed").raise();
@@ -749,7 +726,7 @@ ProfilerIpc::ProfilerIpc(thread_db* tdbb, MemoryPool& pool, AttNumber aAttachmen
 
 ProfilerIpc::~ProfilerIpc()
 {
-	Guard guard(this);
+	SharedMutexGuard guard(sharedMemory);
 
 	const auto header = sharedMemory->getHeader();
 
@@ -809,7 +786,7 @@ void ProfilerIpc::internalSendAndReceive(thread_db* tdbb, Tag tag,
 			LCK_release(tdbb, &tempLock);
 	}
 
-	Guard guard(this);
+	SharedMutexGuard guard(sharedMemory);
 
 	const auto header = sharedMemory->getHeader();
 
@@ -852,7 +829,7 @@ void ProfilerIpc::internalSendAndReceive(thread_db* tdbb, Tag tag,
 	memcpy(header->buffer, in, inSize);
 
 	header->tag = tag;
-	const auto seq = ++header->seq;
+	++header->seq;
 
 	bufferMutexLock.unlock();
 
@@ -1045,8 +1022,8 @@ void ProfilerListener::watcherThread()
 						errorMsg += temp;
 					}
 
-					header->bufferSize = MIN(errorMsg.length(), sizeof(header->buffer));
-					memcpy(header->buffer, errorMsg.c_str(), header->bufferSize);
+					buffer.getBuffer(MIN(errorMsg.length(), sizeof(header->buffer)), false);
+					memcpy(buffer.begin(), errorMsg.c_str(), buffer.getCount());
 				}
 
 				fb_assert(buffer.getCount() <= sizeof(header->buffer));
@@ -1183,8 +1160,7 @@ void ProfilerListener::processCommand(thread_db* tdbb, ProfilerIpc::Tag tag, UCh
 				in->pluginOptionsNull ? 0 : in->pluginOptions.length);
 
 			ProfilerPackage::StartSessionOutput::Type* out;
-			buffer.resize(sizeof(*out));
-			out = reinterpret_cast<decltype(out)>(buffer.begin());
+			out = reinterpret_cast<decltype(out)>(buffer.getBuffer(sizeof(*out), false));
 
 			out->sessionIdNull = FB_FALSE;
 			out->sessionId = profilerManager->startSession(tdbb, flushInterval,
