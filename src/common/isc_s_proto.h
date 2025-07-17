@@ -386,6 +386,9 @@ public:
 			m_locked = false;
 	}
 
+	SharedMutexGuard(const SharedMutexGuard&) = delete;
+	SharedMutexGuard& operator=(const SharedMutexGuard&) = delete;
+
 	bool tryLock() {
 		m_locked = m_shmem->mutexLockCond();
 		return m_locked;
@@ -412,9 +415,6 @@ public:
 	}
 
 private:
-	SharedMutexGuard(const SharedMutexGuard&);
-	SharedMutexGuard& operator=(const SharedMutexGuard&);
-
 	SharedMemoryBase* m_shmem;
 	bool m_locked;
 };
