@@ -651,6 +651,11 @@ public:
 	Firebird::RefPtr<Firebird::AnyRef<Firebird::ObjectsArray<Firebird::MetaString>>> att_schema_search_path;
 	Firebird::RefPtr<Firebird::AnyRef<Firebird::ObjectsArray<Firebird::MetaString>>> att_blr_request_schema_search_path;
 	Firebird::RefPtr<Firebird::AnyRef<Firebird::ObjectsArray<Firebird::MetaString>>> att_system_schema_search_path;
+
+	Firebird::RefPtr<Firebird::AnyRef<Firebird::ObjectsArray<Firebird::MetaString>>>
+		att_unqualified_charset_resolved_cache_search_path;
+	Firebird::NonPooledMap<MetaName, QualifiedName> att_unqualified_charset_resolved_cache;
+
 	int att_parallel_workers;
 	Firebird::TriState att_opt_first_rows;
 
