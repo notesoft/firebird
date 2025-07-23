@@ -150,7 +150,6 @@ enum ConfigKey
 	KEY_TRACE_DSQL,
 	KEY_LEGACY_HASH,
 	KEY_GC_POLICY,
-	KEY_REDIRECTION,
 	KEY_DATABASE_GROWTH_INCREMENT,
 	KEY_TRACE_CONFIG,
 	KEY_MAX_TRACELOG_SIZE,
@@ -252,7 +251,6 @@ inline constexpr ConfigEntry entries[MAX_CONFIG_KEY] =
 	{TYPE_INTEGER,	"TraceDSQL",				true,	0},			// bitmask
 	{TYPE_BOOLEAN,	"LegacyHash",				true,	true},		// let use old passwd hash verification
 	{TYPE_STRING,	"GCPolicy",					false,	nullptr},	// garbage collection policy
-	{TYPE_BOOLEAN,	"Redirection",				true,	false},
 	{TYPE_INTEGER,	"DatabaseGrowthIncrement",	false,	128 * 1048576},	// bytes
 	{TYPE_STRING,	"AuditTraceConfigFile",		true,	""},		// location of audit trace configuration file
 	{TYPE_INTEGER,	"MaxUserTraceLogSize",		true,	10},		// maximum size of user session trace log
@@ -562,9 +560,6 @@ public:
 
 	// GC policy
 	CONFIG_GET_PER_DB_STR(getGCPolicy, KEY_GC_POLICY);
-
-	// Redirection
-	CONFIG_GET_GLOBAL_BOOL(getRedirection, KEY_REDIRECTION);
 
 	CONFIG_GET_PER_DB_INT(getDatabaseGrowthIncrement, KEY_DATABASE_GROWTH_INCREMENT);
 
