@@ -1,6 +1,7 @@
 ## 1. DATETIME TO STRING
 
 The following patterns are currently implemented for datetime to string conversion:
+
 | Format Pattern | Description |
 | -------------- | ----------- |
 | YEAR | Year (1 - 9999) |
@@ -32,8 +33,9 @@ The following patterns are currently implemented for datetime to string conversi
 | TZM | Time zone in Minutes (00 - 59) |
 | TZR | Time zone Name |
 
-The dividers are:
-| Dividers |
+The separators are:
+
+| Separator |
 | ------------- |
 | . |
 | / |
@@ -43,7 +45,7 @@ The dividers are:
 | 'space' |
 | - |
 
-Patterns can be used without any dividers:
+Patterns can be used without any separators:
 ```
 SELECT CAST(CURRENT_TIMESTAMP AS VARCHAR(50) FORMAT 'YEARMMDD HH24MISS') FROM RDB$DATABASE;
 =========================
@@ -53,6 +55,7 @@ However, be careful with patterns like `DDDDD`, it will be interpreted as `DDD` 
 
 It is possible to insert raw text into a format string with `""`: `... FORMAT '"Today is" DAY'` - Today is MONDAY. To add `"` in output raw string use `\"` (to print `\` use `\\`).
 Also the format is case-insensitive, so `YYYY-MM` == `yyyy-mm`.
+
 Example:
 ```
 SELECT CAST(CURRENT_TIMESTAMP AS VARCHAR(45) FORMAT 'DD.MM.YEAR HH24:MI:SS "is" J "Julian day"') FROM RDB$DATABASE;
@@ -63,6 +66,7 @@ SELECT CAST(CURRENT_TIMESTAMP AS VARCHAR(45) FORMAT 'DD.MM.YEAR HH24:MI:SS "is" 
 ## 2. STRING TO DATETIME
 
 The following patterns are currently implemented for string to datetime conversion:
+
 | Format Pattern | Description |
 | ------------- | ------------- |
 | YEAR | Year |
@@ -88,7 +92,7 @@ The following patterns are currently implemented for string to datetime conversi
 | TZM | Time zone in Minutes (0 - 59) |
 | TZR | Time zone Name or Time zone Displacement (same as TZH:TZM) |
 
-Dividers are the same as for datetime to string conversion and can also be omitted.
+Separators are the same as for datetime to string conversion and can also be omitted.
 
 Year, month and day will be taken from current date if these components are not used in pattern (this applies only to data types that contain a date component).
 
