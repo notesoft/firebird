@@ -219,6 +219,10 @@ public:
 			: waiters(0), threadId(0), totalLocksCounter(0), currentLocksCounter(0)
 		{ }
 
+		// copying is prohibited
+		Sync(const Sync&) = delete;
+		Sync& operator=(const Sync&) = delete;
+
 		void enter(const char* aReason)
 		{
 			const ThreadId curTid = getThreadId();
@@ -298,10 +302,6 @@ public:
 		}
 
 	private:
-		// copying is prohibited
-		Sync(const Sync&) = delete;
-		Sync& operator=(const Sync&) = delete;
-
 		Firebird::Mutex syncMutex;
 		std::atomic<int> waiters;
 		ThreadId threadId;
@@ -428,11 +428,11 @@ public:
 				jStable->getSync()->leave();
 		}
 
-	private:
 		// copying is prohibited
 		SyncGuard(const SyncGuard&) = delete;
 		SyncGuard& operator=(const SyncGuard&) = delete;
 
+	private:
 		void init(const char* f, bool optional);
 
 		Firebird::RefPtr<StableAttachmentPart> jStable;
@@ -944,6 +944,10 @@ public:
 			: m_list(list), m_index(0)
 		{}
 
+		// copying is prohibited
+		Iterator(const Iterator&) = delete;
+		Iterator& operator=(const Iterator&) = delete;
+
 		StableAttachmentPart* operator*() noexcept
 		{
 			if (m_index < m_list.m_attachments.getCount())
@@ -967,10 +971,6 @@ public:
 		}
 
 	private:
-		// copying is prohibited
-		Iterator(const Iterator&) = delete;
-		Iterator& operator=(const Iterator&) = delete;
-
 		AttachmentsRefHolder& m_list;
 		FB_SIZE_T m_index;
 	};
