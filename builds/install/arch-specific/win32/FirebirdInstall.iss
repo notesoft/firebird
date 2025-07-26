@@ -53,7 +53,7 @@
 ;
 ;
 #define MyAppPublisher "Firebird Project"
-#define MyAppURL "http://www.firebirdsql.org/"
+#define MyAppURL "https://www.firebirdsql.org/"
 #define MyAppName "Firebird"
 #define MyAppId "FBDBServer"
 
@@ -451,7 +451,7 @@ Filename: {app}\instsvc.exe; Description: {cm:instsvcStartQuestion}; Parameters:
 Filename: {code:StartApp|{app}\firebird.exe}; Description: {cm:instappStartQuestion}; Parameters: {code:StartAppParams|' -a '}; StatusMsg: {cm:instappStartMsg}; MinVersion: {#MinVer}; Components: ServerComponent; Flags: nowait postinstall; Tasks: UseApplicationTask; Check: StartEngine
 
 ;This is a preliminary test of jumping to a landing page. In practice, we are going to need to know the users language and the version number they have installed.
-Filename: "{#MyAppURL}/afterinstall"; Description: "After installation - What Next?"; Flags: postinstall shellexec skipifsilent; Components: ServerComponent DevAdminComponent;
+Filename: "{#MyAppURL}afterinstall"; Description: "After installation - What Next?"; Flags: postinstall shellexec skipifsilent; Components: ServerComponent DevAdminComponent;
 
 [Registry]
 ;If user has chosen to start as App they may well want to start automatically. That is handled by a function below.
