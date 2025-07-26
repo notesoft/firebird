@@ -1420,7 +1420,7 @@ static bool file_rename(TEXT* file_nameL, const TEXT* extension, const TEXT* new
 	}
 
 	// Didn't match extension, so add the extension
-	while (*terminator++ = *extension++)
+	while ((*terminator++ = *extension++))
 		;
 
 	return true;
