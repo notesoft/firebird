@@ -64,7 +64,9 @@
 #include <signal.h>
 #endif
 
-#ifdef HAVE_SYS_SIGNAL_H
+#if defined(HAVE_SIGNAL_H)
+#include <signal.h>
+#elif defined(HAVE_SYS_SIGNAL_H)
 #include <sys/signal.h>
 #endif
 
