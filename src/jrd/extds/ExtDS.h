@@ -30,6 +30,8 @@
 #include "../../common/classes/locks.h"
 #include "../../common/utils_proto.h"
 
+#include <limits>
+
 
 namespace Jrd
 {
@@ -366,7 +368,7 @@ public:
 			clear();
 			m_conn = NULL;
 			m_hash = hash;
-			m_lastUsed = MAX_SINT64;
+			m_lastUsed = std::numeric_limits<time_t>::max();
 		}
 
 		void clear() noexcept
