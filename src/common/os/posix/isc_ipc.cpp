@@ -60,10 +60,6 @@
 #include <sys/stat.h>
 #include <sys/file.h>
 
-#ifdef HAVE_SIGNAL_H
-#include <signal.h>
-#endif
-
 #if defined(HAVE_SIGNAL_H)
 #include <signal.h>
 #elif defined(HAVE_SYS_SIGNAL_H)
