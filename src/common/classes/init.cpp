@@ -31,6 +31,7 @@
 #include "../common/SimpleStatusVector.h"
 #include "../common/dllinst.h"
 #include "../common/os/os_utils.h"
+#include <utility>
 
 #ifdef WIN_NT
 #include <windows.h>
