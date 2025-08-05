@@ -29,7 +29,6 @@
 #include "firebird.h"
 
 #include <stdarg.h>
-#include <algorithm>
 
 #include "../jrd/MetaName.h"
 #include "../common/classes/MetaString.h"
@@ -43,7 +42,7 @@ int MetaName::compare(const char* s, FB_SIZE_T len) const
 	if (s)
 	{
 		adjustLength(s, len);
-		const FB_SIZE_T x = std::min(length(), len);
+		FB_SIZE_T x = length() < len ? length() : len;
 		int rc = memcmp(c_str(), s, x);
 		if (rc)
 		{
@@ -56,11 +55,11 @@ int MetaName::compare(const char* s, FB_SIZE_T len) const
 	return length() - len;
 }
 
-void MetaName::adjustLength(const char* const s, FB_SIZE_T& len) noexcept
+void MetaName::adjustLength(const char* const s, FB_SIZE_T& len)
 {
-	fb_assert(s);
 	if (len > MAX_SQL_IDENTIFIER_LEN)
 	{
+		fb_assert(s);
 #ifdef DEV_BUILD
 		for (FB_SIZE_T i = MAX_SQL_IDENTIFIER_LEN; i < len; ++i)
 			fb_assert(s[i] == '\0' || s[i] == ' ');
@@ -82,7 +81,7 @@ void MetaName::printf(const char* format, ...)
 	char data[MAX_SQL_IDENTIFIER_LEN + 1];
 	va_list params;
 	va_start(params, format);
-	int len = vsnprintf(data, MAX_SQL_IDENTIFIER_LEN, format, params);
+	int len = VSNPRINTF(data, MAX_SQL_IDENTIFIER_LEN, format, params);
 	va_end(params);
 
 	if (len < 0 || FB_SIZE_T(len) > MAX_SQL_IDENTIFIER_LEN)
@@ -106,7 +105,7 @@ FB_SIZE_T MetaName::copyTo(char* to, FB_SIZE_T toSize) const
 	return toSize;
 }
 
-MetaName::operator Firebird::MetaString() const noexcept
+MetaName::operator Firebird::MetaString() const
 {
 	return Firebird::MetaString(c_str(), length());
 }
@@ -126,7 +125,7 @@ void MetaName::test()
 #if defined(DEV_BUILD) || GROW_DEBUG > 0
 	if (word)
 	{
-		const Dictionary::Word* checkWord = get(word->c_str(), word->length());
+		Dictionary::Word* checkWord = get(word->c_str(), word->length());
 		fb_assert(checkWord == word);
 #ifndef DEV_BUILD
 		if (word != checkWord)
@@ -136,15 +135,17 @@ void MetaName::test()
 #endif
 }
 
+const char* MetaName::EMPTY = "";
+
 #if GROW_DEBUG > 1
-static constexpr unsigned int hashSize[] = {1000, 2000, 4000, 6000, 8000, 10000,
+static const unsigned int hashSize[] = {1000, 2000, 4000, 6000, 8000, 10000,
 										12000, 14000, 16000, 18000, 20000,
 										22000, 24000, 26000, 28000, 30000,
 										32000, 34000, 36000, 38000, 40000,
 										42000, 44000, 46000, 48000, 50000,
 										52000, 54000, 56000, 58000, 60000};
 #else
-static constexpr unsigned int hashSize[] = { 10007, 100003, 1000003 };
+static const unsigned int hashSize[] = { 10007, 100003, 1000003 };
 #endif
 
 Dictionary::Dictionary(MemoryPool& p)
@@ -186,7 +187,7 @@ Dictionary::HashTable::HashTable(MemoryPool& p, unsigned lvl)
 		table[n].store(nullptr, std::memory_order_relaxed);
 }
 
-unsigned Dictionary::HashTable::getMaxLevel() noexcept
+unsigned Dictionary::HashTable::getMaxLevel()
 {
 	return FB_NELEM(hashSize) - 1;
 }
@@ -222,7 +223,7 @@ Dictionary::TableData* Dictionary::HashTable::getEntryByHash(const char* s, FB_S
 	return &table[h];
 }
 
-bool Dictionary::checkConsistency(const Dictionary::HashTable* oldValue) noexcept
+bool Dictionary::checkConsistency(Dictionary::HashTable* oldValue)
 {
 	return oldValue->level == nextLevel.load();
 }
@@ -290,7 +291,7 @@ Dictionary::Word* Dictionary::get(const char* s, FB_SIZE_T len)
 					{
 						segment = FB_NEW_POOL(getPool()) Segment;
 						++segCount;
-						const unsigned lvl = nextLevel.load();
+						unsigned lvl = nextLevel.load();
 						if (lvl < HashTable::getMaxLevel() &&
 							segCount * Segment::getWordCapacity() > hashSize[lvl])
 						{
@@ -365,7 +366,7 @@ void Dictionary::growHash()
 
 	// move one level up size of hash table
 	HashTable* tab = hashTable.load();
-	const unsigned lvl = ++nextLevel;
+	unsigned lvl = ++nextLevel;
 	fb_assert(lvl == tab->level + 1);
 	fb_assert(lvl <= HashTable::getMaxLevel());
 
@@ -420,7 +421,7 @@ Dictionary::HashTable* Dictionary::waitForMutex(Jrd::Dictionary::Word** checkWor
 		return t;
 
 	// may be we already have that word in new table
-	const FB_SIZE_T len = (*checkWordPtr)->length();
+	FB_SIZE_T len = (*checkWordPtr)->length();
 	const char* s = (*checkWordPtr)->c_str();
 	Word* word = t->getEntryByHash(s, len)->load();
 	while (word)
@@ -440,25 +441,25 @@ Dictionary::HashTable* Dictionary::waitForMutex(Jrd::Dictionary::Word** checkWor
 	return t;
 }
 
-Dictionary::Segment::Segment() noexcept
+Dictionary::Segment::Segment()
 {
 	position.store(0, std::memory_order_relaxed);
 }
 
-constexpr unsigned Dictionary::Segment::getWordCapacity() noexcept
+unsigned Dictionary::Segment::getWordCapacity()
 {
-	constexpr unsigned AVERAGE_BYTES_LEN = 16;
+	const unsigned AVERAGE_BYTES_LEN = 16;
 	return SEG_BUFFER_SIZE / getWordLength(AVERAGE_BYTES_LEN);
 }
 
-constexpr unsigned Dictionary::Segment::getWordLength(FB_SIZE_T len) noexcept
+unsigned Dictionary::Segment::getWordLength(FB_SIZE_T len)
 {
 	// calculate length in sizeof(Word*)
 	len += 2;
-	return 1 + (len / sizeof(Word*)) + ((len % sizeof(Word*)) ? 1 : 0);
+	return 1 + (len / sizeof(Word*)) + (len % sizeof(Word*) ? 1 : 0);
 }
 
-Dictionary::Word* Dictionary::Segment::getSpace(FB_SIZE_T len DIC_STAT_SEGMENT_PAR) noexcept
+Dictionary::Word* Dictionary::Segment::getSpace(FB_SIZE_T len DIC_STAT_SEGMENT_PAR)
 {
 	len = getWordLength(len);
 
@@ -469,7 +470,7 @@ Dictionary::Word* Dictionary::Segment::getSpace(FB_SIZE_T len DIC_STAT_SEGMENT_P
 	for(;;)
 	{
 		// calculate and check new position
-		const unsigned newPos = oldPos + len;
+		unsigned newPos = oldPos + len;
 		if (newPos >= SEG_BUFFER_SIZE)
 			break;
 

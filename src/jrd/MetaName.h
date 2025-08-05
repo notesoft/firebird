@@ -73,12 +73,12 @@ public:
 		char text[1];
 
 	public:
-		const char* c_str() const noexcept
+		const char* c_str() const
 		{
 			return text;
 		}
 
-		FB_SIZE_T length() const noexcept
+		FB_SIZE_T length() const
 		{
 			return textLen;
 		}
@@ -102,7 +102,7 @@ private:
 	public:
 		HashTable(MemoryPool& p, unsigned lvl);
 		Dictionary::TableData* getEntryByHash(const char* s, FB_SIZE_T len);
-		static unsigned getMaxLevel() noexcept;
+		static unsigned getMaxLevel();
 
 		const unsigned level;
 		TableData* table;
@@ -110,23 +110,23 @@ private:
 	std::atomic<HashTable*> hashTable;
 	std::atomic<unsigned> nextLevel;
 
-	bool checkConsistency(const HashTable* oldValue) noexcept;
+	bool checkConsistency(HashTable* oldValue);
 	HashTable* waitForMutex(Word** checkWordPtr = nullptr);
 
 	class Segment
 	{
 	public:
-		Segment() noexcept;
-		Word* getSpace(FB_SIZE_T len DIC_STAT_SEGMENT_PAR) noexcept;
-		static constexpr unsigned getWordCapacity() noexcept;
+		Segment();
+		Word* getSpace(FB_SIZE_T l DIC_STAT_SEGMENT_PAR);
+		static unsigned getWordCapacity();
 
 	private:
-		static constexpr unsigned getWordLength(FB_SIZE_T len) noexcept;
+		static unsigned getWordLength(FB_SIZE_T len);
 
 #if GROW_DEBUG > 1
-		static constexpr unsigned SEG_BUFFER_SIZE = 256;		// size in sizeof(pointer)
+		static const unsigned SEG_BUFFER_SIZE = 256;		// size in sizeof(pointer)
 #else
-		static constexpr unsigned SEG_BUFFER_SIZE = 16384;		// size in sizeof(pointer)
+		static const unsigned SEG_BUFFER_SIZE = 16384;		// size in sizeof(pointer)
 #endif
 		void* buffer[SEG_BUFFER_SIZE];
 		std::atomic<unsigned> position;
@@ -141,7 +141,7 @@ class MetaName
 {
 private:
 	Dictionary::Word* word;
-	static constexpr const char* EMPTY = "";
+	static const char* EMPTY;
 
 	void test();
 	Dictionary::Word* get(const char* s, FB_SIZE_T l);
@@ -152,7 +152,7 @@ private:
 	}
 
 public:
-	MetaName() noexcept
+	MetaName()
 		: word(nullptr)
 	{ }
 
@@ -177,7 +177,7 @@ public:
 	{ }
 
 
-	explicit MetaName(MemoryPool&) noexcept
+	explicit MetaName(MemoryPool&)
 		: word(nullptr)
 	{ }
 
@@ -233,43 +233,43 @@ public:
 
 	MetaName& operator=(const Firebird::MetaString& s);
 
-	FB_SIZE_T length() const noexcept
+	FB_SIZE_T length() const
 	{
 		return word ? word->length() : 0;
 	}
 
-	const char* c_str() const noexcept
+	const char* c_str() const
 	{
 		return word ? word->c_str() : EMPTY;
 	}
 
-	const char* nullStr() const noexcept
+	const char* nullStr() const
 	{
 		return word ? word->c_str() : nullptr;
 	}
 
-	bool isEmpty() const noexcept
+	bool isEmpty() const
 	{
 		return !word;
 	}
 
-	bool hasData() const noexcept
+	bool hasData() const
 	{
 		return word;
 	}
 
-	char operator[](unsigned n) const noexcept
+	char operator[](unsigned n) const
 	{
 		fb_assert(n < length());
 		return word->c_str()[n];
 	}
 
-	const char* begin() const noexcept
+	const char* begin() const
 	{
 		return word ? word->c_str() : EMPTY;
 	}
 
-	const char* end() const noexcept
+	const char* end() const
 	{
 		return word ? &word->c_str()[length()] : EMPTY;
 	}
@@ -354,22 +354,22 @@ public:
 		return compare(m) >  0;
 	}
 
-	bool operator==(const MetaName& m) const noexcept
+	bool operator==(const MetaName& m) const
 	{
 		return word == m.word;
 	}
 
-	bool operator!=(const MetaName& m) const noexcept
+	bool operator!=(const MetaName& m) const
 	{
 		return word != m.word;
 	}
 
 	void printf(const char*, ...);
 	FB_SIZE_T copyTo(char* to, FB_SIZE_T toSize) const;
-	operator Firebird::MetaString() const noexcept;
+	operator Firebird::MetaString() const;
 
 protected:
-	static void adjustLength(const char* const s, FB_SIZE_T& l) noexcept;
+	static void adjustLength(const char* const s, FB_SIZE_T& l);
 };
 
 typedef Firebird::Pair<Firebird::Full<MetaName, MetaName> > MetaNamePair;
