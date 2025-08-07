@@ -1305,6 +1305,12 @@ void PAG_release_pages(thread_db* tdbb, USHORT pageSpaceID, int cntRelease,
  *	Release a few pages to the free page page.
  *
  **************************************/
+	if (cntRelease <= 0)
+	{
+		// nothing to release
+		fb_assert(false);
+		return;
+	}
 	SET_TDBB(tdbb);
 	const auto* dbb = tdbb->getDatabase();
 
