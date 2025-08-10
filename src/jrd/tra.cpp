@@ -76,6 +76,7 @@
 #include "../jrd/Mapping.h"
 #include "../jrd/DbCreators.h"
 #include "../common/os/fbsyslog.h"
+#include "firebird/impl/msg_helper.h"
 
 
 const int DYN_MSG_FAC	= 8;

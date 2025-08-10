@@ -38,6 +38,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <firebird/Interface.h>
+#include "firebird/impl/msg_helper.h"
 
 // Define lengths used in isql.e
 

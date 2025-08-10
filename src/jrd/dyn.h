@@ -30,6 +30,7 @@
 #include "../common/classes/array.h"
 #include "../common/classes/fb_string.h"
 #include "../common/dsc.h"
+#include "firebird/impl/msg_helper.h"
 
 inline constexpr const char* ALL_PRIVILEGES = "SIUDR";	// all applicable grant/revoke privileges
 inline constexpr const char* EXEC_PRIVILEGES = "X";		// execute privilege
