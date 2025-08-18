@@ -158,7 +158,7 @@ static inline constexpr sqltypes Column_types[] = {
 
 // Integral subtypes
 
-const int MAX_INTSUBTYPES	= 2;
+inline constexpr int MAX_INTSUBTYPES = 2;
 
 static inline constexpr const SCHAR* Integral_subtypes[] = {
 	"UNKNOWN",					// Defined type, keyword
@@ -315,7 +315,7 @@ struct IsqlVar
 class IsqlWireStats
 {
 public:
-	explicit IsqlWireStats(Firebird::IAttachment* att) :
+	explicit IsqlWireStats(Firebird::IAttachment* att) noexcept :
 		m_att(att)
 	{}
 
