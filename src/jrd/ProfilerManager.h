@@ -128,8 +128,8 @@ public:
 		Request* request;
 		ProfilerManager* profilerManager;
 		const AccessPath* recordSource;
-		SINT64 lastTicks;
-		SINT64 lastAccumulatedOverhead;
+		SINT64 lastTicks = 0;
+		SINT64 lastAccumulatedOverhead = 0;
 		Event event;
 	};
 
@@ -197,7 +197,7 @@ public:
 	{
 		if (const auto profileRequestId = getRequest(request, Firebird::IProfilerSession::FLAG_BEFORE_EVENTS))
 		{
-			const auto profileStatement = getStatement(request);
+			const auto* profileStatement = getStatement(request);
 			currentSession->pluginSession->beforePsqlLineColumn(profileStatement->id, profileRequestId, line, column);
 		}
 	}
@@ -206,7 +206,7 @@ public:
 	{
 		if (const auto profileRequestId = getRequest(request, Firebird::IProfilerSession::FLAG_AFTER_EVENTS))
 		{
-			const auto profileStatement = getStatement(request);
+			const auto* profileStatement = getStatement(request);
 			currentSession->pluginSession->afterPsqlLineColumn(profileStatement->id, profileRequestId,
 				line, column, &stats);
 		}
@@ -216,7 +216,7 @@ public:
 	{
 		if (const auto profileRequestId = getRequest(request, Firebird::IProfilerSession::FLAG_BEFORE_EVENTS))
 		{
-			const auto profileStatement = getStatement(request);
+			const auto* profileStatement = getStatement(request);
 
 			if (const auto sequencePtr = profileStatement->recSourceSequence.get(recordSource->getRecSourceId()))
 			{
@@ -230,7 +230,7 @@ public:
 	{
 		if (const auto profileRequestId = getRequest(request, Firebird::IProfilerSession::FLAG_AFTER_EVENTS))
 		{
-			const auto profileStatement = getStatement(request);
+			const auto* profileStatement = getStatement(request);
 
 			if (const auto sequencePtr = profileStatement->recSourceSequence.get(recordSource->getRecSourceId()))
 			{
@@ -244,7 +244,7 @@ public:
 	{
 		if (const auto profileRequestId = getRequest(request, Firebird::IProfilerSession::FLAG_BEFORE_EVENTS))
 		{
-			const auto profileStatement = getStatement(request);
+			const auto* profileStatement = getStatement(request);
 
 			if (const auto sequencePtr = profileStatement->recSourceSequence.get(recordSource->getRecSourceId()))
 			{
@@ -258,7 +258,7 @@ public:
 	{
 		if (const auto profileRequestId = getRequest(request, Firebird::IProfilerSession::FLAG_AFTER_EVENTS))
 		{
-			const auto profileStatement = getStatement(request);
+			const auto* profileStatement = getStatement(request);
 
 			if (const auto sequencePtr = profileStatement->recSourceSequence.get(recordSource->getRecSourceId()))
 			{

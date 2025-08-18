@@ -229,7 +229,7 @@ IExternalResultSet* ProfilerPackage::cancelSessionProcedure(ThrowStatusException
 		return nullptr;
 	}
 
-	const auto transaction = tdbb->getTransaction();
+	const auto* transaction = tdbb->getTransaction();
 	const auto profilerManager = attachment->getProfilerManager(tdbb);
 
 	profilerManager->cancelSession();
@@ -472,7 +472,7 @@ void ProfilerManager::prepareCursor(thread_db* tdbb, Request* request, const Sel
 	if (!profileStatement)
 		return;
 
-	auto cursorId = select->getCursorId();
+	const auto cursorId = select->getCursorId();
 
 	if (!profileStatement->definedCursors.exist(cursorId))
 	{
@@ -531,7 +531,7 @@ void ProfilerManager::onRequestFinish(Request* request, Stats& stats)
 {
 	if (const auto profileRequestId = getRequest(request, 0))
 	{
-		const auto profileStatement = getStatement(request);
+		const auto* profileStatement = getStatement(request);
 		const auto timestamp = TimeZoneUtil::getCurrentTimeStamp(request->req_attachment->att_current_timezone);
 
 		LogLocalStatus status("Profiler onRequestFinish");
@@ -557,7 +557,7 @@ void ProfilerManager::finishSession(thread_db* tdbb, bool flushData)
 {
 	if (currentSession)
 	{
-		const auto attachment = tdbb->getAttachment();
+		const auto* attachment = tdbb->getAttachment();
 		const auto timestamp = TimeZoneUtil::getCurrentTimeStamp(attachment->att_current_timezone);
 		LogLocalStatus status("Profiler finish");
 
@@ -658,6 +658,8 @@ ProfilerManager::Statement* ProfilerManager::getStatement(Request* request)
 				type = "PROCEDURE";
 			else if (statement->function)
 				type = "FUNCTION";
+			else
+				fb_assert(false);
 
 			name = routine->getName();
 		}
@@ -763,7 +765,7 @@ void ProfilerIpc::mutexBug(int osErrorCode, const char* text)
 void ProfilerIpc::internalSendAndReceive(thread_db* tdbb, Tag tag,
 	const void* in, unsigned inSize, void* out, unsigned outSize)
 {
-	const auto attachment = tdbb->getAttachment();
+	const auto* attachment = tdbb->getAttachment();
 
 	{	// scope
 		ThreadStatusGuard tempStatus(tdbb);
@@ -836,7 +838,7 @@ void ProfilerIpc::internalSendAndReceive(thread_db* tdbb, Tag tag,
 	if (sharedMemory->eventPost(&header->serverEvent) != FB_SUCCESS)
 		(Arg::Gds(isc_random) << "Cannot start remote profile session - attachment exited").raise();
 
-	const SLONG TIMEOUT = 500 * 1000;		// 0.5 sec
+	constexpr SLONG TIMEOUT = 500 * 1000;		// 0.5 sec
 	const int serverPID = header->serverEvent.event_pid;
 
 	while (true)
