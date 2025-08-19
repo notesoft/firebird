@@ -34,6 +34,7 @@
 #include "../../common/StatusArg.h"
 #include "../../common/ThreadStart.h"
 #include "../../common/db_alias.h"
+#include "../../common/classes/GetPlugins.h"
 #include "../../jrd/svc.h"
 #include "../../common/os/guid.h"
 #include "../../jrd/trace/TraceLog.h"
@@ -103,7 +104,8 @@ void TraceSvcJrd::setAttachInfo(const string& /*svc_name*/, const string& user, 
 
 void TraceSvcJrd::startSession(TraceSession& session, bool interactive)
 {
-	if (!TraceManager::pluginsCount())
+	GetPlugins<ITraceFactory> traceItr(IPluginManager::TYPE_TRACE, session.getPluginsString());
+	if (!traceItr.hasData())
 	{
 		m_svc.printf(false, "Can not start trace session. There are no trace plugins loaded\n");
 		return;

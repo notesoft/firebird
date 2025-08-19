@@ -70,8 +70,9 @@ Start user trace session :
 		isc_action_svc_trace_start    
 
 	parameter(s)
-		isc_spb_trc_name : trace session name, string, optional
-		isc_spb_trc_cfg  : trace session configuration, string, mandatory
+		isc_spb_trc_name     : trace session name, string, optional
+		isc_spb_trc_cfg      : trace session configuration, string, mandatory
+		isc_spb_trc_plugins  : plugins to use for session
 
 	output
 		text message with status of operation :
