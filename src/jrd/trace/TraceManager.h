@@ -194,14 +194,20 @@ private:
 	{
 		char pluginName[MAXPATHLEN] = {};
 
-		Firebird::ITraceFactory* factory;
 		Firebird::ITracePlugin* plugin;
+		Firebird::ITraceFactory* factory;
 		ULONG ses_id;
+
+		inline void release(Firebird::PluginManagerInterfacePtr& pi)
+		{
+			plugin->release();
+			pi->releasePlugin(factory);
+		}
 
 		inline void release()
 		{
-			factory->release();
-			plugin->release();
+			Firebird::PluginManagerInterfacePtr pi;
+			release(pi);
 		}
 
 		// Used for SortedArray::find
@@ -217,9 +223,11 @@ private:
 
 		~Sessions()
 		{
+			Firebird::PluginManagerInterfacePtr pi;
+
 			for (unsigned int i = 0; i < getCount(); ++i)
 			{
-				getElement(i).release();
+				getElement(i).release(pi);
 			}
 		}
 	};
