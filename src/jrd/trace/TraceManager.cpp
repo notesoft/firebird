@@ -327,7 +327,7 @@ void TraceManager::update_session(const TraceSession& session)
 
 	TraceInitInfoImpl attachInfo(session, attachment, filename);
 
-	for (GetPlugins<ITraceFactory> traceItr(IPluginManager::TYPE_TRACE, session.getPluginsString());
+	for (GetPlugins<ITraceFactory> traceItr(IPluginManager::TYPE_TRACE, session.getPluginsList());
 		traceItr.hasData(); traceItr.next())
 	{
 		FbLocalStatus status;

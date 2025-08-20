@@ -720,15 +720,15 @@ void ConfigStorage::addSession(TraceSession& session)
 	char* p = reinterpret_cast<char*> (header) + slot->offset;
 	Writer writer(p, slot->size);
 
-	writer.writeStringIfExists(tagName, session.ses_name);
+	writer.writeData(tagName, session.ses_name);
 	if (session.ses_auth.hasData())
 		writer.write(tagAuthBlock, session.ses_auth.getCount(), session.ses_auth.begin());
-	writer.writeStringIfExists(tagUserName, session.ses_user);
-	writer.writeStringIfExists(tagRole, session.ses_role);
-	writer.writeStringIfExists(tagConfig, session.ses_config);
+	writer.writeData(tagUserName, session.ses_user);
+	writer.writeData(tagRole, session.ses_role);
+	writer.writeData(tagConfig, session.ses_config);
 	writer.write(tagStartTS, sizeof(session.ses_start), &session.ses_start);
-	writer.writeStringIfExists(tagLogFile, session.ses_logfile);
-	writer.writeStringIfExists(tagPlugins, session.ses_plugins);
+	writer.writeData(tagLogFile, session.ses_logfile);
+	writer.writeData(tagPlugins, session.ses_plugins);
 
 	writer.write(tagEnd, 0, NULL);
 }

@@ -241,7 +241,7 @@ private:
 
 		void write(ITEM tag, ULONG len, const void* data);
 
-		inline void writeStringIfExists(const ITEM tag, const Firebird::AbstractString& data)
+		inline void writeData(const ITEM tag, const Firebird::AbstractString& data)
 		{
 			if (data.empty())
 				return;

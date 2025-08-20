@@ -87,7 +87,7 @@ public:
 	}
 
 	// Return string or nullptr
-	inline const char* getPluginsString() const noexcept
+	inline const char* getPluginsList() const noexcept
 	{
 		return ses_plugins.hasData() ? ses_plugins.data() : nullptr;
 	}

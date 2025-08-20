@@ -109,13 +109,12 @@ void TraceSvcUtil::setAttachInfo(const string& service_name, const string& user,
 	}
 }
 
-template<UCHAR Tag>
-static void insertStringIfExists(ClumpletWriter& spb, const string& str)
+static void insertString(UCHAR tag, ClumpletWriter& spb, const string& str)
 {
 	if (str.isEmpty())
 		return;
 
-	spb.insertBytes(Tag,
+	spb.insertBytes(tag,
 		reinterpret_cast<const UCHAR*> (str.c_str()),
 		str.length());
 }
@@ -169,8 +168,8 @@ void TraceSvcUtil::startSession(TraceSession& session, bool /*interactive*/)
 	spb.insertTag(isc_action_svc_trace_start);
 	spb.insertBytes(isc_spb_trc_cfg, p, len);
 
-	insertStringIfExists<isc_spb_trc_name>(spb, session.ses_name);
-	insertStringIfExists<isc_spb_trc_plugins>(spb, session.ses_plugins);
+	insertString(isc_spb_trc_name, spb, session.ses_name);
+	insertString(isc_spb_trc_plugins, spb, session.ses_plugins);
 
 	runService(spb.getBufferLength(), spb.getBuffer());
 }
