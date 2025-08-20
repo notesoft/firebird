@@ -146,7 +146,9 @@ List of existing trace sessions
 			if the session was created by the engine itself : "system"
 			kind of session : "audit" or "trace"
 			if user session log file is full : "log full"
-
+		"plugins" is a set of plugins used to create trace session
+			Plugins can be specified via API/tracemgr.
+			By default, plugins form the firebird.conf (TracePlugin) are used
 
 	Output of every service is obtained as usually using isc_service_query call
 with isc_info_svc_line or isc_info_svc_to_eof information items.
