@@ -72,7 +72,7 @@ Start user trace session :
 	parameter(s)
 		isc_spb_trc_name     : trace session name, string, optional
 		isc_spb_trc_cfg      : trace session configuration, string, mandatory
-		isc_spb_trc_plugins  : plugins to use for session
+		isc_spb_trc_plugins  : plugins for use with trace session; valid separators: '\t', ',', ';'
 
 	output
 		text message with status of operation :
