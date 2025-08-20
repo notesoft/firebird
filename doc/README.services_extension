@@ -131,10 +131,11 @@ List of existing trace sessions
 	output
 		text messages with list and state of trace sessions
 			- Session ID: <number>
-			-   name:  <string>
-			-   user:  <string>
-			-   date:  YYYY-MM-DD HH:NN:SS
-			-   flags: <string>
+			-   name:    <string>
+			-   user:    <string>
+			-   date:    YYYY-MM-DD HH:NN:SS
+			-   flags:   <string>
+			-   plugins: <string list>
 
 		"name" is trace session name and not printed if empty.
 		"user" is creator user name
