@@ -6,7 +6,7 @@ jobs:
 
   build-linux-ubuntu-x64-clang:
     if: github.ref_type != 'tag'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
@@ -39,7 +39,7 @@ jobs:
 
   build-linux-docker:
     name: build-linux-docker-${{ matrix.arch }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       FB_DOCKER_PATH: ${{ (startsWith(matrix.arch, 'arm') && 'arm32-arm64') || 'x86-x64' }}
 
@@ -94,7 +94,7 @@ jobs:
 
   build-src-bundle-docker:
     name: build-src-bundle-docker
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
@@ -122,8 +122,8 @@ jobs:
 
   build-alpine-x64:
     if: github.ref_type != 'tag'
-    runs-on: ubuntu-22.04
-    container: alpine:3.14
+    runs-on: ubuntu-24.04
+    container: alpine:3.22.1
 
     steps:
       - name: Checkout
@@ -441,7 +441,7 @@ jobs:
 
   build-android-initial:
     name: build-android-${{ matrix.arch }}-initial
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       NDK: /home/runner/Android/Ndk
       ARCH: ${{ matrix.arch }}
@@ -593,7 +593,7 @@ jobs:
 
   build-android-aar:
     needs: build-android-final
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
