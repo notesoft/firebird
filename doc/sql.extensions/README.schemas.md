@@ -223,7 +223,7 @@ or by a user with `DROP ANY SCHEMA` permission. If restoring a Firebird 6 or lat
 CREATE SCHEMA [IF NOT EXISTS] <schema name>
   [<create schema option>...]
 
-{CREATE OR ALTER SCHEMA | RECREATE} <schema name>
+{CREATE OR ALTER | RECREATE} SCHEMA <schema name>
   [<create schema option>...]
 
 <create schema option> ::=
