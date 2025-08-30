@@ -283,7 +283,7 @@ jobs:
             builds/install_images/Firebird-*-windows-arm64*.zip
 
   build-windows-docker:
-    runs-on: windows-2025
+    runs-on: windows-2022
 
     strategy:
       fail-fast: false
