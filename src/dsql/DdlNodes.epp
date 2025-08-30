@@ -10758,6 +10758,12 @@ void CreateFilterNode::execute(thread_db* tdbb, DsqlCompilerScratch* /*dsqlScrat
 {
 	Attachment* const attachment = transaction->tra_attachment;
 	const MetaString& ownerName = attachment->getEffectiveUserName();
+	const QualifiedName qualifiedName(name);
+
+	if (createIfNotExistsOnly && !DYN_UTIL_check_unique_name_nothrow(tdbb, transaction, qualifiedName, obj_blob_filter))
+		return;
+
+	DYN_UTIL_check_unique_name(tdbb, transaction, qualifiedName, obj_blob_filter);
 
 	// run all statements under savepoint control
 	AutoSavePoint savePoint(tdbb, transaction);

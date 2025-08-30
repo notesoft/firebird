@@ -822,6 +822,7 @@ using namespace Firebird;
 	Jrd::CreateAlterExceptionNode* createAlterExceptionNode;
 	Jrd::CreateAlterSequenceNode* createAlterSequenceNode;
 	Jrd::CreateAlterSchemaNode* createAlterSchemaNode;
+	Jrd::CreateFilterNode* createFilterNode;
 	Jrd::CreateShadowNode* createShadowNode;
 	Firebird::Array<Jrd::CreateAlterPackageNode::Item>* packageItems;
 	Jrd::ExceptionArray* exceptionArray;
@@ -1469,7 +1470,12 @@ declare
 
 %type <ddlNode> declare_clause
 declare_clause
-	: FILTER filter_decl_clause				{ $$ = $2; }
+	: FILTER if_not_exists_opt filter_decl_clause
+		{
+			const auto node = $3;
+			node->createIfNotExistsOnly = $2;
+			$$ = node;
+		}
 	| EXTERNAL FUNCTION if_not_exists_opt udf_decl_clause
 		{
 			const auto node = $4;
@@ -1570,7 +1576,7 @@ return_mechanism
 	;
 
 
-%type <ddlNode> filter_decl_clause
+%type <createFilterNode> filter_decl_clause
 filter_decl_clause
 	: symbol_filter_name
 		INPUT_TYPE blob_filter_subtype
