@@ -63,7 +63,7 @@ static inline constexpr struct Switches::in_sw_tab_t trace_option_in_sw_table []
 	{IN_SW_TRACE_CONFIG,	isc_spb_trc_cfg,	"CONFIG", 	0, 0, 0, false,	false,	0,	1, NULL},
 	{IN_SW_TRACE_ID,		isc_spb_trc_id,		"ID",		0, 0, 0, false,	false,	0,	1, NULL},
 	{IN_SW_TRACE_NAME,		isc_spb_trc_name,	"NAME", 	0, 0, 0, false,	false,	0,	1, NULL},
-	{IN_SW_TRACE_PLUGINS,	isc_spb_trc_plugins,"PLUGINS", 	0, 0, 0, false,	false,	0,	1, NULL},
+	{IN_SW_TRACE_PLUGINS,	isc_spb_trc_plugins,"PLUGINS", 	0, 0, 0, false,	false,	0,	2, NULL},
 	{0,						0,					NULL,		0, 0, 0, false,	false, 0,	0, NULL}	// End of List
 };
 
