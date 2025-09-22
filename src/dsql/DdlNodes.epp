@@ -13754,7 +13754,7 @@ void CreateAlterSchemaNode::executeCreate(thread_db* tdbb, DsqlCompilerScratch* 
 					X IN RDB$USER_PRIVILEGES
 				{
 					strcpy(X.RDB$RELATION_SCHEMA_NAME, name.c_str());
-					strcpy(X.RDB$RELATION_NAME, getDllSecurityName(obj));
+					strcpy(X.RDB$RELATION_NAME, getDdlSecurityName(obj));
 
 					strcpy(X.RDB$USER, ownerName.c_str());
 					X.RDB$USER_TYPE = obj_user;

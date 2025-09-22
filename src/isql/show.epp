@@ -860,7 +860,7 @@ processing_state SHOW_ddl_grants(const std::optional<QualifiedMetaString>& name,
 				continue;
 
 			if (!isDdlObject(PRV.RDB$OBJECT_TYPE) || (obj_type != obj_any && PRV.RDB$OBJECT_TYPE != obj_type) ||
-				(name && name->object != getDllSecurityName(PRV.RDB$OBJECT_TYPE)))
+				(name && name->object != getDdlSecurityName(PRV.RDB$OBJECT_TYPE)))
 			{
 				continue;
 			}
@@ -939,7 +939,7 @@ processing_state SHOW_ddl_grants(const std::optional<QualifiedMetaString>& name,
 				SORTED BY PRV.RDB$RELATION_SCHEMA_NAME, PRV.RDB$USER, PRV.RDB$GRANT_OPTION
 			{
 				if (!isDdlObject(PRV.RDB$OBJECT_TYPE) || (obj_type != obj_any && PRV.RDB$OBJECT_TYPE != obj_type) ||
-					(name && name->object != getDllSecurityName(PRV.RDB$OBJECT_TYPE)))
+					(name && name->object != getDdlSecurityName(PRV.RDB$OBJECT_TYPE)))
 				{
 					continue;
 				}

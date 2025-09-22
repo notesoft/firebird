@@ -1053,7 +1053,7 @@ grant0($node)
 	| ddl_privileges(NOTRIAL(&$node->privileges)) schema_object on_schema_opt
 			TO non_role_grantee_list(NOTRIAL(&$node->users)) grant_option granted_by
 		{
-			$node->object = newNode<GranteeClause>($2, QualifiedName(getDllSecurityName($2), ($3 ? *$3 : "")));
+			$node->object = newNode<GranteeClause>($2, QualifiedName(getDdlSecurityName($2), ($3 ? *$3 : "")));
 			$node->grantAdminOption = $6;
 			$node->grantor = $7;
 			$node->isDdl = true;
@@ -1069,7 +1069,7 @@ grant0($node)
 	| db_ddl_privileges(NOTRIAL(&$node->privileges)) DATABASE
 			TO non_role_grantee_list(NOTRIAL(&$node->users)) grant_option granted_by
 		{
-			$node->object = newNode<GranteeClause>(obj_database, QualifiedName(getDllSecurityName(obj_database)));
+			$node->object = newNode<GranteeClause>(obj_database, QualifiedName(getDdlSecurityName(obj_database)));
 			$node->grantAdminOption = $5;
 			$node->grantor = $6;
 			$node->isDdl = true;
@@ -1106,11 +1106,11 @@ schema_object
 %type <granteeClause> schemaless_object
 schemaless_object
 	: ROLE
-		{ $$ = newNode<GranteeClause>(obj_roles, QualifiedName(getDllSecurityName(obj_roles))); }
+		{ $$ = newNode<GranteeClause>(obj_roles, QualifiedName(getDdlSecurityName(obj_roles))); }
 	| FILTER
-		{ $$ = newNode<GranteeClause>(obj_filters, QualifiedName(getDllSecurityName(obj_filters))); }
+		{ $$ = newNode<GranteeClause>(obj_filters, QualifiedName(getDdlSecurityName(obj_filters))); }
 	| SCHEMA
-		{ $$ = newNode<GranteeClause>(obj_schemas, QualifiedName(getDllSecurityName(obj_schemas))); }
+		{ $$ = newNode<GranteeClause>(obj_schemas, QualifiedName(getDdlSecurityName(obj_schemas))); }
 	;
 
 table_noise
@@ -1347,7 +1347,7 @@ revoke0($node)
 	| rev_grant_option ddl_privileges(NOTRIAL(&$node->privileges)) schema_object on_schema_opt
 			FROM non_role_grantee_list(NOTRIAL(&$node->users)) granted_by
 		{
-			$node->object = newNode<GranteeClause>($3, QualifiedName(getDllSecurityName($3), ($4 ? *$4 : "")));
+			$node->object = newNode<GranteeClause>($3, QualifiedName(getDdlSecurityName($3), ($4 ? *$4 : "")));
 			$node->grantAdminOption = $1;
 			$node->grantor = $7;
 			$node->isDdl = true;
@@ -1363,7 +1363,7 @@ revoke0($node)
 	| rev_grant_option db_ddl_privileges(NOTRIAL(&$node->privileges)) DATABASE
 			FROM non_role_grantee_list(NOTRIAL(&$node->users)) granted_by
 		{
-			$node->object = newNode<GranteeClause>(obj_database, QualifiedName(getDllSecurityName(obj_database)));
+			$node->object = newNode<GranteeClause>(obj_database, QualifiedName(getDdlSecurityName(obj_database)));
 			$node->grantAdminOption = $1;
 			$node->grantor = $6;
 			$node->isDdl = true;
