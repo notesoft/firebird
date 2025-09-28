@@ -66,9 +66,9 @@ using namespace Replication;
 
 namespace
 {
-	inline constexpr unsigned FLUSH_WAIT_INTERVAL = 1; // milliseconds
+	inline constexpr unsigned FLUSH_WAIT_INTERVAL = 1;	// milliseconds
 
-	inline constexpr unsigned NO_SPACE_TIMEOUT = 10;	// seconds
+	inline constexpr unsigned NO_SPACE_TIMEOUT = 10000;	// milliseconds
 	inline constexpr unsigned NO_SPACE_RETRIES = 6;		// up to one minute
 
 	inline constexpr unsigned COPY_BLOCK_SIZE = 64 * 1024; // 64 KB
