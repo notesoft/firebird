@@ -18,7 +18,7 @@ FOR <variable> = <initial value> {TO | DOWNTO} <final value> [BY <by value>] DO
 - If omitted, `<by value>` is `1`.
 - `<variable>` also accepts parameters.
 - `<variable>`, `<initial value>`, `<final value>` and `<by value>` must be expressions of exact numeric types.
-- `BREAK [<label>]` can be used to exit the loop.
+- `BREAK` or `LEAVE [<label>]` can be used to exit the loop.
 - `CONTINUE [<label>]` can be used to restart the next loop iteration.
 - `<variable>` can be assigned by user code inside the loop.
 
