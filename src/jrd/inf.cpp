@@ -136,11 +136,9 @@ namespace
 
 		for (auto iter(attachment->att_stats.getRelCounters()); iter; ++iter)
 		{
-			const USHORT relation_id = (*iter).getRelationId();
-			const SINT64 n = (*iter)[type];
-
-			if (n)
+			if (const SINT64 n = (*iter)[type])
 			{
+				const USHORT relation_id = (*iter).getRelationId();
 				const USHORT length = INF_convert(n, num_buffer);
 				const FB_SIZE_T new_buffer_length = buffer_length + length + sizeof(USHORT);
 				buffer.grow(new_buffer_length);
