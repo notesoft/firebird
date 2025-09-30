@@ -127,6 +127,7 @@ Manager::Manager(const string& dbId,
 	  m_buffers(getPool()),
 	  m_queue(getPool()),
 	  m_queueSize(0),
+	  m_sequence(0),
 	  m_shutdown(false),
 	  m_signalled(false)
 {
