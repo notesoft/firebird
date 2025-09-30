@@ -379,7 +379,7 @@ public:
 			advance();
 		}
 
-		T::const_reference operator*() const
+		typename T::const_reference operator*() const
 		{
 			return *m_iter;
 		}
