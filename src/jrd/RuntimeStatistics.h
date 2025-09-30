@@ -390,8 +390,8 @@ public:
 		}
 
 	private:
-		T::const_iterator m_iter;
-		const T::const_iterator m_end;
+		typename T::const_iterator m_iter;
+		const typename T::const_iterator m_end;
 
 		void advance()
 		{
