@@ -2072,6 +2072,7 @@ bool VIO_erase(thread_db* tdbb, record_param* rpb, jrd_tra* transaction)
 		case rel_dpds:
 		case rel_dims:
 		case rel_filters:
+		case rel_segments:
 		case rel_vrel:
 		case rel_args:
 		case rel_packages:
