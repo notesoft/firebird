@@ -814,7 +814,7 @@ int gstat(Firebird::UtilSvc* uSvc)
 
 	FOR(TRANSACTION_HANDLE transact1 REQUEST_HANDLE request1)
 		X IN RDB$RELATIONS SORTED BY DESC X.RDB$RELATION_NAME
-
+	{
 		if (!sw_system && X.RDB$SYSTEM_FLAG) {
 		  continue;
 		}
@@ -872,14 +872,15 @@ int gstat(Firebird::UtilSvc* uSvc)
 		FOR(TRANSACTION_HANDLE transact1 REQUEST_HANDLE request2)
 			Y IN RDB$PAGES WITH Y.RDB$RELATION_ID EQ relation->rel_id AND
 				Y.RDB$PAGE_SEQUENCE EQ 0
-
+		{
 			if (Y.RDB$PAGE_TYPE == pag_pointer) {
 				relation->rel_pointer_page = Y.RDB$PAGE_NUMBER;
 			}
-            if (Y.RDB$PAGE_TYPE == pag_root) {
+			if (Y.RDB$PAGE_TYPE == pag_root) {
 				relation->rel_index_root = Y.RDB$PAGE_NUMBER;
 			}
-		END_FOR;
+		}
+		END_FOR
 		ON_ERROR
 			dba_exit(FINI_ERROR, tddba);
 		END_ERROR
@@ -889,7 +890,8 @@ int gstat(Firebird::UtilSvc* uSvc)
 			FOR(TRANSACTION_HANDLE transact1 REQUEST_HANDLE request3)
 				Y IN RDB$INDICES WITH Y.RDB$RELATION_NAME EQ relation->rel_name
 					SORTED BY DESC Y.RDB$INDEX_NAME
-	            if (Y.RDB$INDEX_INACTIVE)
+			{
+				if (Y.RDB$INDEX_INACTIVE)
 					  continue;
 				dba_idx* index = (dba_idx*) alloc(sizeof(struct dba_idx));
 				index->idx_next = relation->rel_indexes;
@@ -897,7 +899,8 @@ int gstat(Firebird::UtilSvc* uSvc)
 				strcpy(index->idx_name, Y.RDB$INDEX_NAME);
 				fb_utils::exact_name(index->idx_name);
 				index->idx_id = Y.RDB$INDEX_ID - 1;
-	        END_FOR;
+			}
+			END_FOR
 			ON_ERROR
 				dba_exit(FINI_ERROR, tddba);
 			END_ERROR
@@ -908,6 +911,7 @@ int gstat(Firebird::UtilSvc* uSvc)
 			FOR(TRANSACTION_HANDLE transact1 REQUEST_HANDLE request4)
 				Y IN RDB$FORMATS WITH Y.RDB$RELATION_ID EQ X.RDB$RELATION_ID
 					SORTED BY Y.RDB$FORMAT
+			{
 				dba_fmt* format = (dba_fmt*) alloc(sizeof(struct dba_fmt));
 				format->fmt_next = relation->rel_formats;
 				relation->rel_formats = format;
@@ -919,12 +923,14 @@ int gstat(Firebird::UtilSvc* uSvc)
 				}
 				format->fmt_used = false;
 				++relation->rel_total_formats;
-			END_FOR;
+			}
+			END_FOR
 			ON_ERROR
 				dba_exit(FINI_ERROR, tddba);
 			END_ERROR
 		}
-	END_FOR;
+	}
+	END_FOR
 	ON_ERROR
 		dba_exit(FINI_ERROR, tddba);
 	END_ERROR
@@ -974,7 +980,6 @@ int gstat(Firebird::UtilSvc* uSvc)
 			}
 		}
 	}
-
 
 	dba_print(false, 10);
 	// msg 10: \nAnalyzing database pages ...\n
@@ -1099,7 +1104,6 @@ int gstat(Firebird::UtilSvc* uSvc)
 						}
 					}
 				}
-
 
 				const FB_UINT64 tableSize = tddba->page_size * (
 					relation->rel_pointer_pages +
