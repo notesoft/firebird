@@ -2699,7 +2699,11 @@ static void gen_get_segment( const act* action)
 		names[isc_a_pos], blob->blb_ident,
 		names[isc_a_pos], blob->blb_len_ident,
 		BY_VALUE, blob->blb_seg_length, END_VALUE,
-		BY_REF, names[isc_a_pos], blob->blb_buff_ident, names[isc_status_pos]);
+		BY_REF, names[isc_a_pos], blob->blb_buff_ident
+#ifdef GIVING_SUPPORTED
+		, names[isc_status_pos]
+#endif
+	);
 
 	COB_print_buffer(output_buffer, true);
 
@@ -2872,7 +2876,11 @@ static void gen_put_segment( const act* action)
 		status_vector(action),
 		BY_REF, names[isc_a_pos], blob->blb_ident,
 		BY_VALUE, names[isc_a_pos], blob->blb_len_ident, END_VALUE,
-		BY_REF, names[isc_a_pos], blob->blb_buff_ident, names[isc_status_pos]);
+		BY_REF, names[isc_a_pos], blob->blb_buff_ident
+#ifdef GIVING_SUPPORTED
+		, names[isc_status_pos]
+#endif
+	);
 	COB_print_buffer(output_buffer, true);
 
 	set_sqlcode(action);
@@ -4283,4 +4291,3 @@ static void t_start_auto(const gpre_req* request,
 
 	set_sqlcode(action);
 }
-
