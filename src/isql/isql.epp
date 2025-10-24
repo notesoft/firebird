@@ -354,10 +354,11 @@ static int win32ReadConsole(FILE* file, CharBuffer& mbBuffer)
 		if (error == ERROR_NOT_ENOUGH_MEMORY && maxLineLength > 256)
 			maxLineLength -= 256;
 		else
-			Firebird::system_error::raise("ReadConsoleW", error);
+			system_error::raise("ReadConsoleW", error);
 	}
 
-	if (!charsRead)
+	constexpr WCHAR CtrlZ = 0x1a;
+	if (!charsRead || (wideBuf[0] == CtrlZ))
 		return 0;
 
 	int mbLength = WideCharToMultiByte(GetConsoleCP(), 0, wideBuf, charsRead,
