@@ -4503,6 +4503,7 @@ void VIO_store(thread_db* tdbb, record_param* rpb, jrd_tra* transaction)
 			break;
 
 		case rel_fields:
+			protect_system_table_insert(tdbb, request, relation);
 			EVL_field(0, rpb->rpb_record, f_fld_schema, &schemaDesc);
 			MOV_get_metaname(tdbb, &schemaDesc, object_name.schema);
 			EVL_field(0, rpb->rpb_record, f_fld_name, &desc);
@@ -4554,6 +4555,7 @@ void VIO_store(thread_db* tdbb, record_param* rpb, jrd_tra* transaction)
 			break;
 
 		case rel_triggers:
+			protect_system_table_insert(tdbb, request, relation);
 			EVL_field(0, rpb->rpb_record, f_trg_schema, &schemaDesc);
 			EVL_field(0, rpb->rpb_record, f_trg_rname, &desc);
 
