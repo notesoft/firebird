@@ -2604,6 +2604,8 @@ EraseNode* EraseNode::pass2(thread_db* tdbb, CompilerScratch* csb)
 
 	csb->csb_rpt[stream].csb_flags |= csb_update;
 
+	impureOffset = csb->allocImpure<impure_state>();
+
 	return this;
 }
 
@@ -2664,6 +2666,8 @@ const StmtNode* EraseNode::erase(thread_db* tdbb, Request* request, WhichTrigger
 	{
 		case Request::req_evaluate:
 		{
+			impure->sta_state = 0;
+
 			if (!(marks & MARK_AVOID_COUNTERS))
 				request->req_records_affected.bumpModified(false);
 
