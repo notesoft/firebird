@@ -867,8 +867,7 @@ bool Connection::getWrapErrors(const ISC_STATUS* status) noexcept
 /// ConnectionsPool
 
 ConnectionsPool::ConnectionsPool(MemoryPool& pool)
-	: m_pool(pool),
-	  m_idleArray(pool),
+	: m_idleArray(pool),
 	  m_idleList(NULL),
 	  m_activeList(NULL),
 	  m_allCount(0),
