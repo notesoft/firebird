@@ -985,12 +985,15 @@ void ListAggNode::getDesc(thread_db* tdbb, CompilerScratch* csb, dsc* desc)
 
 ValueExprNode* ListAggNode::copy(thread_db* tdbb, NodeCopier& copier) const
 {
-	ListAggNode* node = FB_NEW_POOL(*tdbb->getDefaultPool()) ListAggNode(*tdbb->getDefaultPool(),
-		distinct);
+	ListAggNode* node = FB_NEW_POOL(*tdbb->getDefaultPool()) ListAggNode(*tdbb->getDefaultPool(), distinct);
+
 	node->nodScale = nodScale;
 	node->arg = copier.copy(tdbb, arg);
 	node->delimiter = copier.copy(tdbb, delimiter);
-	node->sort = sort->copy(tdbb, copier);
+
+	if (sort)
+		node->sort = sort->copy(tdbb, copier);
+
 	return node;
 }
 
