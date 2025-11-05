@@ -834,6 +834,7 @@ RecordSource* Optimizer::compile(BoolExprNodeStack* parentStack)
 		for (auto iter = getConjuncts(); iter.hasData(); ++iter)
 		{
 			if (!(iter & CONJUNCT_USED) &&
+				!(iter->nodFlags & ExprNode::FLAG_RESIDUAL) &&
 				iter->deterministic() &&
 				iter->computable(csb, INVALID_STREAM, false))
 			{
