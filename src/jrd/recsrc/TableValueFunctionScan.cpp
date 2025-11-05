@@ -232,10 +232,10 @@ void UnlistFunctionScan::internalOpen(thread_db* tdbb) const
 			auto size = end = valueView.find(separatorView);
 			if (end == std::string_view::npos)
 			{
-				if (!valueView.empty())
-					size = valueView.length();
-				else
+				if (valueView.empty())
 					break;
+
+				size = valueView.length();
 			}
 
 			if (size > 0)
@@ -247,7 +247,10 @@ void UnlistFunctionScan::internalOpen(thread_db* tdbb) const
 				impure->m_recordBuffer->store(record);
 			}
 
-			valueView.remove_prefix(size + separatorView.length());
+			if (end != std::string_view::npos)
+				size += separatorView.length();
+
+			valueView.remove_prefix(size);
 
 		} while (end != std::string_view::npos);
 	}
@@ -305,21 +308,26 @@ bool UnlistFunctionScan::nextBuffer(thread_db* tdbb) const
 			std::string_view valueView(bufferString.data(), blobLength + resultLength);
 			auto end = std::string_view::npos;
 			impure->m_resultStr->erase();
+
 			do
 			{
 				const auto size = end = valueView.find(separatorView);
 				if (end == std::string_view::npos)
 				{
 					if (!valueView.empty())
+					{
 						impure->m_resultStr->append(valueView.data(),
 							static_cast<string::size_type>(valueView.length()));
+					}
 
 					break;
 				}
 
 				if (size > 0)
+				{
 					impure->m_resultStr->append(valueView.data(),
 						static_cast<string::size_type>(size));
+				}
 
 				valueView.remove_prefix(size + separatorView.length());
 
