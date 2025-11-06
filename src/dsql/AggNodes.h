@@ -116,7 +116,7 @@ public:
 	Firebird::string internalPrint(NodePrinter& printer) const override;
 	void make(DsqlCompilerScratch* dsqlScratch, dsc* desc) override;
 	void genBlr(DsqlCompilerScratch* dsqlScratch) override;
-	
+
 	bool setParameterType(DsqlCompilerScratch* dsqlScratch,
 		std::function<void (dsc*)> makeDesc, bool forceVarChar) override;
 	void getDesc(thread_db* tdbb, CompilerScratch* csb, dsc* desc) override;
