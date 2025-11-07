@@ -412,7 +412,7 @@ void GenSeriesFunctionScan::internalOpen(thread_db* tdbb) const
 	// common type
 	impure->m_dtype = MAX(MAX(startDesc->dsc_dtype, finishDesc->dsc_dtype), stepDesc->dsc_dtype);
 
-	if (impure->m_dtype != dtype_int128) 
+	if (impure->m_dtype != dtype_int128)
 	{
 		const auto start = MOV_get_int64(tdbb, startDesc, impure->m_scale);
 		const auto finish = MOV_get_int64(tdbb, finishDesc, impure->m_scale);
@@ -433,7 +433,7 @@ void GenSeriesFunctionScan::internalOpen(thread_db* tdbb) const
 		impure->m_step.vlu_int64 = step;
 		impure->m_result.vlu_int64 = start;
 	}
-	else 
+	else
 	{
 		const auto start = MOV_get_int128(tdbb, startDesc, impure->m_scale);
 		const auto finish = MOV_get_int128(tdbb, finishDesc, impure->m_scale);
@@ -456,7 +456,7 @@ void GenSeriesFunctionScan::internalOpen(thread_db* tdbb) const
 	}
 
 	impure->irsb_flags |= irsb_open;
-   
+
 	VIO_record(tdbb, rpb, m_format, &pool);
 }
 
@@ -490,7 +490,7 @@ bool GenSeriesFunctionScan::internalGetRecord(thread_db* tdbb) const
 
 	rpb->rpb_number.increment();
 
-	if (nextBuffer(tdbb)) 
+	if (nextBuffer(tdbb))
 	{
 		rpb->rpb_number.setValid(true);
 		return true;
@@ -528,7 +528,8 @@ bool GenSeriesFunctionScan::nextBuffer(thread_db* tdbb) const
 			return true;
 		}
 	}
-	else {
+	else
+	{
 		auto result = impure->m_result.vlu_int128;
 		const auto finish = impure->m_finish.vlu_int128;
 		const auto step = impure->m_step.vlu_int128;

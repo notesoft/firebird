@@ -1592,7 +1592,7 @@ namespace Jrd
 			UNLIST_INDEX_LAST = 2
 		};
 
-		struct Impure : public TableValueFunctionScan::Impure
+		struct Impure final : public TableValueFunctionScan::Impure
 		{
 			blb* m_blob;
 			Firebird::string* m_separatorStr;
@@ -1606,8 +1606,7 @@ namespace Jrd
 	protected:
 		void close(thread_db* tdbb) const final;
 		void internalOpen(thread_db* tdbb) const final;
-		void internalGetPlan(thread_db* tdbb, PlanEntry& planEntry, unsigned level,
-							 bool recurse) const final;
+		void internalGetPlan(thread_db* tdbb, PlanEntry& planEntry, unsigned level, bool recurse) const final;
 
 		bool nextBuffer(thread_db* tdbb) const final;
 
@@ -1625,7 +1624,7 @@ namespace Jrd
 			GEN_SERIES_INDEX_LAST = 3
 		};
 
-		struct Impure : public TableValueFunctionScan::Impure
+		struct Impure final : public TableValueFunctionScan::Impure
 		{
 			union
 			{
@@ -1662,8 +1661,7 @@ namespace Jrd
 	protected:
 		void close(thread_db* tdbb) const override;
 		void internalOpen(thread_db* tdbb) const override;
-		void internalGetPlan(thread_db* tdbb, PlanEntry& planEntry, unsigned level,
-							 bool recurse) const override;
+		void internalGetPlan(thread_db* tdbb, PlanEntry& planEntry, unsigned level, bool recurse) const override;
 		bool internalGetRecord(thread_db* tdbb) const override;
 
 		bool nextBuffer(thread_db* tdbb) const override;
