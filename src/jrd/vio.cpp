@@ -4215,7 +4215,10 @@ void VIO_store(thread_db* tdbb, record_param* rpb, jrd_tra* transaction)
 			}},
 		};
 
-		ObjectsArray<MetaString> schemaSearchPath({SYSTEM_SCHEMA, PUBLIC_SCHEMA});
+		static const GlobalPtr<ObjectsArray<MetaString>> schemaSearchPath([](MemoryPool& pool)
+		{
+			return FB_NEW_POOL(pool) ObjectsArray<MetaString>(pool, {SYSTEM_SCHEMA, PUBLIC_SCHEMA});
+		});
 
 		if (const auto relSchemaFields = schemaFields.find(relation->rel_id); relSchemaFields != schemaFields.end())
 		{
@@ -4234,7 +4237,7 @@ void VIO_store(thread_db* tdbb, record_param* rpb, jrd_tra* transaction)
 					{
 						MOV_get_metaname(tdbb, &desc, depName.object);
 
-						if (MET_qualify_existing_name(tdbb, depName, {dependency->objType}, &schemaSearchPath))
+						if (MET_qualify_existing_name(tdbb, depName, {dependency->objType}, schemaSearchPath.get()))
 							schemaName = depName.schema.c_str();
 					}
 
