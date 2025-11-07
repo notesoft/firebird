@@ -1615,6 +1615,63 @@ namespace Jrd
 		NestConst<ValueListNode> m_inputList;
 	};
 
+	class GenSeriesFunctionScan final : public TableValueFunctionScan
+	{
+		enum GenSeriesTypeItemIndex : UCHAR
+		{
+			GEN_SERIES_INDEX_START = 0,
+			GEN_SERIES_INDEX_FINISH = 1,
+			GEN_SERIES_INDEX_STEP = 2,
+			GEN_SERIES_INDEX_LAST = 3
+		};
+
+		struct Impure : public TableValueFunctionScan::Impure
+		{
+			union
+			{
+				SINT64 vlu_int64;
+				Firebird::Int128 vlu_int128;
+			} m_start;
+
+			union
+			{
+				SINT64 vlu_int64;
+				Firebird::Int128 vlu_int128;
+			} m_finish;
+
+			union
+			{
+				SINT64 vlu_int64;
+				Firebird::Int128 vlu_int128;
+			} m_step;
+
+			union
+			{
+				SINT64 vlu_int64;
+				Firebird::Int128 vlu_int128;
+			} m_result;
+
+			UCHAR m_dtype;
+			SCHAR m_scale;
+		};
+
+	public:
+		GenSeriesFunctionScan(CompilerScratch* csb, StreamType stream, const Firebird::string& alias,
+						   ValueListNode* list);
+
+	protected:
+		void close(thread_db* tdbb) const override;
+		void internalOpen(thread_db* tdbb) const override;
+		void internalGetPlan(thread_db* tdbb, PlanEntry& planEntry, unsigned level,
+							 bool recurse) const override;
+		bool internalGetRecord(thread_db* tdbb) const override;
+
+		bool nextBuffer(thread_db* tdbb) const override;
+
+	private:
+		NestConst<ValueListNode> m_inputList;
+	};
+
 } // namespace
 
 #endif // JRD_RECORD_SOURCE_H
