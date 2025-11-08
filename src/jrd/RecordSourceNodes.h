@@ -1084,7 +1084,7 @@ public:
 class GenSeriesFunctionSourceNode final : public TableValueFunctionSourceNode
 {
 public:
-	explicit GenSeriesFunctionSourceNode(MemoryPool& pool) 
+	explicit GenSeriesFunctionSourceNode(MemoryPool& pool)
 		: TableValueFunctionSourceNode(pool)
 	{
 	}
