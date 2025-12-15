@@ -670,7 +670,6 @@ TraceRuntimeStats::TraceRuntimeStats(Attachment* attachment,
 			m_info.pin_tables[i].trc_relation_id = m_tableCounters.getObjectId(i);
 			m_info.pin_tables[i].trc_relation_name = m_tableCounters.getObjectName(i);
 			m_info.pin_tables[i].trc_counters = m_tableCounters.getObjectCounters(i);
-			i++;
 		}
 	}
 	else
