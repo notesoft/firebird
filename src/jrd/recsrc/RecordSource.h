@@ -584,7 +584,7 @@ namespace Jrd
 	{
 	public:
 		FilteredStream(CompilerScratch* csb, RecordSource* next,
-					   BoolExprNode* boolean, double selectivity = 0);
+					   BoolExprNode* boolean, double selectivity);
 
 		void close(thread_db* tdbb) const override;
 
@@ -611,11 +611,13 @@ namespace Jrd
 		}
 
 	protected:
+		FilteredStream(CompilerScratch* csb, RecordSource* next, BoolExprNode* boolean);
+
 		void internalGetPlan(thread_db* tdbb, PlanEntry& planEntry, unsigned level, bool recurse) const override;
 		void internalOpen(thread_db* tdbb) const override;
 		bool internalGetRecord(thread_db* tdbb) const override;
 
-		bool m_invariant = false;
+		const bool m_invariant;
 
 	private:
 		Firebird::TriState evaluateBoolean(thread_db* tdbb) const;
@@ -623,9 +625,9 @@ namespace Jrd
 		NestConst<RecordSource> m_next;
 		NestConst<BoolExprNode> const m_boolean;
 		NestConst<BoolExprNode> m_anyBoolean;
-		bool m_ansiAny;
-		bool m_ansiAll;
-		bool m_ansiNot;
+		bool m_ansiAny = false;
+		bool m_ansiAll = false;
+		bool m_ansiNot = false;
 	};
 
 	class PreFilteredStream : public FilteredStream
@@ -634,9 +636,7 @@ namespace Jrd
 		PreFilteredStream(CompilerScratch* csb, RecordSource* next,
 						  BoolExprNode* boolean)
 			: FilteredStream(csb, next, boolean)
-		{
-			m_invariant = true;
-		}
+		{}
 	};
 
 	class SortedStream : public RecordSource
