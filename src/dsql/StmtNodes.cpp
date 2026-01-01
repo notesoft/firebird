@@ -2389,6 +2389,9 @@ string EraseNode::internalPrint(NodePrinter& printer) const
 // RETURNING specified.
 void EraseNode::genBlr(DsqlCompilerScratch* dsqlScratch)
 {
+	if (dsqlScratch->recordKeyMessage)
+		GEN_port(dsqlScratch, dsqlScratch->recordKeyMessage);
+
 	std::optional<USHORT> tableNumber;
 
 	const bool skipLocked = dsqlRse && dsqlRse->hasSkipLocked();
