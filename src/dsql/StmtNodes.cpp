@@ -6527,7 +6527,6 @@ void LocalDeclarationsNode::genBlr(DsqlCompilerScratch* dsqlScratch)
 	// EXECUTE BLOCK needs "ports", which creates DSQL messages using the client charset.
 	// Sub routine doesn't need ports and should generate BLR as declared in its metadata.
 	const bool isSubRoutine = dsqlScratch->flags & DsqlCompilerScratch::FLAG_SUB_ROUTINE;
-	const auto& variables = isSubRoutine ? dsqlScratch->outputVariables : dsqlScratch->variables;
 
 	Array<dsql_var*> declaredVariables;
 
@@ -11246,7 +11245,6 @@ static RseNode* dsqlPassCursorReference(DsqlCompilerScratch* dsqlScratch, const 
 {
 	DEV_BLKCHK(dsqlScratch, dsql_type_req);
 
-	thread_db* tdbb = JRD_get_thread_data();
 	// Use scratch pool because none of created object is stored anywhere
 	MemoryPool& pool = dsqlScratch->getPool();
 
@@ -11868,7 +11866,6 @@ static StmtNode* pass1ExpandView(thread_db* tdbb, CompilerScratch* csb, StreamTy
 	jrd_rel* relation = csb->csb_rpt[orgStream].csb_relation;
 	vec<jrd_fld*>* fields = relation->rel_fields;
 
-	dsc desc;
 	USHORT id = 0, newId = 0;
 	vec<jrd_fld*>::iterator ptr = fields->begin();
 

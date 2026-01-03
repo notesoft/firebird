@@ -429,7 +429,6 @@ bool SweepTask::handler(WorkItem& _item)
 		RelInfo* relInfo = item->m_relInfo;
 
 		Database* dbb = tdbb->getDatabase();
-		Attachment* att = tdbb->getAttachment();
 
 		/*relation = (*att->att_relations)[relInfo->rel_id];
 		if (relation)*/
