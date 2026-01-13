@@ -2905,7 +2905,7 @@ RecordSource* Optimizer::generateRetrieval(StreamType stream,
 			inversion = candidate->inversion;
 			condition = candidate->condition;
 			dbkeyRanges.assign(candidate->dbkeyRanges);
-			scanSelectivity = candidate->selectivity;
+			scanSelectivity = candidate->matchSelectivity;
 
 			// Just for safety sake, this condition must be already checked
 			// inside OptimizerRetrieval::matchOnIndexes()
@@ -2920,9 +2920,7 @@ RecordSource* Optimizer::generateRetrieval(StreamType stream,
 			}
 		}
 
-		const auto navigation = retrieval.getNavigation(candidate);
-
-		if (navigation)
+		if (const auto navigation = retrieval.getNavigation())
 		{
 			if (sortClause)
 				*sortClause = nullptr;

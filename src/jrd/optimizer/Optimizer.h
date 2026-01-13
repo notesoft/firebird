@@ -685,6 +685,7 @@ struct InversionCandidate
 	{}
 
 	double selectivity = MAXIMUM_SELECTIVITY;
+	double matchSelectivity = MAXIMUM_SELECTIVITY;
 	double cost = 0;
 	unsigned nonFullMatchedSegments = MAX_INDEX_SEGMENTS + 1;
 	unsigned matchedSegments = 0;
@@ -724,10 +725,11 @@ public:
 	}
 
 	InversionCandidate* getInversion();
-	IndexTableScan* getNavigation(const InversionCandidate* candidate);
+	IndexTableScan* getNavigation();
 
 protected:
 	void analyzeNavigation(const InversionCandidateList& inversions);
+	void applyNavigation(InversionCandidate* candidate);
 	bool betterInversion(const InversionCandidate* inv1, const InversionCandidate* inv2,
 						 bool navigation) const;
 	bool checkIndexCondition(index_desc& idx, BooleanList& matches) const;

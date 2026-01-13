@@ -187,7 +187,7 @@ void InnerJoin::estimateCost(unsigned position,
 	fb_assert(!position || candidate->dependencies);
 
 	// Remember selectivity of this stream
-	joinedStreams[position].selectivity = candidate->selectivity;
+	joinedStreams[position].selectivity = candidate->matchSelectivity;
 
 	// Calculate the nested loop cost, it's our default option
 	const auto loopCost = candidate->cost * cardinality;
