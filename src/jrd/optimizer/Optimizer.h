@@ -365,12 +365,19 @@ public:
 	{
 		auto factor = REDUCE_SELECTIVITY_FACTOR_OTHER;
 
-		if (const auto binaryNode = nodeAs<BinaryBoolNode>(node))
+		if (const auto notNode = nodeAs<NotBoolNode>(node))
 		{
+			factor = MAXIMUM_SELECTIVITY - getSelectivity(notNode->arg);
+		}
+		else if (const auto binaryNode = nodeAs<BinaryBoolNode>(node))
+		{
+			const auto selectivity1 = getSelectivity(binaryNode->arg1);
+			const auto selectivity2 = getSelectivity(binaryNode->arg2);
+
 			if (binaryNode->blrOp == blr_and)
-				factor = getSelectivity(binaryNode->arg1) * getSelectivity(binaryNode->arg2);
+				factor = selectivity1 * selectivity2;
 			else if (binaryNode->blrOp == blr_or)
-				factor = getSelectivity(binaryNode->arg1) + getSelectivity(binaryNode->arg2);
+				factor = selectivity1 + selectivity2 - selectivity1 * selectivity2;
 			else
 				fb_assert(false);
 		}
