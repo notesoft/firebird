@@ -434,15 +434,9 @@ public:
 		return MIN(selectivity, MAXIMUM_SELECTIVITY / 2);
 	}
 
-	static void adjustSelectivity(double& selectivity, double factor, double cardinality) noexcept
+	static void adjustSelectivity(double& selectivity, double factor) noexcept
 	{
-		if (!cardinality)
-			cardinality = DEFAULT_CARDINALITY;
-
-		const auto minSelectivity = MAXIMUM_SELECTIVITY / cardinality;
-		const auto diffSelectivity = selectivity > minSelectivity ?
-			selectivity - minSelectivity : 0;
-		selectivity = minSelectivity + diffSelectivity * factor;
+		selectivity = MIN(selectivity * factor, MAXIMUM_SELECTIVITY);
 	}
 
 	bool deliverJoinConjuncts(const BoolExprNodeStack& conjuncts) const

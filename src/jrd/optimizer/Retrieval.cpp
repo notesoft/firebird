@@ -355,7 +355,7 @@ InversionCandidate* Retrieval::getInversion()
 		}
 	}
 
-	Optimizer::adjustSelectivity(invCandidate->selectivity, selectivity, cardinality);
+	Optimizer::adjustSelectivity(invCandidate->selectivity, selectivity);
 
 	// Add the streams where this stream is depending on
 	for (auto match : invCandidate->matches)
@@ -419,7 +419,7 @@ IndexTableScan* Retrieval::getNavigation(const InversionCandidate* candidate)
 			}
 		}
 
-		Optimizer::adjustSelectivity(selectivity, factor, streamCardinality);
+		Optimizer::adjustSelectivity(selectivity, factor);
 
 		// Don't consider external sorting if optimization for first rows is requested
 		// and we have no local filtering applied
