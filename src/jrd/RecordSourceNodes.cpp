@@ -3559,8 +3559,11 @@ RecordSource* RseNode::compile(thread_db* tdbb, Optimizer* opt, bool innerSubStr
 				conjunctStack.push(iter);
 		}
 
-		if (opt->isSpecialJoin() && !opt->deliverJoinConjuncts(conjunctStack))
+		if (opt->isSpecialJoin() && !opt->deliverJoinConjuncts(this, conjunctStack))
+		{
 			conjunctStack.clear();
+			firstRows = false;
+		}
 	}
 	else
 	{

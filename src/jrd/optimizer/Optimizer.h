@@ -439,21 +439,26 @@ public:
 		selectivity = MIN(selectivity * factor, MAXIMUM_SELECTIVITY);
 	}
 
-	bool deliverJoinConjuncts(const BoolExprNodeStack& conjuncts) const
+	double getDependentSelectivity();
+
+	bool deliverJoinConjuncts(RseNode* subRse, const BoolExprNodeStack& stack) const
 	{
-		fb_assert(conjuncts.hasData());
+		// Determine whether the join conjunct(s) should be delivered to the inner RSE being joined.
+		// The decision is based on the parent (outer) cardinality and selectivity of the conjunct(s).
 
-		// Look at cardinality of the priorly joined streams. If it's known to be
-		// not very small, give up a possible nested loop join in favor of a hash join.
-		// Here we assume every equi-join condition having a default selectivity (0.1).
-		// TODO: replace with a proper cost-based decision in the future.
+		fb_assert(stack.hasData());
 
-		double subSelectivity = MAXIMUM_SELECTIVITY;
-		for (auto count = conjuncts.getCount(); count; count--)
-			subSelectivity *= DEFAULT_SELECTIVITY;
-		const auto thresholdCardinality = MINIMUM_CARDINALITY / subSelectivity;
+		const auto selectivity = Optimizer(tdbb, csb, subRse, stack).getDependentSelectivity();
 
-		return (cardinality && cardinality <= thresholdCardinality);
+		if (selectivity < MAXIMUM_SELECTIVITY)
+		{
+			if (cardinality)
+				return (cardinality * selectivity < MINIMUM_CARDINALITY);
+
+			return true;
+		}
+
+		return false;
 	}
 
 	static RecordSource* compile(thread_db* tdbb, CompilerScratch* csb, RseNode* rse)
@@ -557,6 +562,8 @@ public:
 private:
 	Optimizer(thread_db* aTdbb, CompilerScratch* aCsb, RseNode* aRse,
 			  bool parentFirstRows);
+	Optimizer(thread_db* aTdbb, CompilerScratch* aCsb, RseNode* aRse,
+			  const BoolExprNodeStack& stack);
 
 	RecordSource* compile(BoolExprNodeStack* parentStack);
 
