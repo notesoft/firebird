@@ -57,7 +57,10 @@ NestedLoopJoin::NestedLoopJoin(CompilerScratch* csb,
 	fb_assert(outer && inner);
 
 	m_impure = csb->allocImpure<Impure>();
-	m_cardinality = outer->getCardinality() * inner->getCardinality();
+
+	m_cardinality = outer->getCardinality();
+	m_cardinality *= (m_joinType == JoinType::INNER || m_joinType == JoinType::OUTER) ?
+		inner->getCardinality() : REDUCE_SELECTIVITY_FACTOR_ANY;
 
 	m_args.add(outer);
 	m_args.add(inner);
