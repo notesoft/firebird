@@ -267,7 +267,7 @@ void METD_drop_relation(jrd_tra* transaction, const QualifiedName& name)
 
 	if (dbb->dbb_relations.get(name, relation))
 	{
-		if (!(relation->rel_flags & REL_temp_ltt))
+		if (!(relation->rel_flags & REL_ltt_created))
 			MET_dsql_cache_use(tdbb, SYM_relation, name);
 
 		relation->rel_flags |= REL_dropped;

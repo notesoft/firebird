@@ -5807,7 +5807,8 @@ static void get_trigger_dependencies(DeferredWork* work, bool compile, jrd_tra* 
 	FOR(REQUEST_HANDLE handle)
 		X IN RDB$TRIGGERS
 		WITH X.RDB$SCHEMA_NAME EQ work->dfw_schema.c_str() AND
-			 X.RDB$TRIGGER_NAME EQ work->dfw_name.c_str()
+			 X.RDB$TRIGGER_NAME EQ work->dfw_name.c_str() AND
+			 X.RDB$RELATION_NAME NOT MISSING
 	{
 		blob_id = X.RDB$TRIGGER_BLR;
 		type = (ISC_UINT64) X.RDB$TRIGGER_TYPE;

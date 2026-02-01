@@ -3187,6 +3187,8 @@ jrd_rel* MET_lookup_relation(thread_db* tdbb, const QualifiedName& name)
 		}
 	}
 
+	relation = nullptr;
+
 	// We need to look up the relation name in RDB$RELATIONS
 
 	static const CachedRequestId request1CacheId;
