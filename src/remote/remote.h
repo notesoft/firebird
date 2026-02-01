@@ -913,7 +913,9 @@ class InternalCryptKey final :
 {
 public:
 	InternalCryptKey()
-		: keyName(getPool())
+		: encrypt(getPool()),
+		  decrypt(getPool()),
+		  keyName(getPool())
 	{ }
 
 	// ICryptKey implementation
@@ -926,8 +928,8 @@ public:
 	class Key : public Firebird::UCharBuffer
 	{
 	public:
-		Key()
-			: Firebird::UCharBuffer(getPool())
+		Key(MemoryPool& pool)
+			: Firebird::UCharBuffer(pool)
 		{ }
 
 		void set(unsigned keyLength, const void* key)
