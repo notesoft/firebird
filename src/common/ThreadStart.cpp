@@ -193,6 +193,8 @@ void Thread::waitForCompletion()
 {
 	if (isValid())
 	{
+		fb_assert(!isCurrent());
+
 		int state = pthread_join(m_handle, NULL);
 		if (state)
 			Firebird::system_call_failed::raise("pthread_join", state);
@@ -206,12 +208,15 @@ void Thread::kill() noexcept
 #ifdef HAVE_PTHREAD_CANCEL
 	if (isValid())
 	{
+		fb_assert(!isCurrent());
+
 		pthread_cancel(m_handle);
 		try
 		{
 			waitForCompletion();
 		}
 		catch(...) { }
+		m_handle = INVALID_HANDLE;
 	}
 #endif
 }
@@ -351,6 +356,8 @@ bool Thread::waitFor(unsigned milliseconds) const noexcept
 	if (!isValid())
 		return true;
 
+	fb_assert(!isCurrent());
+
 	return WaitForSingleObject(m_handle, milliseconds) != WAIT_TIMEOUT;
 }
 
@@ -358,6 +365,8 @@ void Thread::waitForCompletion()
 {
 	if (!isValid())
 		return;
+
+	fb_assert(!isCurrent());
 
 	// When current DLL is unloading, OS loader holds loader lock. When thread is
 	// exiting, OS notifies every DLL about it, and acquires loader lock. In such
@@ -372,6 +381,8 @@ void Thread::kill() noexcept
 {
 	if (isValid())
 	{
+		fb_assert(!isCurrent());
+
 		TerminateThread(m_handle, -1);
 		detach();
 	}
