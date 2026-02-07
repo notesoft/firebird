@@ -3121,7 +3121,7 @@ static bool packet_receive(rem_port* port, UCHAR* buffer, SSHORT buffer_length, 
 			INET_force_error = 1;
 			try
 			{
-				inet_error(false, port, "simulated error - read", isc_net_read_err);
+				inet_error(false, port, "simulated error - read", isc_net_read_err, 0);
 			}
 			catch (const Exception&) { }
 			return false;
