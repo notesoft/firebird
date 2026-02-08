@@ -146,7 +146,6 @@ char *get_line() {
 
   /* VM: Process %include line */
   if(strncmp(&line[0], "%include ", 9)==0) {
-    int ii=0;
 
     char *inc_file_name = line+9;
     while (isspace(*inc_file_name)) inc_file_name++;
