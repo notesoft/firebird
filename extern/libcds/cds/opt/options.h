@@ -342,7 +342,7 @@ namespace opt {
     //@endcond
 
     /// Special padding constants for \p cds::opt::padding option
-    enum special_padding {
+    enum special_padding : unsigned int {
         no_special_padding = 0,   ///< no special padding
         cache_line_padding = 1,   ///< use cache line size defined in cds/user_setup/cache_line.h
 
@@ -357,7 +357,8 @@ namespace opt {
             cds::opt::padding< 256 | cds::opt::padding_tiny_data_only >;
             \endcode
         */
-        padding_tiny_data_only = 0x80000000,
+
+        padding_tiny_data_only = 0x80000000, 
 
         //@cond
         padding_flags = padding_tiny_data_only
