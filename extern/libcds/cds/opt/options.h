@@ -357,7 +357,7 @@ namespace opt {
             cds::opt::padding< 256 | cds::opt::padding_tiny_data_only >;
             \endcode
         */
-        padding_tiny_data_only = 0x80000000, 
+        padding_tiny_data_only = 0x80000000,
 
         //@cond
         padding_flags = padding_tiny_data_only
