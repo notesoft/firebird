@@ -206,13 +206,13 @@ namespace
 
 						for (auto& subRiver : rivers)
 						{
-							auto subRsb = subRiver->getRecordSource();
-
 							subRiver->activate(csb);
-							subRsb = opt->applyBoolean(subRsb, iter);
 
 							if (subRiver->isComputable(csb))
 							{
+								auto subRsb = subRiver->getRecordSource();
+								subRsb = opt->applyBoolean(subRsb, iter);
+
 								rsbs.add(subRsb);
 								rivers.remove(&subRiver);
 								break;
@@ -231,13 +231,12 @@ namespace
 
 						for (auto& subRiver : rivers)
 						{
-							auto subRsb = subRiver->getRecordSource();
-
 							subRiver->activate(csb);
+
+							auto subRsb = subRiver->getRecordSource();
 							subRsb = opt->applyBoolean(subRsb, iter);
 
-							const auto pos = &subRiver - rivers.begin();
-							rsbs.insert(pos, subRsb);
+							rsbs.add(subRsb);
 						}
 
 						rivers.clear();
@@ -1081,6 +1080,9 @@ RecordSource* Optimizer::compile(BoolExprNodeStack* parentStack)
 
 				if (dependentRivers.hasData())
 				{
+					for (const auto depRiver : dependentRivers)
+						depRiver->activate(csb);
+
 					rivers.join(dependentRivers);
 					dependentRivers.clear();
 				}
@@ -2934,6 +2936,10 @@ RecordSource* Optimizer::generateRetrieval(StreamType stream,
 			rsb = FB_NEW_POOL(getPool()) TimeZonesTableScan(csb, alias, stream, relation);
 			break;
 
+		case rel_mon_local_temp_tables:
+			rsb = FB_NEW_POOL(getPool()) MonitoringTableScan(csb, alias, stream, relation);
+			break;
+
 		case rel_config:
 			rsb = FB_NEW_POOL(getPool()) ConfigTableScan(csb, alias, stream, relation);
 			break;
@@ -3243,13 +3249,15 @@ string Optimizer::makeAlias(StreamType stream)
 
 	const CompilerScratch::csb_repeat* csb_tail = &csb->csb_rpt[stream];
 
-	if (csb_tail->csb_view || csb_tail->csb_alias)
+	// Check for view or explicit alias with actual content
+	// (csb_alias can be a non-null pointer to an empty string for blr_relation3)
+	if (csb_tail->csb_view || (csb_tail->csb_alias && csb_tail->csb_alias->hasData()))
 	{
 		ObjectsArray<string> alias_list;
 
 		while (csb_tail)
 		{
-			if (csb_tail->csb_alias)
+			if (csb_tail->csb_alias && csb_tail->csb_alias->hasData())
 				alias_list.push(*csb_tail->csb_alias);
 			else if (csb_tail->csb_relation)
 				alias_list.push(csb_tail->csb_relation->rel_name.toQuotedString());
