@@ -17,10 +17,10 @@
 #
 ################################################################################
 
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.10.0)
 
 # In-source builds are not possible and so disabled.
-if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
     message(FATAL_ERROR
         "CMake generation for Firebird is not possible within the source directory!"
         "\n Remove the CMakeCache.txt file and try again from another folder, e.g.:"
@@ -32,12 +32,12 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
     )
 endif()
 
-set(CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/builds/cmake)
+set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/builds/cmake)
 
 if (NATIVE_BUILD_DIR)
     get_filename_component(NATIVE_BUILD_DIR ${NATIVE_BUILD_DIR} ABSOLUTE)
 else()
-    set(NATIVE_BUILD_DIR ${CMAKE_BINARY_DIR})
+    set(NATIVE_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
 # Use solution folders.
@@ -75,8 +75,8 @@ endif()
 # Output directory settings
 ########################################
 
-set(output_dir ${CMAKE_BINARY_DIR}/${PROJECT_NAME})
-set(boot_dir ${CMAKE_BINARY_DIR}/src)
+set(output_dir ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME})
+set(boot_dir ${CMAKE_CURRENT_BINARY_DIR}/src)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${output_dir})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${output_dir})
@@ -109,9 +109,38 @@ endif()
 #
 ################################################################################
 
+
+
 ########################################
 # icu
 ########################################
+
+include(builds/cmake/BuildICU.cmake)
+
+    if (${BUILD_ICU_WITH_VER})
+
+        build_icu4c(${BUILD_ICU_WITH_VER})
+
+        set(ICU_INCLUDE_DIR "${ICU_DIR_distr}/include")
+            link_directories(${ICU_DIR_distr})
+         include_directories(${ICU_DIR_distr}/include)
+
+        if (WIN32)
+            set(ICU_VERSION ${ISU_VER_MAJOR})
+
+            string(FIND "${CMAKE_EXE_LINKER_FLAGS}" "/machine:x64" arch)
+            if (NOT ${arch} EQUAL -1)
+                set(arch "x64")
+            else()
+                set(arch "Win32")
+            endif()
+
+            file(COPY "${ICU_DIR_distr}/lib/"  DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/extern/icu/${arch}/Release/bin FILES_MATCHING PATTERN "icuin*")
+            file(COPY "${ICU_DIR_distr}/lib/"  DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/extern/icu/${arch}/Release/bin FILES_MATCHING PATTERN "icuuc*")
+            file(COPY "${ICU_DIR_distr}/lib/"  DESTINATION ${CMAKE_CURRENT_SOURCE_DIR}/extern/icu/${arch}/Release/bin FILES_MATCHING PATTERN "icudt*")
+        endif()
+
+    endif()
 
 if (UNIX)
     if (NOT ICU_INCLUDE_DIR)
@@ -131,9 +160,9 @@ if (UNIX)
     if (CMAKE_CROSSCOMPILING)
         execute_process(COMMAND ${CMAKE_COMMAND} -E copy_directory
             ${ICU_INCLUDE_DIR}/unicode
-            ${CMAKE_BINARY_DIR}/unicode
+            ${CMAKE_CURRENT_BINARY_DIR}/unicode
         )
-        set(ICU_INCLUDE_DIR ${CMAKE_BINARY_DIR})
+        set(ICU_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR})
     endif()
     set(ICU_INCLUDE_DIRS ${ICU_INCLUDE_DIR})
     include_directories(${ICU_INCLUDE_DIRS})
@@ -145,11 +174,11 @@ endif()
 #
 ################################################################################
 
-include(Configure)
+include(builds/cmake/Configure.cmake)
 
 if (FREEBSD)
     # temporary
-    set(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR})
+    set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
 set(FB_PREFIX ${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME})
@@ -163,8 +192,8 @@ if (WIN32)
     set(FB_IPC_NAME "FIREBIRD")
 endif()
 
-set(AUTOCONFIG_SRC ${CMAKE_SOURCE_DIR}/src/include/gen/autoconfig.h.in)
-set(AUTOCONFIG ${CMAKE_BINARY_DIR}/src/include/gen/autoconfig.h)
+set(AUTOCONFIG_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/include/gen/autoconfig.h.in)
+set(AUTOCONFIG ${CMAKE_CURRENT_BINARY_DIR}/src/include/gen/autoconfig.h)
 configure_file(${AUTOCONFIG_SRC} ${AUTOCONFIG} @ONLY)
 
 ################################################################################
@@ -175,9 +204,11 @@ configure_file(${AUTOCONFIG_SRC} ${AUTOCONFIG} @ONLY)
 
 add_definitions(-DDEV_BUILD)
 
+string(REPLACE "${CMAKE_SOURCE_DIR}" "" OWNER_RROJECTS_TREE "${CMAKE_CURRENT_SOURCE_DIR}" )
+
 if (WIN32)
     set(OS_DIR win32)
-    set(VERSION_RC ${CMAKE_SOURCE_DIR}/src/jrd/version.rc)
+    set(VERSION_RC ${CMAKE_CURRENT_SOURCE_DIR}/src/jrd/version.rc)
 
     if (MSVC)
         set(disable_msvc_warnings "/wd4996")
@@ -216,16 +247,21 @@ if (UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -msse4 -std=c++20")
 
     if (NOT CMAKE_CROSSCOMPILING)
-        set(LIB_readline readline)
+        # set(LIB_readline readline)
     endif()
     if (NOT FREEBSD)
         set(LIB_dl dl)
     endif()
 endif()
 
-if (NOT LINUX AND (CLANG OR IOS))
-    set(LIB_iconv iconv)
+if (NOT LINUX AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR IOS))
+    if (NOT WIN32)
+        set(LIB_iconv iconv)
+    endif()
 endif()
+
+
+
 
 if (FREEBSD OR APPLE)
     include_directories(/usr/local/include)
@@ -238,7 +274,8 @@ if (APPLE)
     if (NOT CMAKE_CROSSCOMPILING)
         include_directories(/opt/local/include)
         link_directories(/opt/local/lib)
-        link_directories(/usr/local/opt/icu4c/lib)
+        link_directories(${ICU_DIR}/distr/lib)
+        link_directories(/usr/local/opt/icu4c/lib)  
     endif()
 
     find_library(LIB_CoreFoundation CoreFoundation)
@@ -278,10 +315,10 @@ if (WIN32)
 endif()
 
 if (UNIX)
-    file(GLOB vers_src "${CMAKE_SOURCE_DIR}/builds/posix/*.vers")
+    file(GLOB vers_src "${CMAKE_CURRENT_SOURCE_DIR}/builds/posix/*.vers")
     foreach(f ${vers_src})
         get_filename_component(name ${f} NAME)
-        set(name ${CMAKE_BINARY_DIR}/builds/posix/${name})
+        set(name "${CMAKE_CURRENT_BINARY_DIR}/builds/posix/${name}")
 
         if (AIX)
             file(WRITE ${name} "#!\n")
@@ -318,7 +355,7 @@ endif()
 #
 ################################################################################
 
-include(BuildFunctions)
+include(builds/cmake/BuildFunctions.cmake)
 
 if (NOT CMAKE_CROSSCOMPILING)
 
@@ -329,8 +366,16 @@ endif() # if (NOT CMAKE_CROSSCOMPILING)
 
 crosscompile_prebuild_steps()
 
-include_directories("extern/libtommath")
-include_directories("extern/libtomcrypt/src/headers")
+# include_directories("/extern/editline/src/editline")
+
+include_directories("extern/re2")
+include_directories("extern/boost")
+
+if(BUILD_LIBTOM)
+    include_directories("extern/libtommath")
+    include_directories("extern/libtomcrypt/src/headers")
+endif()
+
 include_directories("extern/decNumber")
 include_directories("extern/icu/include")
 include_directories("extern/zlib")
@@ -340,15 +385,81 @@ include_directories("src/include/gen")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/src/include")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/src/include/gen")
 
+
+########################################
+# LIBRARY cds
+########################################
+
+if (USE_CDS)
+
+    add_definitions(-DCDS_BUILD_STATIC_LIB) # nead global to include .h   
+    set(LIB_cds_ID "fb-cds-static")
+    file(GLOB cds_src 
+        extern/libcds/src/*.cpp
+    )  
+    add_library                 (${LIB_cds_ID} STATIC ${cds_src})        
+    project_group               (${LIB_cds_ID} Extern)
+    # target_compile_definitions  (${LIB_cds_ID} PUBLIC CDS_BUILD_STATIC_LIB)
+
+    # #
+    # set(LIBCDS_CXX_STANDARD ${CMAKE_CXX_STANDARD})
+    # add_definitions( -DCDS_BUILD_STATIC_LIB)   # target_compile_definitions  (cds PUBLIC CDS_BUILD_STATIC_LIB)
+    # add_subdirectory(extern/libcds)
+    # set(cds "cds-s")
+    # if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    #     set(cds "${cds}_d")
+    # endif()
+    # set(LIB_cds_ID "${cds}")
+    # #
+
+    include_directories("${CMAKE_CURRENT_SOURCE_DIR}/extern/libcds")
+       link_directories("${CMAKE_CURRENT_BINARY_DIR}/extern/libcds/bin")
+
+    message("use cds library from ${CMAKE_CURRENT_BINARY_DIR}/extern/libcds/bin/")
+else()
+    add_definitions("-DCDS_UNAVAILABLE")
+endif()
+
+########################################
+# LIBRARY re2
+########################################
+
+file( GLOB re2_src  
+ "extern/re2/re2/*.cc" 
+ "extern/re2/re2/*.h"
+ "extern/re2/util/rune.cc"  
+ "extern/re2/util/strutil.cc"
+)
+add_library                 (re2 ${re2_src})
+target_compile_definitions  (re2 PRIVATE NOMINMAX)
+project_group               (re2 Extern)
+
+if(BUILD_LIBTOM)
+
 ########################################
 # LIBRARY libtommath
 ########################################
 
 file(GLOB libtommath_src "extern/libtommath/*.c" "extern/libtommath/*.h")
 
-add_library             (libtommath ${libtommath_src})
-project_group           (libtommath Extern)
+add_library               (${libtommath_ID} ${libtommath_src})
+project_group             (${libtommath_ID} Extern)
 
+if (WIN32 AND USE_TTMATH_MASM)
+    add_custom_command(TARGET ${libtommath_ID} PRE_BUILD  
+    # COMMAND "${LLVM_win}/bin/llvm-ml.exe" -c --m64 -Fo  # --save-temp-labels 
+      COMMAND "/c/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/14.50.35717/bin/Hostx64/x64/ml64.exe"  -c -Fo
+              "${CMAKE_CURRENT_BINARY_DIR}/ttmathuint_x86_64_msvc.obj"
+              "${CMAKE_CURRENT_SOURCE_DIR}/extern/ttmath/ttmathuint_x86_64_msvc.asm"
+    )
+    set(libtommath_x86_64_masm_obj  "${CMAKE_CURRENT_BINARY_DIR}/ttmathuint_x86_64_msvc.obj")
+    message("use TTMATH MASM")
+else()
+    message("not use TTMATH MASM")
+    add_definitions("-DTTMATH_NOASM")
+endif()                             
+
+target_link_libraries     (${libtommath_ID} ${LIB_builtins_Clang} ${libtommath_x86_64_masm_obj})
 
 ########################################
 # LIBRARY libtomcrypt
@@ -359,10 +470,12 @@ list(FILTER libtomcrypt_src EXCLUDE REGEX ".*aes_tab.c")
 list(FILTER libtomcrypt_src EXCLUDE REGEX ".*whirltab.c")
 list(FILTER libtomcrypt_src EXCLUDE REGEX ".*sober128tab.c")
 
-add_library                 (libtomcrypt ${libtomcrypt_src})
-target_compile_definitions  (libtomcrypt PRIVATE LTC_NO_ROLC LTC_SOURCE)
-project_group               (libtomcrypt Extern)
+add_library                 (${libtomcrypt_ID} ${libtomcrypt_src})
+target_compile_definitions  (${libtomcrypt_ID} PRIVATE LTC_NO_ROLC LTC_SOURCE)
+target_link_libraries       (${libtomcrypt_ID} ${libtommath_ID})
+project_group               (${libtomcrypt_ID} Extern)
 
+endif()
 
 ########################################
 # LIBRARY decNumber
@@ -405,5 +518,6 @@ project_group           (cloop Extern)
 
 add_subdirectory("examples")
 add_subdirectory("src")
+
 
 ################################################################################

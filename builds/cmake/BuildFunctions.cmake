@@ -73,7 +73,10 @@ if (UNIX)
             if (APPLE)
                 set(wl_option "-exported_symbols_list")
             endif()
-            set_target_properties(${target} PROPERTIES LINK_FLAGS -Wl,${wl_option},${CMAKE_BINARY_DIR}/builds/posix/${def_file})
+
+            set(VERS_DIR "${CMAKE_BINARY_DIR}${OWNER_RROJECTS_TREE}")
+            # message(" ---- ${VERS_DIR} ")
+            set_target_properties(${target} PROPERTIES LINK_FLAGS -Wl,${wl_option},${VERS_DIR}/builds/posix/${def_file})
         endif()
     endfunction(set_exported_symbols)
 endif(UNIX)
@@ -222,7 +225,7 @@ function(set_generated_directory)
     if (NOT CMAKE_CROSSCOMPILING)
         set(GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR} PARENT_SCOPE)
     else()
-        string(REPLACE "${CMAKE_BINARY_DIR}" "${NATIVE_BUILD_DIR}" GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR})
+        string(REPLACE "${CMAKE_CURRENT_BINARY_DIR}" "${NATIVE_BUILD_DIR}" GENERATED_DIR ${CMAKE_CURRENT_BINARY_DIR})
         set(GENERATED_DIR ${GENERATED_DIR} PARENT_SCOPE)
     endif()
 endfunction(set_generated_directory)
@@ -250,7 +253,7 @@ endfunction(add_dependencies_unix_cc)
 ########################################
 function(crosscompile_prebuild_steps)
     if (CMAKE_CROSSCOMPILING)
-        execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different ${NATIVE_BUILD_DIR}/src/include/gen/parse.h ${CMAKE_BINARY_DIR}/src/include/gen/parse.h)
+        execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different ${NATIVE_BUILD_DIR}/src/include/gen/parse.h ${CMAKE_CURRENT_BINARY_DIR}/src/include/gen/parse.h)
     endif()
 endfunction(crosscompile_prebuild_steps)
 
@@ -286,7 +289,7 @@ function(create_command command type out)
         set(options %*)
     endif()
     set(cmd_name ${cmd_name}${conf}${ext})
-    set(cmd_name ${CMAKE_BINARY_DIR}/src/${cmd_name})
+    set(cmd_name ${CMAKE_CURRENT_BINARY_DIR}/src/${cmd_name})
 
     set(content)
     foreach(e ${env})
@@ -316,7 +319,7 @@ function(create_boot_commands)
         boot_gbak
         boot_gfix
         build_msg
-        codes
+        # codes
         gpre_boot
     )
     foreach(cmd ${cmd_list})

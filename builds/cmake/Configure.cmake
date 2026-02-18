@@ -113,7 +113,12 @@ set(SHRLIB_EXT ${CMAKE_SHARED_LIBRARY_SUFFIX})
 string(REPLACE "." "" SHRLIB_EXT ${SHRLIB_EXT})
 
 set(CASE_SENSITIVITY "true")
-set(SUPPORT_RAW_DEVICES 1)
+
+if (APPLE)
+    set(SUPPORT_RAW_DEVICES 0)
+else()
+    set(SUPPORT_RAW_DEVICES 1)
+endif()
 
 set(include_files_list
     aio.h
