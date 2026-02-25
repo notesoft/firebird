@@ -1,25 +1,42 @@
-#include "tommath_private.h"
+#include <tommath.h>
 #ifdef BN_MP_SUBMOD_C
-/* LibTomMath, multiple-precision integer library -- Tom St Denis */
-/* SPDX-License-Identifier: Unlicense */
+/* LibTomMath, multiple-precision integer library -- Tom St Denis
+ *
+ * LibTomMath is a library that provides multiple-precision
+ * integer arithmetic as well as number theoretic functionality.
+ *
+ * The library was designed directly after the MPI library by
+ * Michael Fromberger but has been written from scratch with
+ * additional optimizations in place.
+ *
+ * The library is free for all purposes without any express
+ * guarantee it works.
+ *
+ * Tom St Denis, tomstdenis@gmail.com, http://libtom.org
+ */
 
 /* d = a - b (mod c) */
-mp_err mp_submod(const mp_int *a, const mp_int *b, const mp_int *c, mp_int *d)
+int
+mp_submod (mp_int * a, mp_int * b, mp_int * c, mp_int * d)
 {
-   mp_err err;
-   mp_int t;
+  int     res;
+  mp_int  t;
 
-   if ((err = mp_init(&t)) != MP_OKAY) {
-      return err;
-   }
 
-   if ((err = mp_sub(a, b, &t)) != MP_OKAY) {
-      goto LBL_ERR;
-   }
-   err = mp_mod(&t, c, d);
+  if ((res = mp_init (&t)) != MP_OKAY) {
+    return res;
+  }
 
-LBL_ERR:
-   mp_clear(&t);
-   return err;
+  if ((res = mp_sub (a, b, &t)) != MP_OKAY) {
+    mp_clear (&t);
+    return res;
+  }
+  res = mp_mod (&t, c, d);
+  mp_clear (&t);
+  return res;
 }
 #endif
+
+/* $Source$ */
+/* $Revision: 0.41 $ */
+/* $Date: 2007-04-18 09:58:18 +0000 $ */
