@@ -371,10 +371,6 @@ crosscompile_prebuild_steps()
 include_directories("extern/re2")
 include_directories("extern/boost")
 
-if(BUILD_LIBTOM)
-    include_directories("extern/libtommath")
-    include_directories("extern/libtomcrypt/src/headers")
-endif()
 
 include_directories("extern/decNumber")
 include_directories("extern/icu/include")
@@ -439,11 +435,31 @@ if(BUILD_LIBTOM)
 ########################################
 # LIBRARY libtommath
 ########################################
+    set(libtommath_ID   tommath)
 
-file(GLOB libtommath_src "extern/libtommath/*.c" "extern/libtommath/*.h")
+if (LIBTOMMATH_VER)
+    set(LIBTOMMATH_DIR "extern/libtommath-${LIBTOMMATH_VER}")
+else()
+    set(LIBTOMMATH_DIR "extern/libtommath")
+endif()    
+include_directories("${LIBTOMMATH_DIR}")
 
-add_library               (${libtommath_ID} ${libtommath_src})
-project_group             (${libtommath_ID} Extern)
+    # # test build vith MSVS
+    # d: && cd d:/source/COMPONENTS/SQLfb/code/extern/libtommath-1.2
+    # "c:/Program Files/Microsoft Visual Studio/18/Community/MSBuild/Current/Bin/MSBuild.exe" libtommath_MSVC15.sln /p:Configuration=Release /t:Rebuild /p:Platform=x64            
+    # execute_process(COMMAND 
+    # ${CMAKE_VS_MSBUILD_COMMAND} ${LIBTOMMATH_DIR}/libtommath_MSVC15.sln 
+    # /p:Configuration=Release /t:Rebuild
+    # /p:Platform=x64            
+    # WORKING_DIRECTORY ${LIBTOMMATH_DIR})
+    # file(COPY "${LIBTOMMATH_DIR}/lib/x64/Release/" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+    # set(libtommath_ID   tommath)
+    # #
+
+    file(GLOB libtommath_src "${LIBTOMMATH_DIR}/*.c" "${LIBTOMMATH_DIR}/*.h")
+    add_library               (${libtommath_ID} ${libtommath_src})
+    project_group             (${libtommath_ID} Extern)
+
 
 if (WIN32 AND USE_TTMATH_MASM)
     add_custom_command(TARGET ${libtommath_ID} PRE_BUILD  
@@ -453,17 +469,18 @@ if (WIN32 AND USE_TTMATH_MASM)
               "${CMAKE_CURRENT_SOURCE_DIR}/extern/ttmath/ttmathuint_x86_64_msvc.asm"
     )
     set(libtommath_x86_64_masm_obj  "${CMAKE_CURRENT_BINARY_DIR}/ttmathuint_x86_64_msvc.obj")
+    target_link_libraries     (${libtommath_ID} ${LIB_builtins_Clang} ${libtommath_x86_64_masm_obj})
     message("use TTMATH MASM")
 else()
     message("not use TTMATH MASM")
     add_definitions("-DTTMATH_NOASM")
 endif()                             
 
-target_link_libraries     (${libtommath_ID} ${LIB_builtins_Clang} ${libtommath_x86_64_masm_obj})
-
 ########################################
 # LIBRARY libtomcrypt
 ########################################
+
+set(libtomcrypt_ID tomcrypt)
 
 file(GLOB_RECURSE libtomcrypt_src "extern/libtomcrypt/src/*")
 list(FILTER libtomcrypt_src EXCLUDE REGEX ".*aes_tab.c")
@@ -474,6 +491,7 @@ add_library                 (${libtomcrypt_ID} ${libtomcrypt_src})
 target_compile_definitions  (${libtomcrypt_ID} PRIVATE LTC_NO_ROLC LTC_SOURCE)
 target_link_libraries       (${libtomcrypt_ID} ${libtommath_ID})
 project_group               (${libtomcrypt_ID} Extern)
+include_directories("extern/libtomcrypt/src/headers")
 
 endif()
 

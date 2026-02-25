@@ -53,7 +53,7 @@ add_src_win32(fbserver_src
     server/os/win32/server.ico
     server/os/win32/caution.ico
     server/os/win32/window.rc
-    server/ReplServer.cpp
+    # server/ReplServer.cpp
     server/server.cpp
 )
 add_src_unix(fbserver_src

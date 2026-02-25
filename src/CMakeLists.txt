@@ -161,8 +161,8 @@ add_custom_command(
         msg_fdb
     #
     COMMAND ${CMAKE_COMMAND} -E remove firebird.msg
-    COMMAND ${BUILD_MSG_CMD} -D msg.fdb -P ${CMAKE_CURRENT_BINARY_DIR}/ -F firebird.msg -L all
-    COMMAND ${BUILD_MSG_CMD} -D msg.fdb -P ${CMAKE_CURRENT_BINARY_DIR}/ -F firebird.msg
+    COMMAND ${BUILD_MSG_CMD} -F ${CMAKE_CURRENT_BINARY_DIR}/firebird.msg 
+    # COMMAND ${BUILD_MSG_CMD} -D msg.fdb -P ${CMAKE_CURRENT_BINARY_DIR}/ -F firebird.msg
     COMMAND ${CMAKE_COMMAND} -E copy_if_different firebird.msg ${output_dir}/firebird.msg
 )
 # add_custom_command(
@@ -177,8 +177,8 @@ add_custom_command(
 #     COMMAND ${CODES_CMD} ${CMAKE_CURRENT_SOURCE_DIR}/include/gen ${CMAKE_CURRENT_SOURCE_DIR}/../lang_helpers
 # )
 # add_custom_target(messages ALL DEPENDS firebird.msg codes_headers.dummy)
-# add_custom_target(messages ALL DEPENDS firebird.msg)
-# project_group(messages "Boot/Custom build steps")
+add_custom_target(messages ALL DEPENDS firebird.msg)
+project_group(messages "Boot/Custom build steps")
 
 
 ########################################

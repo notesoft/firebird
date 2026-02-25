@@ -120,9 +120,7 @@ function(build_icu4c ICU_VER)
         if (WIN32)
 
             # file(COPY  mh-unknown "${ICU_DIR}/ICU/icu/source/config/mh-unknown")
-
-            set(CMAKE_VS_MSBUILD_COMMAND "c:/Program Files/Microsoft Visual Studio/18/Community/MSBuild/Current/Bin/MSBuild.exe")
-
+            
             execute_process(COMMAND 
                 ${CMAKE_VS_MSBUILD_COMMAND} icu/source/allinone/allinone.sln 
                 /p:Configuration=Release /t:Rebuild
