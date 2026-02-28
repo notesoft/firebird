@@ -9108,6 +9108,9 @@ Format* RelationNode::makeFormat(thread_db* tdbb, jrd_tra* transaction, Cached::
 	// Link the format block into the world
 	relation->addFormat(format);
 
+	if (relation->rel_flags & REL_temp_ltt)
+		return format;
+
 	// Store format in system relation
 
 	AutoCacheRequest request(tdbb, irq_format3, IRQ_REQUESTS);
