@@ -1498,6 +1498,7 @@ InversionCandidate* Retrieval::makeInversion(InversionCandidateList& inversions)
 
 					if (bestCandidate->condition)
 					{
+						bestCandidate->used = true;
 						bestCandidate = currentInv;
 						restartLoop = true;
 						break;
