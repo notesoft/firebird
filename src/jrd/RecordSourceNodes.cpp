@@ -1434,7 +1434,7 @@ ProcedureSourceNode* ProcedureSourceNode::parse(thread_db* tdbb, CompilerScratch
 				{
 					Dependency dependency(obj_procedure);
 					dependency.procedure = node->procedure();
-					dependency.subName = &argName;
+					dependency.subName = argName;
 					csb->addDependency(dependency);
 				}
 			}
