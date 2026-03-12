@@ -1028,8 +1028,16 @@ void DdlNode::storeGlobalField(thread_db* tdbb, jrd_tra* transaction, MetaName& 
 			Arg::Gds(isc_dsql_max_arr_dim_exceeded));
 	}
 
+	bool implicitDomain = false;
+
 	if (name.isEmpty())
+	{
 		DYN_UTIL_generate_field_name(tdbb, name);
+		implicitDomain = true;
+	}
+
+	// Avoid the security class being assigned for implicit domains
+	AutoSetRestoreFlag<ULONG> noSecurityClass(&tdbb->tdbb_flags, implicitDomain ? TDBB_no_security_class : 0, true);
 
 	AutoCacheRequest requestHandle(tdbb, drq_s_fld_src, DYN_REQUESTS);
 
@@ -1113,7 +1121,8 @@ void DdlNode::storeGlobalField(thread_db* tdbb, jrd_tra* transaction, MetaName& 
 		}
 	}
 
-	storePrivileges(tdbb, transaction, name, obj_field, USAGE_PRIVILEGES);
+	if (!implicitDomain)
+		storePrivileges(tdbb, transaction, name, obj_field, USAGE_PRIVILEGES);
 }
 
 
@@ -8368,6 +8377,12 @@ void DropRelationNode::deleteGlobalField(thread_db* tdbb, jrd_tra* transaction,
 				ARG.RDB$FIELD_SOURCE EQ FLD.RDB$FIELD_NAME)
 	{
 		DropDomainNode::deleteDimensionRecords(tdbb, transaction, globalName);
+
+		if (!FLD.RDB$SECURITY_CLASS.NULL)
+			deleteSecurityClass(tdbb, transaction, FLD.RDB$SECURITY_CLASS);
+
+		deletePrivilegesByRelName(tdbb, transaction, globalName, obj_field);
+
 		ERASE FLD;
 	}
 	END_FOR
