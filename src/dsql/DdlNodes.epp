@@ -12740,8 +12740,7 @@ MetaId StoreIndexNode::createExpression(thread_db* tdbb, Cached::Relation* rel, 
 		// Actually create the index
 
 		// Protect relation from modification to create consistent index
-		ProtectRelations protectRelation(tdbb, transaction);
-		protectRelation.addRelation(rel);
+		ProtectRelations protectRelation(tdbb, transaction, rel);
 
 		SelectivityList selectivity(*tdbb->getDefaultPool());
 
