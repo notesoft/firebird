@@ -3881,6 +3881,9 @@ ScanResult CharSetVers::scan(thread_db* tdbb, ObjectBase::Flag flags)
 		END_FOR
 	}
 
+	if (flags & CacheFlag::MINISCAN)
+		return ScanResult::REPEAT;
+
 	FOR(REQUEST_HANDLE handle2)
 		CS IN RDB$CHARACTER_SETS
 			CROSS COL IN RDB$COLLATIONS OVER RDB$CHARACTER_SET_ID
@@ -3927,34 +3930,49 @@ ScanResult CharSetVers::scan(thread_db* tdbb, ObjectBase::Flag flags)
 			}
 		}
 
-		AutoPtr<texttype> tt = FB_NEW_POOL(perm->getPool()) texttype;
-		memset(tt, 0, sizeof(texttype));
-		INTL_lookup_texttype(tt, &info);
-
 		if (charset_collations.getCount() <= colId)
 			charset_collations.grow(colId + 1);
 
-		fb_assert((tt->texttype_canonical_width == 0 && tt->texttype_fn_canonical == NULL) ||
-				  (tt->texttype_canonical_width != 0 && tt->texttype_fn_canonical != NULL));
-
-		if (tt->texttype_canonical_width == 0)
+		try
 		{
-			if (charset->isMultiByte())
-				tt->texttype_canonical_width = sizeof(ULONG);	// UTF-32
-			else
+			AutoPtr<texttype> tt = FB_NEW_POOL(perm->getPool()) texttype;
+			memset(tt, 0, sizeof(texttype));
+			INTL_lookup_texttype(tt, &info);
+
+			fb_assert((tt->texttype_canonical_width == 0 && tt->texttype_fn_canonical == NULL) ||
+					  (tt->texttype_canonical_width != 0 && tt->texttype_fn_canonical != NULL));
+
+			if (tt->texttype_canonical_width == 0)
 			{
-				tt->texttype_canonical_width = charset->minBytesPerChar();
-				// canonical is equal to string, then TEXTTYPE_DIRECT_MATCH can be turned on
-				tt->texttype_flags |= TEXTTYPE_DIRECT_MATCH;
+				if (charset->isMultiByte())
+					tt->texttype_canonical_width = sizeof(ULONG);	// UTF-32
+				else
+				{
+					tt->texttype_canonical_width = charset->minBytesPerChar();
+					// canonical is equal to string, then TEXTTYPE_DIRECT_MATCH can be turned on
+					tt->texttype_flags |= TEXTTYPE_DIRECT_MATCH;
+				}
 			}
+
+			Collation* collation = Collation::createInstance(perm->getPool(),
+				TTypeId(id, colId), tt, nullptr, info.attributes, charset);
+			collation->name = info.collationName;
+
+			tt.release();
+			charset_collations[colId] = collation;
 		}
+		catch (const Exception& ex)
+		{
+			AutoDispose<IStatus> error = MasterInterfacePtr()->getStatus();
+			ex.stuffException(error);
 
-		Collation* collation = Collation::createInstance(perm->getPool(),
-			TTypeId(id, colId), tt, info.attributes, charset);
-		collation->name = info.collationName;
+			Collation* collation = Collation::createInstance(perm->getPool(),
+				TTypeId(id, colId), nullptr, error, info.attributes, charset);
+			collation->name = info.collationName;
 
-		tt.release();
-		charset_collations[colId] = collation;
+			error.release();
+			charset_collations[colId] = collation;
+		}
 	}
 	END_FOR
 
