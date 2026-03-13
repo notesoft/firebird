@@ -1240,7 +1240,8 @@ double Optimizer::estimateSelectivity(const BooleanList& filters, double cardina
 		// If the table is small enough, the hardcoded selectivity factors are causing
 		// too small resulting selectivity. Adjust the initial value to protect from this case.
 		const auto minSelectivity = MAXIMUM_SELECTIVITY / cardinality;
-		selectivity *= minSelectivity / selectivities.front();
+		if (selectivities.front() < minSelectivity)
+			selectivity *= minSelectivity / selectivities.front();
 	}
 
 	// Apply exponential backoff
