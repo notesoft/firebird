@@ -50,6 +50,7 @@
 #include "../jrd/btr.h"
 #include "../jrd/sort.h"
 #include "../jrd/ini.h"
+#include "../jrd/met.h"
 #include "../jrd/intl.h"
 #include "../jrd/Collation.h"
 #include "../common/gdsassert.h"
@@ -62,7 +63,7 @@
 #include "../jrd/err_proto.h"
 #include "../jrd/ext_proto.h"
 #include "../jrd/intl_proto.h"
-#include "../jrd/lck_proto.h"
+#include "../jrd/lck.h"
 #include "../jrd/met_proto.h"
 #include "../jrd/mov_proto.h"
 #include "../jrd/par_proto.h"
@@ -402,20 +403,16 @@ namespace
 		return false;
 	}
 
-	double getCardinality(thread_db* tdbb, jrd_rel* relation, const Format* format)
+	double getCardinality(thread_db* tdbb, const Rsc::Rel& relation, const Format* format)
 	{
 		// Return the estimated cardinality for the given relation
 
 		double cardinality = DEFAULT_CARDINALITY;
 
-		if (relation->rel_file)
-			cardinality = EXT_cardinality(tdbb, relation);
-		else if (!relation->isVirtual())
-		{
-			MET_post_existence(tdbb, relation);
-			cardinality = DPM_cardinality(tdbb, relation, format);
-			MET_release_existence(tdbb, relation);
-		}
+		if (auto* extFile = relation()->getExtFile())
+			cardinality = extFile->getCardinality(tdbb, relation(tdbb));
+		else if (!relation()->isVirtual())
+			cardinality = DPM_cardinality(tdbb, relation(tdbb), format);
 
 		return MAX(cardinality, MINIMUM_CARDINALITY);
 	}
@@ -436,8 +433,7 @@ namespace
 
 		// If there were none indices, this is a sequential retrieval.
 
-		const auto* relation = tail->csb_relation;
-		if (!relation)
+		if (!tail->csb_relation)
 			return;
 
 		if (!tail->csb_idx)
@@ -865,7 +861,7 @@ RecordSource* Optimizer::compile(BoolExprNodeStack* parentStack)
 		{
 			if (!(iter & CONJUNCT_USED) &&
 				!(iter->nodFlags & ExprNode::FLAG_RESIDUAL) &&
-				iter->deterministic() &&
+				iter->deterministic(tdbb) &&
 				iter->computable(csb, INVALID_STREAM, false))
 			{
 				compose(getPool(), &invariantBoolean, iter);
@@ -966,7 +962,7 @@ RecordSource* Optimizer::compile(BoolExprNodeStack* parentStack)
 		river->activate(csb);
 
 	bool sortCanBeUsed = true;
-	SortNode* const orgSortNode = sort;
+	const auto orgSortNode = sort;
 
 	// When DISTINCT and ORDER BY are done on different fields,
 	// and ORDER BY can be mapped to an index, then the records
@@ -990,6 +986,8 @@ RecordSource* Optimizer::compile(BoolExprNodeStack* parentStack)
 	}
 	else
 	{
+		fb_assert(isInnerJoin() || isSpecialJoin());
+
 		// AB: If previous rsb's are already on the stack we can't use
 		// a navigational-retrieval for an ORDER BY because the next
 		// streams are JOINed to the previous ones
@@ -1004,61 +1002,45 @@ RecordSource* Optimizer::compile(BoolExprNodeStack* parentStack)
 				;
 		}
 
-		StreamList joinStreams(compileStreams);
-
-		if (isInnerJoin())
+		if (compileStreams.hasData())
 		{
-			fb_assert(joinStreams.getCount() != 1 || csb->csb_rpt[joinStreams[0]].csb_relation);
+			StreamList joinStreams(compileStreams);
 
-			while (true)
+			if (isInnerJoin())
 			{
-				// AB: Determine which streams have an index relationship
-				// with the currently active rivers. This is needed so that
-				// no merge is made between a new cross river and the
-				// currently active rivers. Where in the new cross river
-				// a stream depends (index) on the active rivers.
-				StreamList dependentStreams, freeStreams;
-				findDependentStreams(joinStreams, dependentStreams, freeStreams);
+				fb_assert(joinStreams.getCount() != 1 || csb->csb_rpt[joinStreams[0]].csb_relation);
 
-				// If we have dependent and free streams then we can't rely on
-				// the sort node to be used for index navigation
-				if (dependentStreams.hasData() && freeStreams.hasData())
+				// Process streams dependent on the priorly created rivers
+
+				if (joinDependentStreams(joinStreams, rivers, &sort))
 				{
-					sort = nullptr;
-					sortCanBeUsed = false;
-				}
-
-				if (dependentStreams.hasData())
-				{
-					// Copy free streams
-					joinStreams.assign(freeStreams);
-
-					// Make rivers from the dependent streams
-					generateInnerJoin(dependentStreams, rivers, &sort, rse->rse_plan);
+					// If we have dependent and free streams then we can't rely on
+					// the sort node to be used for index navigation
+					if (joinStreams.hasData())
+					{
+						sortCanBeUsed = false;
+						sort = nullptr;
+					}
 
 					// Generate one river which holds a cross join rsb between
-					// all currently available rivers
+					// all currently available rivers. This is needed to exclude
+					// dependent rivers from hashing or sort/merging that happens below.
 
 					rivers.add(FB_NEW_POOL(getPool()) CrossJoin(this, rivers, JoinType::INNER));
 					rivers.back()->activate(csb);
 				}
-				else
-				{
-					if (freeStreams.hasData())
-					{
-						// Deactivate streams from rivers on stack, because
-						// the remaining streams don't have any indexed relationship with them
-						for (const auto river : rivers)
-							river->deactivate(csb);
-					}
 
-					break;
-				}
+				// Now process streams dependent on rivers that are dependent themselves
+
+				for (const auto depRiver : dependentRivers)
+					depRiver->activate(csb);
+
+				joinDependentStreams(joinStreams, dependentRivers, nullptr);
 			}
-		}
 
-		// Attempt to form joins in decreasing order of desirability
-		generateInnerJoin(joinStreams, rivers, &sort, rse->rse_plan);
+			// Attempt to form joins in decreasing order of desirability
+			generateInnerJoin(joinStreams, rivers, &sort, rse->rse_plan);
+		}
 
 		if (rivers.isEmpty() && dependentRivers.isEmpty())
 		{
@@ -1186,13 +1168,13 @@ RecordSource* Optimizer::compile(BoolExprNodeStack* parentStack)
 
 			fb_assert(tail->csb_relation);
 
-			const SLONG ssRelationId = tail->csb_view ? tail->csb_view->rel_id : 0;
+			const SLONG ssRelationId = tail->csb_view ? tail->csb_view()->rel_id : 0;
 
-			CMP_post_access(tdbb, csb, tail->csb_relation->rel_security_name.schema, ssRelationId,
-				SCL_usage, obj_schemas, QualifiedName(tail->csb_relation->rel_name.schema));
+			CMP_post_access(tdbb, csb, tail->csb_relation()->getSecurityName().schema, ssRelationId,
+				SCL_usage, obj_schemas, QualifiedName(tail->csb_relation()->getName().schema));
 
-			CMP_post_access(tdbb, csb, tail->csb_relation->rel_security_name.object, ssRelationId,
-				SCL_update, obj_relations, tail->csb_relation->rel_name);
+			CMP_post_access(tdbb, csb, tail->csb_relation()->getSecurityName().object, ssRelationId,
+				SCL_update, obj_relations, tail->csb_relation()->getName());
 		}
 
 		rsb = FB_NEW_POOL(getPool()) LockedStream(csb, rsb);
@@ -1237,6 +1219,40 @@ double Optimizer::getDependentSelectivity()
 
 
 //
+// Estimate overall selectivity for a list of conjuncts.
+// Booleans are usually inter-dependent in practice and simple multiplication results to a very low selectivity value,
+// thus causing the stream cardinality being under-estimated. To avoid this, apply exponential backoff adjustment.
+// See also explanation in the middle of Retrieval::makeInversion().
+//
+
+double Optimizer::estimateSelectivity(const BooleanList& filters, double cardinality, unsigned priorConjuncts)
+{
+	// Get selectivities and order them
+	SortedArray<double, InlineStorage<double, OPT_STATIC_ITEMS> > selectivities;
+
+	for (const auto filter : filters)
+		selectivities.add(getSelectivity(filter));
+
+	auto selectivity = MAXIMUM_SELECTIVITY;
+
+	if (selectivities.hasData() && !priorConjuncts && cardinality)
+	{
+		// If the table is small enough, the hardcoded selectivity factors are causing
+		// too small resulting selectivity. Adjust the initial value to protect from this case.
+		const auto minSelectivity = MAXIMUM_SELECTIVITY / cardinality;
+		if (selectivities.front() < minSelectivity)
+			selectivity *= minSelectivity / selectivities.front();
+	}
+
+	// Apply exponential backoff
+	for (auto factor : selectivities)
+		selectivity *= applyBackoff(factor, priorConjuncts++);
+
+	return selectivity;
+}
+
+
+//
 // Prepare relation and its indices for optimization
 //
 
@@ -1263,15 +1279,26 @@ void Optimizer::compileRelation(StreamType stream)
 
 	tail->csb_idx = nullptr;
 
-	if (needIndices && !relation->rel_file && !relation->isVirtual())
+	if (needIndices && !relation()->getExtFile() && !relation()->isVirtual())
 	{
-		const auto relPages = relation->getPages(tdbb);
+		const auto relPages = relation()->getPages(tdbb);
 		IndexDescList idxList;
-		BTR_all(tdbb, relation, idxList, relPages);
+		BTR_all(tdbb, relation(), idxList, relPages);
+
+		MetaId n = idxList.getCount();
+		while (n--)
+		{
+			auto id = idxList[n].idx_id;
+			auto* idv = relation()->lookup_index(tdbb, id, CacheFlag::AUTOCREATE);
+			if (idv && idv->getActive() != MET_index_active)
+				idv = nullptr;
+			if (!idv)
+				idxList.remove(n);
+		}
 
 		// if index stats is empty, update it for non-empty and not too big system relations
 
-		const bool updateStats = (relation->isSystem() && idxList.hasData() &&
+		const bool updateStats = (relation()->isSystem() && idxList.hasData() &&
 			!tdbb->getDatabase()->readOnly() &&
 			(relPages->rel_data_pages > 0) && (relPages->rel_data_pages < 100));
 
@@ -1283,7 +1310,7 @@ void Optimizer::compileRelation(StreamType stream)
 				if (idx.idx_selectivity <= 0.0f)
 				{
 					SelectivityList	selectivity;
-					BTR_selectivity(tdbb, relation, idx.idx_id, selectivity);
+					BTR_selectivity(tdbb, relation(), idx.idx_id, selectivity);
 					if (selectivity[0] > 0.0f)
 						updated = true;
 				}
@@ -1292,7 +1319,7 @@ void Optimizer::compileRelation(StreamType stream)
 			if (updated)
 			{
 				idxList.clear();
-				BTR_all(tdbb, relation, idxList, relPages);
+				BTR_all(tdbb, relation(), idxList, relPages);
 			}
 		}
 
@@ -1300,7 +1327,7 @@ void Optimizer::compileRelation(StreamType stream)
 			tail->csb_idx = FB_NEW_POOL(getPool()) IndexDescList(getPool(), idxList);
 
 		if (tail->csb_plan)
-			markIndices(tail, relation->rel_id);
+			markIndices(tail, relation()->getId());
 	}
 }
 
@@ -1558,7 +1585,7 @@ void Optimizer::generateAggregateSort(AggNode* aggNode)
 
 		if (sortKey->skd_dtype == SKD_varying || sortKey->skd_dtype == SKD_cstring)
 		{
-			if (desc->dsc_ttype() == ttype_binary)
+			if (desc->getTextType() == ttype_binary)
 				sortKey->skd_flags |= SKD_binary;
 		}
 
@@ -1698,11 +1725,11 @@ SortedStream* Optimizer::generateSort(const StreamList& streams,
 	{
 		for (auto& item : fields)
 		{
-			const auto* relation = csb->csb_rpt[item.stream].csb_relation;
+			const auto* relation = csb->csb_rpt[item.stream].csb_relation();
 
 			if (relation &&
-				!relation->rel_file &&
-				!relation->rel_view_rse &&
+				!relation->getExtFile() &&
+				!relation->isView() &&
 				!relation->isVirtual())
 			{
 				item.desc = nullptr;
@@ -1795,7 +1822,7 @@ SortedStream* Optimizer::generateSort(const StreamList& streams,
 
 		if (sort_key->skd_dtype == SKD_varying || sort_key->skd_dtype == SKD_cstring)
 		{
-			if (desc->dsc_ttype() == ttype_binary)
+			if (desc->getTextType() == ttype_binary)
 				sort_key->skd_flags |= SKD_binary;
 		}
 
@@ -1933,7 +1960,7 @@ void Optimizer::checkIndices()
 		if (plan->type != PlanNode::TYPE_RETRIEVE)
 			continue;
 
-		const auto* relation = tail->csb_relation;
+		auto* const relation = tail->csb_relation();
 		if (!relation)
 			return;
 
@@ -1956,17 +1983,18 @@ void Optimizer::checkIndices()
 
 		// Check to make sure that all indices are either used or marked not to be used,
 		// and that there are no unused navigational indices
-		QualifiedName index_name;
-
 		for (const auto& idx : *tail->csb_idx)
 		{
 			if (!(idx.idx_runtime_flags & (idx_plan_dont_use | idx_used)) ||
 				((idx.idx_runtime_flags & idx_plan_navigate) && !(idx.idx_runtime_flags & idx_navigate)))
 			{
-				if (relation)
-					MET_lookup_index(tdbb, index_name, relation->rel_name, (USHORT) (idx.idx_id + 1));
-				else
-					index_name.clear();
+				QualifiedName index_name;
+				auto* idp = relation->lookupIndex(tdbb, idx.idx_id, CacheFlag::AUTOCREATE);
+				if (idp)
+					index_name = idp->getName();
+
+				if (!index_name.hasData())
+					index_name = QualifiedName("***unknown***");
 
 				// index %s cannot be used in the specified plan
 				if (isGbak)
@@ -2467,9 +2495,10 @@ unsigned Optimizer::distributeEqualities(BoolExprNodeStack& orgStack, unsigned b
 // Find the streams that can use an index with the currently active streams
 //
 
-void Optimizer::findDependentStreams(const StreamList& streams,
-									 StreamList& dependent_streams,
-									 StreamList& free_streams)
+void Optimizer::findDependentStreams(const RiverList& rivers,
+									 const StreamList& streams,
+									 StreamList& dependentStreams,
+									 StreamList& freeStreams)
 {
 #ifdef OPT_DEBUG_RETRIEVAL
 	if (streams.hasData())
@@ -2483,7 +2512,7 @@ void Optimizer::findDependentStreams(const StreamList& streams,
 		// Set temporary active flag for this stream
 		tail->activate();
 
-		bool indexed_relationship = false;
+		bool dependent = false;
 
 		if (conjuncts.hasData())
 		{
@@ -2497,18 +2526,84 @@ void Optimizer::findDependentStreams(const StreamList& streams,
 			const auto* candidate = retrieval.getInversion();
 
 			if (candidate->dependentFromStreams.hasData())
-				indexed_relationship = true;
+			{
+				dependent = true;
+
+				StreamList checkStreams;
+				checkStreams.add(stream);
+
+				for (const auto river : rivers)
+				{
+					// If some river already depends on this stream,
+					// then itself it cannot be dependent
+					if (river->isDependent(checkStreams))
+					{
+						dependent = false;
+						break;
+					}
+				}
+			}
 		}
 
-		if (indexed_relationship)
-			dependent_streams.add(stream);
+		if (dependent)
+			dependentStreams.add(stream);
 		else
-			free_streams.add(stream);
+			freeStreams.add(stream);
 
 		// Reset active flag
 		tail->deactivate();
 	}
 }
+
+//
+// Find streams dependent on the priorly created rivers and make a join from them
+//
+
+bool Optimizer::joinDependentStreams(StreamList& joinStreams, RiverList& rivers, SortNode** sort)
+{
+	bool hasDependentStreams = false;
+
+	while (true)
+	{
+		// AB: Determine which streams have an index relationship
+		// with the currently active rivers. This is needed so that
+		// no merge is made between a new cross river and the
+		// currently active rivers. Where in the new cross river
+		// a stream depends (index) on the active rivers.
+		StreamList dependentStreams, freeStreams;
+		findDependentStreams(rivers, joinStreams, dependentStreams, freeStreams);
+
+		// If we have dependent and free streams then we can't rely on
+		// the sort node to be used for index navigation
+		if (dependentStreams.hasData() && freeStreams.hasData())
+			sort = nullptr;
+
+		if (dependentStreams.hasData())
+		{
+			hasDependentStreams = true;
+
+			// Copy free streams
+			joinStreams.assign(freeStreams);
+
+			// Make rivers from the dependent streams
+			generateInnerJoin(dependentStreams, rivers, sort, rse->rse_plan);
+		}
+		else
+		{
+			if (freeStreams.hasData())
+			{
+				// Deactivate streams from rivers on stack, because
+				// the remaining streams don't have any indexed relationship with them
+				for (const auto river : rivers)
+					river->deactivate(csb);
+			}
+
+			break;
+		}
+	}
+
+	return hasDependentStreams;
+};
 
 
 //
@@ -2909,16 +3004,17 @@ RecordSource* Optimizer::generateRetrieval(StreamType stream,
 	BoolExprNode* condition = nullptr;
 	Array<DbKeyRangeNode*> dbkeyRanges;
 	double scanSelectivity = MAXIMUM_SELECTIVITY;
+	double filterSelectivity = MAXIMUM_SELECTIVITY;
 
-	if (relation->rel_file)
+	if (relation()->getExtFile())
 	{
 		// External table
 		rsb = FB_NEW_POOL(getPool()) ExternalTableScan(csb, alias, stream, relation);
 	}
-	else if (relation->isVirtual())
+	else if (relation()->isVirtual())
 	{
 		// Virtual table: monitoring or security
-		switch (relation->rel_id)
+		switch (relation()->getId())
 		{
 		case rel_global_auth_mapping:
 			rsb = FB_NEW_POOL(getPool()) GlobalMappingScan(csb, alias, stream, relation);
@@ -2959,14 +3055,14 @@ RecordSource* Optimizer::generateRetrieval(StreamType stream,
 		// Persistent table
 		Retrieval retrieval(tdbb, this, stream, outerFlag, innerFlag,
 							(sortClause ? *sortClause : nullptr), false);
-		const auto candidate = retrieval.getInversion();
 
-		if (candidate)
+		if (const auto candidate = retrieval.getInversion())
 		{
 			inversion = candidate->inversion;
 			condition = candidate->condition;
 			dbkeyRanges.assign(candidate->dbkeyRanges);
 			scanSelectivity = candidate->matchSelectivity;
+			filterSelectivity = candidate->filterSelectivity;
 
 			// Just for safety sake, this condition must be already checked
 			// inside OptimizerRetrieval::matchOnIndexes()
@@ -3005,8 +3101,8 @@ RecordSource* Optimizer::generateRetrieval(StreamType stream,
 	// booleans.  When one is found, roll it into a final boolean and mark
 	// it used. If a computable boolean didn't match against an index then
 	// mark the stream to denote unmatched booleans.
+	BooleanList filters;
 	BoolExprNode* boolean = nullptr;
-	double filterSelectivity = MAXIMUM_SELECTIVITY;
 
 	for (auto iter = getConjuncts(outerFlag, innerFlag); iter.hasData(); ++iter)
 	{
@@ -3032,12 +3128,16 @@ RecordSource* Optimizer::generateRetrieval(StreamType stream,
 				}
 
 				if (!(iter & (CONJUNCT_MATCHED | CONJUNCT_JOINED)))
-					filterSelectivity *= getSelectivity(*iter);
+					filters.add(*iter);
 			}
 		}
 	}
 
-	if (!rsb)
+	if (rsb)
+	{
+		filterSelectivity = Optimizer::estimateSelectivity(filters, rsb->getCardinality());
+	}
+	else
 	{
 		if (inversion && condition)
 		{
@@ -3073,9 +3173,13 @@ RecordSource* Optimizer::generateRetrieval(StreamType stream,
 
 RecordSource* Optimizer::applyBoolean(RecordSource* rsb, ConjunctIterator& iter)
 {
-	double selectivity = MAXIMUM_SELECTIVITY;
-	if (const auto boolean = composeBoolean(iter, &selectivity))
+	BooleanList filters;
+
+	if (const auto boolean = composeBoolean(iter, filters))
+	{
+		const auto selectivity = estimateSelectivity(filters, rsb->getCardinality());
 		rsb = FB_NEW_POOL(getPool()) FilteredStream(csb, rsb, boolean, selectivity);
+	}
 
 	return rsb;
 }
@@ -3106,8 +3210,8 @@ RecordSource* Optimizer::applyLocalBoolean(RecordSource* rsb,
 
 RecordSource* Optimizer::applyResidualBoolean(RecordSource* rsb)
 {
+	BooleanList filters;
 	BoolExprNode* boolean = nullptr;
-	double selectivity = MAXIMUM_SELECTIVITY;
 
 	for (auto iter = getBaseConjuncts(); iter.hasData(); ++iter)
 	{
@@ -3117,15 +3221,17 @@ RecordSource* Optimizer::applyResidualBoolean(RecordSource* rsb)
 			iter |= CONJUNCT_USED;
 
 			if (!(iter & (CONJUNCT_MATCHED | CONJUNCT_JOINED)))
-				selectivity *= getSelectivity(*iter);
+				filters.add(*iter);
 		}
 	}
+
+	const auto selectivity = estimateSelectivity(filters, rsb->getCardinality());
 
 	return boolean ? FB_NEW_POOL(getPool()) FilteredStream(csb, rsb, boolean, selectivity) : rsb;
 }
 
 
-BoolExprNode* Optimizer::composeBoolean(ConjunctIterator& iter, double* selectivity)
+BoolExprNode* Optimizer::composeBoolean(ConjunctIterator& iter, BooleanList& filters)
 {
 	BoolExprNode* boolean = nullptr;
 
@@ -3138,8 +3244,8 @@ BoolExprNode* Optimizer::composeBoolean(ConjunctIterator& iter, double* selectiv
 			compose(getPool(), &boolean, iter);
 			iter |= CONJUNCT_USED;
 
-			if (!(iter & (CONJUNCT_MATCHED | CONJUNCT_JOINED)) && selectivity)
-				*selectivity *= getSelectivity(*iter);
+			if (!(iter & (CONJUNCT_MATCHED | CONJUNCT_JOINED)))
+				filters.add(*iter);
 		}
 	}
 
@@ -3261,7 +3367,7 @@ string Optimizer::makeAlias(StreamType stream)
 			if (csb_tail->csb_alias && csb_tail->csb_alias->hasData())
 				alias_list.push(*csb_tail->csb_alias);
 			else if (csb_tail->csb_relation)
-				alias_list.push(csb_tail->csb_relation->rel_name.toQuotedString());
+				alias_list.push(csb_tail->csb_relation()->getName().toQuotedString());
 
 			if (!csb_tail->csb_view)
 				break;
