@@ -442,7 +442,7 @@ private:
 
 	bool executeCreate(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_tra* transaction);
 	bool executeAlter(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_tra* transaction,
-		bool secondPass, bool runTriggers);
+		bool create, bool secondPass, bool runTriggers);
 	bool executeAlterIndividualParameters(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_tra* transaction,
 		bool secondPass, bool runTriggers);
 
@@ -451,8 +451,6 @@ private:
 		const CollectedParameter* collectedParameter);
 	void compile(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch);
 	void collectParameters(thread_db* tdbb, jrd_tra* transaction, CollectedParameterMap& items);
-
-	MetaId id = 0;
 
 public:
 	QualifiedName name;
@@ -473,6 +471,9 @@ public:
 	bool preserveDefaults;
 	SLONG udfReturnPos;
 	std::optional<SqlSecurity> ssDefiner;
+
+private:
+	MetaId id = 0;
 };
 
 
@@ -589,7 +590,7 @@ protected:
 private:
 	bool executeCreate(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_tra* transaction);
 	bool executeAlter(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_tra* transaction,
-		bool secondPass, bool runTriggers);
+		bool create, bool secondPass, bool runTriggers);
 	bool executeAlterIndividualParameters(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_tra* transaction,
 		bool secondPass, bool runTriggers);
 
@@ -598,8 +599,6 @@ private:
 		const CollectedParameter* collectedParameter);
 	void compile(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch);
 	void collectParameters(thread_db* tdbb, jrd_tra* transaction, CollectedParameterMap& items);
-
-	MetaId id = 0;
 
 public:
 	QualifiedName name;
@@ -618,6 +617,9 @@ public:
 	bool privateScope;
 	bool preserveDefaults;
 	std::optional<SqlSecurity> ssDefiner;
+
+private:
+	MetaId id = 0;
 };
 
 
@@ -1650,6 +1652,7 @@ public:
 	static MetaId generateRelId(thread_db* tdbb, MetaName name);
 	static bool checkDeletedId(thread_db* tdbb, MetaId& relId);
 	static bool checkIdRange(thread_db* tdbb, MetaId& relId, const MetaId existingRelationId);
+
 	USHORT calcDbKeyLength(thread_db* tdbb);
 
 	static bool deleteLocalField(thread_db* tdbb, jrd_tra* transaction,
@@ -2055,6 +2058,7 @@ private:
 	MetaId create(thread_db* tdbb, Cached::Relation* rel, jrd_tra* transaction);
 	MetaId createExpression(thread_db* tdbb, Cached::Relation* rel, jrd_tra* transaction);
 
+private:
 	bool expressionIndex = false;
 };
 
@@ -2180,11 +2184,11 @@ protected:
 		statusVector << Firebird::Arg::Gds(isc_dsql_drop_index_failed) << indexName.toQuotedString();
 	}
 
-private:
-	MetaId idxId;
-
 public:
 	bool silent = false;
+
+private:
+	MetaId idxId = MAX_META_ID;
 };
 
 

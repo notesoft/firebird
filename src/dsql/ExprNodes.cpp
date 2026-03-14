@@ -5122,7 +5122,7 @@ DmlNode* DefaultNode::parse(thread_db* tdbb, MemoryPool& pool, CompilerScratch* 
 	{
 		Dependency dependency(obj_relation);
 		dependency.relation = MetadataCache::getPerm<Cached::Relation>(tdbb, relationName, CacheFlag::AUTOCREATE);
-		dependency.subName = FB_NEW_POOL(pool) MetaName(fieldName);
+		dependency.subName = fieldName;
 		csb->addDependency(dependency);
 	}
 
@@ -10022,7 +10022,7 @@ dsc* ParameterNode::execute(thread_db* tdbb, Request* request) const
 						break;
 				}
 
-				auto charSet = INTL_charset_lookup(tdbb, retDesc->getCharSet());
+				const auto charSet = INTL_charset_lookup(tdbb, retDesc->getCharSet());
 
 				EngineCallbacks::instance->validateData(charSet, len, p);
 
@@ -10922,7 +10922,6 @@ dsc* StrCaseNode::execute(thread_db* tdbb, Request* request) const
 
 	Collation* textType = INTL_texttype_lookup(tdbb, value->getTextType());
 	CharSet* charSet = textType->getCharSet();
-//	auto intlFunction = (blrOp == blr_lowcase ? &TextType::str_to_lower : &TextType::str_to_upper);
 	auto intlFunction = (blrOp == blr_lowcase ? &Collation::str_to_lower : &Collation::str_to_upper);
 
 	if (value->isBlob())
@@ -12223,21 +12222,21 @@ dsc* SubstringSimilarNode::execute(thread_db* tdbb, Request* request) const
 	if (!exprDesc || !patternDesc || !escapeDesc)
 		return nullptr;
 
-	auto textType = exprDesc->getTextType();
+	const auto textType = exprDesc->getTextType();
 	Collation* collation = INTL_texttype_lookup(tdbb, textType);
 	CharSet* charSet = collation->getCharSet();
 
 	MoveBuffer exprBuffer;
 	UCHAR* exprStr;
-	ULONG exprLen = MOV_make_string2(tdbb, exprDesc, textType, &exprStr, exprBuffer);
+	const ULONG exprLen = MOV_make_string2(tdbb, exprDesc, textType, &exprStr, exprBuffer);
 
 	MoveBuffer patternBuffer;
 	UCHAR* patternStr;
-	ULONG patternLen = MOV_make_string2(tdbb, patternDesc, textType, &patternStr, patternBuffer);
+	const ULONG patternLen = MOV_make_string2(tdbb, patternDesc, textType, &patternStr, patternBuffer);
 
 	MoveBuffer escapeBuffer;
 	UCHAR* escapeStr;
-	ULONG escapeLen = MOV_make_string2(tdbb, escapeDesc, textType, &escapeStr, escapeBuffer);
+	const ULONG escapeLen = MOV_make_string2(tdbb, escapeDesc, textType, &escapeStr, escapeBuffer);
 
 	// Verify the correctness of the escape character.
 	if (escapeLen == 0 || charSet->length(escapeLen, escapeStr, true) != 1)
@@ -12784,7 +12783,7 @@ dsc* TrimNode::execute(thread_db* tdbb, Request* request) const
 	if (!valueDesc)
 		return nullptr;
 
-	auto ttype = valueDesc->getTextType();
+	const auto ttype = valueDesc->getTextType();
 	Collation* tt = INTL_texttype_lookup(tdbb, ttype);
 	CharSet* cs = tt->getCharSet();
 
@@ -12995,7 +12994,6 @@ UdfCallNode::UdfCallNode(MemoryPool& pool, const QualifiedName& aName,
 	  dsqlArgNames(aDsqlArgNames)
 {
 }
-
 
 DmlNode* UdfCallNode::parse(thread_db* tdbb, MemoryPool& pool, CompilerScratch* csb,
 	const UCHAR blrOp)
@@ -13301,7 +13299,7 @@ DmlNode* UdfCallNode::parse(thread_db* tdbb, MemoryPool& pool, CompilerScratch* 
 			{
 				Dependency dependency(obj_udf);
 				dependency.function = node->function();
-				dependency.subName = &argName;
+				dependency.subName = argName;
 				csb->addDependency(dependency);
 			}
 		}
@@ -13309,9 +13307,6 @@ DmlNode* UdfCallNode::parse(thread_db* tdbb, MemoryPool& pool, CompilerScratch* 
 
 	return node;
 }
-
-
-
 
 string UdfCallNode::internalPrint(NodePrinter& printer) const
 {
@@ -13433,6 +13428,7 @@ ValueExprNode* UdfCallNode::copy(thread_db* tdbb, NodeCopier& copier) const
 {
 	UdfCallNode* node = FB_NEW_POOL(*tdbb->getDefaultPool()) UdfCallNode(*tdbb->getDefaultPool(), name);
 	node->args = copier.copy(tdbb, args);
+
 	if (isSubRoutine)
 		node->function = function;
 	else
@@ -13440,6 +13436,7 @@ ValueExprNode* UdfCallNode::copy(thread_db* tdbb, NodeCopier& copier) const
 		auto* func = MetadataCache::getPerm<Cached::Function>(tdbb, name, 0);
 		node->function = copier.csb->csb_resources->functions.registerResource(func);
 	}
+
 	return node;
 }
 
@@ -13507,6 +13504,7 @@ ValueExprNode* UdfCallNode::pass1(thread_db* tdbb, CompilerScratch* csb)
 ValueExprNode* UdfCallNode::pass2(thread_db* tdbb, CompilerScratch* csb)
 {
 	Function* f = function(tdbb);
+
 	if (f->fun_deterministic)
 	{
 		// Deterministic function without input arguments is expected to be
@@ -14166,9 +14164,10 @@ void VariableNode::genBlr(DsqlCompilerScratch* dsqlScratch)
 {
 	auto varScratch = outerDecl ? dsqlScratch->mainScratch : dsqlScratch;
 
-	const bool execBlock = (varScratch->flags & DsqlCompilerScratch::FLAG_EXEC_BLOCK);
+	const bool execBlockOrUsing = (varScratch->flags &
+		(DsqlCompilerScratch::FLAG_EXEC_BLOCK | DsqlCompilerScratch::FLAG_USING_STATEMENT));
 
-	if (dsqlVar->type == dsql_var::TYPE_INPUT && !execBlock)
+	if (dsqlVar->type == dsql_var::TYPE_INPUT && !execBlockOrUsing)
 	{
 		dsqlScratch->appendUChar(blr_parameter2);
 
@@ -14186,7 +14185,7 @@ void VariableNode::genBlr(DsqlCompilerScratch* dsqlScratch)
 	}
 	else
 	{
-		// If this is an EXECUTE BLOCK input parameter, use the internal variable.
+		// If this is an EXECUTE BLOCK or USING input parameter, use the internal variable.
 		dsqlScratch->appendUChar(blr_variable);
 
 		if (outerDecl)
