@@ -5200,7 +5200,6 @@ void AlterDomainNode::checkUpdate(const dyn_fld& origFld, const dyn_fld& newFld)
 		case blr_bool:
 			break;
 
-		/*** ASF: I'm not yet sure about this, and it is not working internally.
 		// If the original field is a boolean field and the new field is a character field,
 		// is there enough space in the new field?
 		case blr_text:
@@ -5212,7 +5211,6 @@ void AlterDomainNode::checkUpdate(const dyn_fld& origFld, const dyn_fld& newFld)
 				errorCode = isc_dyn_char_fld_too_small;
 			}
 			break;
-		***/
 
 		default:
 			// Cannot change datatype for column %s.  Conversion from base type %s to base type %s is not supported.
