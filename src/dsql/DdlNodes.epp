@@ -13985,7 +13985,7 @@ void DropIndexNode::clearId(thread_db* tdbb, MetaId relId, MetaId indexId)
 	// cleanup NOT related to current transaction
 	// cleanup can NOT be done using system transaction (due to backout logic in erase)
 	// start separate transaction for cleanup
-	auto* transaction = TRA_start(tdbb, 0u, 0);
+	auto* transaction = TRA_start(tdbb, 0ul, 0);
 
 	try
 	{
