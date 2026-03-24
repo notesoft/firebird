@@ -3444,7 +3444,17 @@ static bool delete_index(thread_db* tdbb, SSHORT phase, DeferredWork* work, jrd_
 		return true;
 
 	case 2:
+		return true;
+
 	case 3:
+		{
+			auto* relation = MetadataCache::getPerm<Cached::Relation>(tdbb, work->dfw_id, CacheFlag::ERASED);
+			if (!relation)
+				break;
+
+			if (relation->rel_flags & REL_check_partners)
+				relation->scanPartners(tdbb);
+		}
 		return true;
 
 	case 4:
@@ -3471,9 +3481,6 @@ static bool delete_index(thread_db* tdbb, SSHORT phase, DeferredWork* work, jrd_
 
 			if (index->getForeignKey().hasData())
 			{
-				if (relation->rel_flags & REL_check_partners)
-					relation->scanPartners(tdbb);
-
 				if (relation->rel_foreign_refs)		// may be missing in a case of self-reference
 				{
 					const auto& foreign(*relation->rel_foreign_refs);
