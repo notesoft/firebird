@@ -642,7 +642,7 @@ namespace
 					if (!routine)
 					{
 						ERR_post(Arg::Gds(isc_no_meta_update) <<
-							Arg::Gds(getErrorNotFound(routine->getObjectType())) << Arg::Num(work->dfw_id));
+							Arg::Gds(getErrorNotFound(T::Versioned::objectType())) << Arg::Num(work->dfw_id));
 					}
 
 					return true;
