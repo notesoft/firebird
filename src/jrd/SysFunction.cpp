@@ -5024,8 +5024,8 @@ dsc* evlResetContext(thread_db* tdbb, const SysFunction* function, const NestVal
 {
 	fb_assert(args.getCount() == 1);
 
-	Jrd::Attachment* attachment = tdbb->getAttachment();
-	jrd_tra* transaction = tdbb->getTransaction();
+	Attachment* const attachment = tdbb->getAttachment();
+	jrd_tra* const transaction = tdbb->getTransaction();
 	Request* request = tdbb->getRequest();
 
 	const dsc* nameSpace = EVL_expr(tdbb, request, args[0]);
