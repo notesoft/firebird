@@ -725,6 +725,7 @@ using namespace Firebird;
 %token <metaNamePtr> TRUNCATE
 %token <metaNamePtr> UNLIST
 %token <metaNamePtr> WITHIN
+%token <metaNamePtr> RDB_RESET_CONTEXT
 
 // precedence declarations for expression evaluation
 
@@ -9055,6 +9056,7 @@ system_function_std_syntax
 	| RAND
 	| RDB_GET_CONTEXT
 	| RDB_GET_TRANSACTION_CN
+	| RDB_RESET_CONTEXT
 	| RDB_ROLE_IN_USE
 	| RDB_SET_CONTEXT
 	| REPLACE
