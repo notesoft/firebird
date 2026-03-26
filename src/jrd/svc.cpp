@@ -411,9 +411,9 @@ void Service::outputVerbose(const char* text)
 	}
 }
 
-void Service::outputError(const char* /*text*/)
+void Service::outputError(const char* text)
 {
-	fb_assert(false);
+	outputVerbose(text);
 }
 
 void Service::outputData(const void* data, FB_SIZE_T len)
