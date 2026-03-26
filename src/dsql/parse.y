@@ -4785,15 +4785,15 @@ keyword_or_column
 	| BTRIM					// added in FB 6.0
 	| CALL
 	| CURRENT_SCHEMA
-	| LTRIM
-	| RTRIM
 	| GREATEST
 	| LEAST
-	| WITHIN
 	| LISTAGG
-	| TRUNCATE
+	| LTRIM
 	| PERCENTILE_CONT
 	| PERCENTILE_DISC
+	| RTRIM
+	| TRUNCATE
+	| WITHIN
 	;
 
 col_opt
