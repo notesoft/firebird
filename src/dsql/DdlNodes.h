@@ -1322,7 +1322,7 @@ public:
 		nodes.push(node);
 	}
 
-	bool exec(thread_db* tdbb, Cached::Relation* rel, jrd_tra* transaction);
+	bool exec(thread_db* tdbb, jrd_tra* transaction);
 	void erase(thread_db* tdbb, MetaName indexName);
 
 	MemoryPool& getPool()
@@ -1950,24 +1950,32 @@ public:
 class ModifyIndexNode
 {
 public:
-	ModifyIndexNode(const QualifiedName& indexName, bool create)
+	ModifyIndexNode(const QualifiedName& indexName, Cached::Relation* rel, bool create)
 		: indexName(indexName),
+		  rel(rel),
 		  create(create)
 	{
+		fb_assert(rel);
 	}
+
+	ModifyIndexNode(const QualifiedName& indexName, bool create)
+		: indexName(indexName),
+		  rel(nullptr),
+		  create(create)
+	{ }
 
 	virtual ~ModifyIndexNode()
 	{
 	}
 
-	bool modify(thread_db* tdbb, Cached::Relation* rel, jrd_tra* transaction);
+	bool modify(thread_db* tdbb, jrd_tra* transaction);
 
 	bool check(thread_db*, MetaName iName)
 	{
 		return create && (indexName.object == iName);
 	}
 
-	virtual bool exec(thread_db* tdbb, Cached::Relation* rel, jrd_tra* transaction) = 0;
+	virtual bool exec(thread_db* tdbb, jrd_tra* transaction) = 0;
 
 protected:
 	Firebird::string print(NodePrinter& printer) const;
@@ -1975,6 +1983,7 @@ protected:
 
 public:
 	QualifiedName indexName;
+	Cached::Relation* rel;
 	bool create;
 };
 
@@ -2056,17 +2065,17 @@ public:
 class StoreIndexNode final : public ModifyIndexNode
 {
 public:
-	StoreIndexNode(const QualifiedName& indexName, bool expressionIndex)
-		: ModifyIndexNode(indexName, true),
+	StoreIndexNode(const QualifiedName& indexName, Cached::Relation* rel, bool expressionIndex)
+		: ModifyIndexNode(indexName, rel, true),
 		  expressionIndex(expressionIndex)
 	{ }
 
 public:
-	bool exec(thread_db* tdbb, Cached::Relation* rel, jrd_tra* transaction) override;
+	bool exec(thread_db* tdbb, jrd_tra* transaction) override;
 
 private:
-	MetaId create(thread_db* tdbb, Cached::Relation* rel, jrd_tra* transaction);
-	MetaId createExpression(thread_db* tdbb, Cached::Relation* rel, jrd_tra* transaction);
+	MetaId create(thread_db* tdbb, jrd_tra* transaction);
+	MetaId createExpression(thread_db* tdbb, jrd_tra* transaction);
 
 private:
 	bool expressionIndex = false;
@@ -2103,7 +2112,7 @@ public:
 private:
 	void alterLocalTempIndex(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch,
 		jrd_tra* transaction, LocalTemporaryTable* ltt, LocalTemporaryTable::Index* lttIndex);
-	bool exec(thread_db* tdbb, Cached::Relation* rel, jrd_tra* transaction) override;
+	bool exec(thread_db* tdbb, jrd_tra* transaction) override;
 
 protected:
 	void putErrorPrefix(Firebird::Arg::StatusVector& statusVector) override
@@ -2162,7 +2171,10 @@ public:
 class DropIndexNode final : public ModifyIndexNode, public DdlNode
 {
 public:
-	DropIndexNode(MemoryPool& p, const QualifiedName& aName);
+	DropIndexNode(MemoryPool& p, const QualifiedName& name)
+		: ModifyIndexNode(name, false),
+		  DdlNode(p)
+	{ }
 
 	static bool deleteSegmentRecords(thread_db* tdbb, jrd_tra* transaction, const QualifiedName& name);
 	static void clearFrgn(thread_db* tdbb, MetaId relId, MetaId indexId);
@@ -2172,7 +2184,7 @@ public:
 	Firebird::string internalPrint(NodePrinter& printer) const override;
 	void checkPermission(thread_db* tdbb, jrd_tra* transaction) override;
 	void execute(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_tra* transaction) override;
-	Cached::Relation* drop(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_tra* transaction,
+	void drop(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_tra* transaction,
 	    ModifyIndexList& list, bool runTriggers);
 
 	DdlNode* dsqlPass(DsqlCompilerScratch* dsqlScratch) override
@@ -2191,7 +2203,7 @@ public:
 private:
 	void dropLocalTempIndex(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch,
 		jrd_tra* transaction, LocalTemporaryTable* ltt, LocalTemporaryTable::Index* lttIndex);
-	bool exec(thread_db* tdbb, Cached::Relation* rel, jrd_tra* transaction) override;
+	bool exec(thread_db* tdbb, jrd_tra* transaction) override;
 
 protected:
 	void putErrorPrefix(Firebird::Arg::StatusVector& statusVector) override
