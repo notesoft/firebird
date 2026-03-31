@@ -828,7 +828,7 @@ public:
 
 	void newIndexVersion(thread_db* tdbb, MetaId id, ObjectBase::Flag scanType)
 	{
-		auto chk = rel_indices.makeObject(tdbb, id, CacheFlag::NOCOMMIT | scanType);
+		[[maybe_unused]] auto chk = rel_indices.newVersion(tdbb, id);
 		fb_assert(chk);
 	}
 

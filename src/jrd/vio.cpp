@@ -3246,14 +3246,14 @@ void VIO_init(thread_db* tdbb)
 	}
 }
 
-static void indexDfw(jrd_tra* transaction, enum dfw_t task, dsc& nameDsc, dsc& schemaDesc, int relId, int idxId)
+static void indexDfw(jrd_tra* tran, enum dfw_t task, dsc& nameDsc, dsc& schemaDesc, Cached::Relation* rel, int idxId)
 {
 	// AP:	In index-related DFW dfw_id is relation id,
 	//		dfw_name is index name, dfw_ids[0] is index id
 
 	if (idxId-- == 0)
 		return;
-	auto* work = DFW_post_work(transaction, task, &nameDsc, &schemaDesc, relId);
+	auto* work = DFW_post_work(tran, task, &nameDsc, &schemaDesc, rel->getId());
 	auto& ids = DFW_get_ids(work);
 	fb_assert((ids.getCount() == 0) || ((ids.getCount() == 1) && (ids[0] == idxId)));
 	if (ids.getCount() == 0)
@@ -3628,7 +3628,7 @@ bool VIO_modify(thread_db* tdbb, record_param* org_rpb, record_param* new_rpb, j
 				if (EVL_field(0, new_rpb->rpb_record, f_idx_statistics, &desc2) &&
 					MOV_get_double(tdbb, &desc2) < 0)
 				{
-					indexDfw(transaction, dfw_set_statistics, desc1, schemaDesc, irel->getId(), idxId);
+					indexDfw(transaction, dfw_set_statistics, desc1, schemaDesc, irel, idxId);
 				}
 				else
 				{
@@ -3639,10 +3639,10 @@ bool VIO_modify(thread_db* tdbb, record_param* org_rpb, record_param* new_rpb, j
 						nullFl = !EVL_field(0, org_rpb->rpb_record, f_idx_inactive, &desc2);
 						auto oldStat = nullFl ? 0 : MOV_get_long(tdbb, &desc2, 0);
 						if (newStat != oldStat)
-							indexDfw(transaction, dfw_delete_index, desc1, schemaDesc, irel->getId(), idxId);
+							indexDfw(transaction, dfw_delete_index, desc1, schemaDesc, irel, idxId);
 					}
 					else
-						indexDfw(transaction, dfw_create_index, desc1, schemaDesc, irel->getId(), idxId);
+						indexDfw(transaction, dfw_create_index, desc1, schemaDesc, irel, idxId);
 				}
 			}
 			break;
@@ -4441,7 +4441,7 @@ void VIO_store(thread_db* tdbb, record_param* rpb, jrd_tra* transaction)
 				EVL_field(0, rpb->rpb_record, f_idx_id, &desc);
 				int idxId = MOV_get_long(tdbb, &desc, 0);
 				EVL_field(0, rpb->rpb_record, f_idx_name, &desc);
-				indexDfw(transaction, dfw_create_index, desc, schemaDesc, irel->getId(), idxId);
+				indexDfw(transaction, dfw_create_index, desc, schemaDesc, irel, idxId);
 			}
 
 			set_system_flag(tdbb, rpb->rpb_record, f_idx_sys_flag);
