@@ -5353,27 +5353,93 @@ void AlterDomainNode::getDomainType(thread_db* tdbb, jrd_tra* transaction, dyn_f
 
 // Updates the field names in an index and forces the index to be rebuilt with the new field names.
 void AlterDomainNode::modifyLocalFieldIndex(thread_db* tdbb, jrd_tra* transaction,
-	const QualifiedName& relationName, const MetaName& fieldName, const MetaName& newFieldName)
+	const QualifiedName& relationName, const MetaName& fieldName, const MetaName& newFieldName,
+	ModifyIndexList& indexList)
 {
-	AutoRequest request;
+	AutoRequest request, rq2;
 
 	FOR(REQUEST_HANDLE request TRANSACTION_HANDLE transaction)
 		IDX IN RDB$INDICES
-		CROSS IDXS IN RDB$INDEX_SEGMENTS
-		WITH IDXS.RDB$SCHEMA_NAME EQ IDX.RDB$SCHEMA_NAME AND
-			 IDXS.RDB$INDEX_NAME EQ IDX.RDB$INDEX_NAME AND
+		CROSS SEG IN RDB$INDEX_SEGMENTS
+		WITH SEG.RDB$SCHEMA_NAME EQ IDX.RDB$SCHEMA_NAME AND
+			 SEG.RDB$INDEX_NAME EQ IDX.RDB$INDEX_NAME AND
 			 IDX.RDB$SCHEMA_NAME EQ relationName.schema.c_str() AND
 			 IDX.RDB$RELATION_NAME EQ relationName.object.c_str() AND
-			 IDXS.RDB$FIELD_NAME EQ fieldName.c_str()
+			 SEG.RDB$FIELD_NAME EQ fieldName.c_str()
 	{
 		// Change the name of the field in the index
-		MODIFY IDXS USING
-			memcpy(IDXS.RDB$FIELD_NAME, newFieldName.c_str(), sizeof(IDXS.RDB$FIELD_NAME));
+		MODIFY SEG USING
+			memcpy(SEG.RDB$FIELD_NAME, newFieldName.c_str(), sizeof(SEG.RDB$FIELD_NAME));
 		END_MODIFY
+
+		// Mark old index for deletion
+		auto* node = FB_NEW_POOL(indexList.getPool())
+			DropIndexNode(indexList.getPool(), QualifiedName(IDX.RDB$INDEX_NAME, IDX.RDB$SCHEMA_NAME));
+		node->drop(tdbb, nullptr, transaction, indexList, false);	// keep segments
+		auto* rel = node->getRelation();
+
+		// Add record for new index
+		STORE(REQUEST_HANDLE rq2 TRANSACTION_HANDLE transaction)
+			INEW IN RDB$INDICES
+		{
+			INEW.RDB$INDEX_ID.NULL = TRUE;
+
+            if (IDX.RDB$INDEX_NAME.NULL) INEW.RDB$INDEX_NAME.NULL = TRUE;
+            else {INEW.RDB$INDEX_NAME.NULL = FALSE; strcpy(INEW.RDB$INDEX_NAME, IDX.RDB$INDEX_NAME);};
+
+            if (IDX.RDB$RELATION_NAME.NULL) INEW.RDB$RELATION_NAME.NULL = TRUE;
+            else {INEW.RDB$RELATION_NAME.NULL = FALSE; strcpy(INEW.RDB$RELATION_NAME, IDX.RDB$RELATION_NAME);};
+
+            if (IDX.RDB$UNIQUE_FLAG.NULL) INEW.RDB$UNIQUE_FLAG.NULL = TRUE;
+            else {INEW.RDB$UNIQUE_FLAG.NULL = FALSE; INEW.RDB$UNIQUE_FLAG = IDX.RDB$UNIQUE_FLAG;};
+
+            if (IDX.RDB$DESCRIPTION.NULL) INEW.RDB$DESCRIPTION.NULL = TRUE;
+            else {INEW.RDB$DESCRIPTION.NULL = FALSE; INEW.RDB$DESCRIPTION = IDX.RDB$DESCRIPTION;};
+
+            if (IDX.RDB$SEGMENT_COUNT.NULL) INEW.RDB$SEGMENT_COUNT.NULL = TRUE;
+            else {INEW.RDB$SEGMENT_COUNT.NULL = FALSE; INEW.RDB$SEGMENT_COUNT = IDX.RDB$SEGMENT_COUNT;};
+
+            if (IDX.RDB$INDEX_INACTIVE.NULL) INEW.RDB$INDEX_INACTIVE.NULL = TRUE;
+            else {INEW.RDB$INDEX_INACTIVE.NULL = FALSE; INEW.RDB$INDEX_INACTIVE = IDX.RDB$INDEX_INACTIVE;};
+
+            if (IDX.RDB$INDEX_TYPE.NULL) INEW.RDB$INDEX_TYPE.NULL = TRUE;
+            else {INEW.RDB$INDEX_TYPE.NULL = FALSE; INEW.RDB$INDEX_TYPE = IDX.RDB$INDEX_TYPE;};
+
+            if (IDX.RDB$FOREIGN_KEY.NULL) INEW.RDB$FOREIGN_KEY.NULL = TRUE;
+            else {INEW.RDB$FOREIGN_KEY.NULL = FALSE; strcpy(INEW.RDB$FOREIGN_KEY, IDX.RDB$FOREIGN_KEY);};
+
+            if (IDX.RDB$SYSTEM_FLAG.NULL) INEW.RDB$SYSTEM_FLAG.NULL = TRUE;
+            else {INEW.RDB$SYSTEM_FLAG.NULL = FALSE; INEW.RDB$SYSTEM_FLAG = IDX.RDB$SYSTEM_FLAG;};
+
+            if (IDX.RDB$EXPRESSION_BLR.NULL) INEW.RDB$EXPRESSION_BLR.NULL = TRUE;
+            else {INEW.RDB$EXPRESSION_BLR.NULL = FALSE; INEW.RDB$EXPRESSION_BLR = IDX.RDB$EXPRESSION_BLR;};
+
+            if (IDX.RDB$EXPRESSION_SOURCE.NULL) INEW.RDB$EXPRESSION_SOURCE.NULL = TRUE;
+            else {INEW.RDB$EXPRESSION_SOURCE.NULL = FALSE; INEW.RDB$EXPRESSION_SOURCE = IDX.RDB$EXPRESSION_SOURCE;};
+
+            if (IDX.RDB$STATISTICS.NULL) INEW.RDB$STATISTICS.NULL = TRUE;
+            else {INEW.RDB$STATISTICS.NULL = FALSE; INEW.RDB$STATISTICS = IDX.RDB$STATISTICS;};
+
+            if (IDX.RDB$CONDITION_BLR.NULL) INEW.RDB$CONDITION_BLR.NULL = TRUE;
+            else {INEW.RDB$CONDITION_BLR.NULL = FALSE; INEW.RDB$CONDITION_BLR = IDX.RDB$CONDITION_BLR;};
+
+            if (IDX.RDB$CONDITION_SOURCE.NULL) INEW.RDB$CONDITION_SOURCE.NULL = TRUE;
+            else {INEW.RDB$CONDITION_SOURCE.NULL = FALSE; INEW.RDB$CONDITION_SOURCE = IDX.RDB$CONDITION_SOURCE;};
+
+            if (IDX.RDB$SCHEMA_NAME.NULL) INEW.RDB$SCHEMA_NAME.NULL = TRUE;
+            else {INEW.RDB$SCHEMA_NAME.NULL = FALSE; strcpy(INEW.RDB$SCHEMA_NAME, IDX.RDB$SCHEMA_NAME);};
+
+            if (IDX.RDB$FOREIGN_KEY_SCHEMA_NAME.NULL) INEW.RDB$FOREIGN_KEY_SCHEMA_NAME.NULL = TRUE;
+            else {INEW.RDB$FOREIGN_KEY_SCHEMA_NAME.NULL = FALSE; strcpy(INEW.RDB$FOREIGN_KEY_SCHEMA_NAME, IDX.RDB$FOREIGN_KEY_SCHEMA_NAME);};
+		}
+		END_STORE
+
+		// request creation of new index
+		auto* store = FB_NEW_POOL(indexList.getPool())
+			StoreIndexNode(QualifiedName(IDX.RDB$INDEX_NAME, IDX.RDB$SCHEMA_NAME), rel, !IDX.RDB$EXPRESSION_BLR.NULL);
+		indexList.push(store);
 	}
 	END_FOR
-
-
 }
 
 string AlterDomainNode::internalPrint(NodePrinter& printer) const
@@ -5406,6 +5472,9 @@ void AlterDomainNode::execute(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch,
 
 	// run all statements under savepoint control
 	AutoSavePoint savePoint(tdbb, transaction);
+
+	MemoryPool& p = *MemoryPool::getContextPool();
+	ModifyIndexList indexList(p);
 
 	AutoCacheRequest request(tdbb, drq_m_fld2, DYN_REQUESTS);
 	bool found = false;
@@ -5632,7 +5701,7 @@ void AlterDomainNode::execute(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch,
 				{
 					modifyLocalFieldIndex(tdbb, transaction,
 						QualifiedName(DOM.RDB$RELATION_NAME, DOM.RDB$SCHEMA_NAME),
-						DOM.RDB$FIELD_NAME, DOM.RDB$FIELD_NAME);
+						DOM.RDB$FIELD_NAME, DOM.RDB$FIELD_NAME, indexList);
 				}
 				END_FOR
 
@@ -5660,7 +5729,7 @@ void AlterDomainNode::execute(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch,
 						Arg::Gds(isc_dsql_implicit_domain_name) << renameTo);
 				}
 
-				rename(tdbb, transaction, (FLD.RDB$DIMENSIONS.NULL ? 0 : FLD.RDB$DIMENSIONS));
+				rename(tdbb, transaction, (FLD.RDB$DIMENSIONS.NULL ? 0 : FLD.RDB$DIMENSIONS), indexList);
 				strcpy(FLD.RDB$FIELD_NAME, renameTo.c_str());
 			}
 		END_MODIFY
@@ -5673,6 +5742,8 @@ void AlterDomainNode::execute(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch,
 		status_exception::raise(Arg::PrivateDyn(89));
 	}
 
+	indexList.exec(tdbb, transaction);
+
 	executeDdlTrigger(tdbb, dsqlScratch, transaction, DTW_AFTER, DDL_TRIGGER_ALTER_DOMAIN,
 		(renameTo.hasData() ? qualifiedRenameTo : name),
 		(renameTo.hasData() ? name : QualifiedName()));
@@ -5680,7 +5751,7 @@ void AlterDomainNode::execute(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch,
 	savePoint.release();	// everything is ok
 }
 
-void AlterDomainNode::rename(thread_db* tdbb, jrd_tra* transaction, SSHORT dimensions)
+void AlterDomainNode::rename(thread_db* tdbb, jrd_tra* transaction, SSHORT dimensions, ModifyIndexList& indexList)
 {
 	// Checks to see if the given domain already exists.
 
@@ -5726,7 +5797,7 @@ void AlterDomainNode::rename(thread_db* tdbb, jrd_tra* transaction, SSHORT dimen
 
 		modifyLocalFieldIndex(tdbb, transaction,
 			QualifiedName(RFLD.RDB$RELATION_NAME, RFLD.RDB$SCHEMA_NAME),
-			RFLD.RDB$FIELD_NAME, RFLD.RDB$FIELD_NAME);
+			RFLD.RDB$FIELD_NAME, RFLD.RDB$FIELD_NAME, indexList);
 	}
 	END_FOR
 }
@@ -9725,7 +9796,7 @@ void AlterRelationNode::execute(thread_db* tdbb, DsqlCompilerScratch* dsqlScratc
 							{
 								strcpy(RFL.RDB$FIELD_NAME, clause->toName.c_str());
 								AlterDomainNode::modifyLocalFieldIndex(tdbb, transaction, name,
-									clause->fromName, clause->toName);
+									clause->fromName, clause->toName, indexList);
 							}
 							else
 							{
@@ -10536,7 +10607,7 @@ void AlterRelationNode::modifyField(thread_db* tdbb, DsqlCompilerScratch* dsqlSc
 
 		// Update any indices that exist.
 		AlterDomainNode::modifyLocalFieldIndex(tdbb, transaction, name,
-			field->fld_name, field->fld_name);
+			field->fld_name, field->fld_name, indexList);
 	}
 	catch (const Exception&)
 	{
@@ -11072,7 +11143,7 @@ void DropRelationNode::execute(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch
 			 IDX.RDB$INDEX_INACTIVE NE MET_index_deferred_drop
 	{
 		auto* node = FB_NEW_POOL(p) DropIndexNode(p, QualifiedName(IDX.RDB$INDEX_NAME, name.schema));
-		node->drop(tdbb, dsqlScratch, transaction, indexList, false);
+		node->drop(tdbb, nullptr, transaction, indexList);
 	}
 	END_FOR
 
@@ -13770,7 +13841,7 @@ void DropIndexNode::execute(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, j
 		ERRD_post(Arg::Gds(isc_read_only_database));
 
 	ModifyIndexList oneItemList(*MemoryPool::getContextPool());
-	drop(tdbb, dsqlScratch, transaction, oneItemList, true);
+	drop(tdbb, dsqlScratch, transaction, oneItemList);
 	oneItemList.exec(tdbb, transaction);
 
 	savePoint.release();	// everything is ok
@@ -13786,7 +13857,7 @@ static MetaName makeTempDependName(MetaId relId, MetaId indexId)
 
 
 void DropIndexNode::drop(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_tra* transaction,
-	ModifyIndexList& list, bool runTriggers)
+	ModifyIndexList& list, bool dropSegments)
 {
 	AUTO_HANDLE(req1);
 
@@ -13814,7 +13885,7 @@ void DropIndexNode::drop(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_
 		rel = MetadataCache::getPerm<Cached::Relation>(tdbb, relName, CacheFlag::AUTOCREATE);
 		fb_assert(rel);
 
-		if (runTriggers)
+		if (dsqlScratch)
 			executeDdlTrigger(tdbb, dsqlScratch, transaction, DTW_BEFORE, DDL_TRIGGER_DROP_INDEX, indexName, {});
 
 		if (rel &&
@@ -13842,13 +13913,16 @@ void DropIndexNode::drop(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_
 			ERASE IDX;
 		}
 
-		deleteSegmentRecords(tdbb, transaction, indexName);
+		if (dropSegments)
+			deleteSegmentRecords(tdbb, transaction, indexName);
+		else
+			fb_assert(tempName.hasData());
 	}
 	END_FOR
 
 	if (rel)
 	{
-		if (runTriggers)
+		if (dsqlScratch)
 			executeDdlTrigger(tdbb, dsqlScratch, transaction, DTW_AFTER, DDL_TRIGGER_DROP_INDEX, indexName, {});
 		if (addToTheList)
 			list.push(this);

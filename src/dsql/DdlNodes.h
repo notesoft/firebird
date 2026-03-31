@@ -54,6 +54,7 @@ class LocalTemporaryTable;
 class RelationSourceNode;
 class ValueListNode;
 class SecDbContext;
+class ModifyIndexList;
 
 class BoolSourceClause : public Printable
 {
@@ -1005,7 +1006,7 @@ public:
 	static void getDomainType(thread_db* tdbb, jrd_tra* transaction, dyn_fld& dynFld);
 	static void modifyLocalFieldIndex(thread_db* tdbb, jrd_tra* transaction,
 		const QualifiedName& relationName, const MetaName& fieldName,
-		const MetaName& newFieldName);
+		const MetaName& newFieldName, ModifyIndexList& indexList);
 
 	Firebird::string internalPrint(NodePrinter& printer) const override;
 	void checkPermission(thread_db* tdbb, jrd_tra* transaction) override;
@@ -1030,7 +1031,7 @@ protected:
 	}
 
 private:
-	void rename(thread_db* tdbb, jrd_tra* transaction, SSHORT dimensions);
+	void rename(thread_db* tdbb, jrd_tra* transaction, SSHORT dimensions, ModifyIndexList& indexList);
 
 public:
 	QualifiedName name;
@@ -1975,6 +1976,11 @@ public:
 		return create && (indexName.object == iName);
 	}
 
+	Cached::Relation* getRelation() const
+	{
+		return rel;
+	}
+
 	virtual bool exec(thread_db* tdbb, jrd_tra* transaction) = 0;
 
 protected:
@@ -2185,7 +2191,7 @@ public:
 	void checkPermission(thread_db* tdbb, jrd_tra* transaction) override;
 	void execute(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_tra* transaction) override;
 	void drop(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_tra* transaction,
-	    ModifyIndexList& list, bool runTriggers);
+	    ModifyIndexList& list, bool dropSegments = true);
 
 	DdlNode* dsqlPass(DsqlCompilerScratch* dsqlScratch) override
 	{

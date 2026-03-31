@@ -292,13 +292,13 @@ void dumpIndexRoot(const char* up, const char* from, thread_db* tdbb, WIN* windo
 	{
 		auto* rel = MetadataCache::getPerm<Cached::Relation>(tdbb, root->irt_relation, 0);
 		printf("\n%sFrom %s page=%" ULONGFORMAT " len=%d rel=%s(%d) tra=%" SQUADFORMAT "\n",
-			up, from, window->win_page.getPageNum(), root->irt_count, rel->c_name(), root->irt_relation,
+			up, from, window->win_page.getPageNum(), root->irt_count, rel->getName().toQuotedString().c_str(), root->irt_relation,
 			tdbb->getTransaction() ? tdbb->getTransaction()->tra_number : 0);
 		for (MetaId i = 0; i < root->irt_count; ++i)
 		{
 			auto* idp = rel->lookupIndex(tdbb, i, 0);
 			auto& rpt = root->irt_rpt[i];
-			printf("Index %d '%s' root %d tra %" SQUADFORMAT " %s\n", i, idp ? idp->getName().c_str() : "not-found",
+			printf("Index %d '%s' root %d tra %" SQUADFORMAT " %s\n", i, idp ? idp->getName().toQuotedString().c_str() : "not-found",
 				rpt.getRoot(), rpt.getTransaction(), Flags::state(rpt));
 		}
 		printf("\n");
