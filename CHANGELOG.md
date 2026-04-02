@@ -36,6 +36,9 @@
 
 ## Bugfixes
 
+* [#8965](https://github.com/FirebirdSQL/firebird/issues/8965): Wrong `PERCENT_RANK` computation  
+  Contributor(s): Denis Simonov
+
 * [#8937](https://github.com/FirebirdSQL/firebird/pull/8937): Get rid of the unnecessary permissions for implicit domains  
   Contributor(s): Dmitry Yemanov
 
@@ -47,6 +50,9 @@
 
 * [#8911](https://github.com/FirebirdSQL/firebird/issues/8911): Wrong result in case of `SubQueryConversion = true`  
   Contributor(s): Dmitry Yemanov
+
+* [#8903](https://github.com/FirebirdSQL/firebird/issues/8903): Use of some switches with parameter in _gbak_'s command line before name of database in `-SE` mode breaks access to databases with non-default security database  
+  Contributor(s): Alexander Peshkov
 
 * [#8901](https://github.com/FirebirdSQL/firebird/issues/8901): Bugcheck during nbackup under high load  
   Contributor(s): Vlad Khorsun
@@ -72,8 +78,8 @@
 * [#8851](https://github.com/FirebirdSQL/firebird/issues/8851): 'Internal error' when calling outer procedure after deleting unused result variable from inner procedure  
   Contributor(s): Vlad Khorsun
 
-* [#8828](https://github.com/FirebirdSQL/firebird/issues/8828): Gstat does not open database if the system locale is not UTF-8  
-  Contributor(s): Vasiliy
+* [#8828](https://github.com/FirebirdSQL/firebird/issues/8828): _Gstat_ does not open database if the system locale is not UTF-8  
+  Contributor(s): Vasiliy Yashkov
 
 * [#8826](https://github.com/FirebirdSQL/firebird/pull/8826): Fixed potential endless loop inside `MET_scan_relation`  
   Contributor(s): Vlad Khorsun
@@ -93,8 +99,8 @@
 * [#8794](https://github.com/FirebirdSQL/firebird/issues/8794): Called procedure parameter changes during execution without assignment when deleting from updatable view  
   Contributor(s): Vlad Khorsun
 
-* [#8772](https://github.com/FirebirdSQL/firebird/pull/8772): fix(pag): Incorrect calculation of last used page  
-  Contributor(s): TreeHunter
+* [#8772](https://github.com/FirebirdSQL/firebird/pull/8772): Incorrect calculation of last used page  
+  Contributor(s): Artyom Ivanov
 
 * [#8766](https://github.com/FirebirdSQL/firebird/pull/8766): File truncation errors may happen during replication in Windows CS  
   Contributor(s): Dmitry Yemanov
@@ -102,8 +108,8 @@
 * [#8755](https://github.com/FirebirdSQL/firebird/issues/8755): Replicator could produce log segments with duplicated segment numbers  
   Contributor(s): Vlad Khorsun
 
-* [#8749](https://github.com/FirebirdSQL/firebird/issues/8749): Computed index on `RDB$RECORD_VERSION` don't work as expected  
-  Contributor(s): 
+* [#8749](https://github.com/FirebirdSQL/firebird/issues/8749): Computed index on `RDB$RECORD_VERSION` doesn't work as expected  
+  Contributor(s): Vlad Khorsun
 
 * [#8739](https://github.com/FirebirdSQL/firebird/issues/8739): Wrong `SQLSTATE` in case of table alias conflict  
   Contributor(s): Mark Rotteveel
@@ -127,7 +133,7 @@
   Contributor(s): Andrey Kravchenko
 
 * [#8687](https://github.com/FirebirdSQL/firebird/pull/8687): Prevent race condition when `GlobalObject` destruction routine unlocks global mutex  
-  Contributor(s): TreeHunter
+  Contributor(s): Artyom Ivanov
 
 * [#8675](https://github.com/FirebirdSQL/firebird/issues/8675): _fbclient_ incompatible to older ODS  
   Contributor(s): Adriano dos Santos Fernandes
@@ -158,6 +164,12 @@
 
 * [#8105](https://github.com/FirebirdSQL/firebird/issues/8105): Master database could miss replication segments on Windows Classic Server  
   Contributor(s): Vlad Khorsun
+
+* [#7916](https://github.com/FirebirdSQL/firebird/issues/7916): Query issue conversion error from string  
+  Contributor(s): Dmitry Yemanov
+
+* [GHSA-g99w-prq5-29c6](https://github.com/FirebirdSQL/firebird/security/advisories/GHSA-g99w-prq5-29c6): DoS via malicious slice descriptor in the slice packet  
+  Contributor(s): Artyom Ivanov, Alexander Peshkov
 
 * [GHSA-7jq3-6j3c-5cm2](https://github.com/FirebirdSQL/firebird/security/advisories/GHSA-7jq3-6j3c-5cm2): DoS via `op_response` packet from client (CVE-2026-34232)  
   Contributor(s): Artyom Ivanov
@@ -272,7 +284,7 @@
   Contributor(s): Adriano dos Santos Fernandes
 
 * [#8432](https://github.com/FirebirdSQL/firebird/pull/8432): Fix server hang when trying to stop a server with active connections with event notifications  
-  Contributor(s): TreeHunter
+  Contributor(s): Artyom Ivanov
 
 * [#8431](https://github.com/FirebirdSQL/firebird/pull/8431): Make sure only one error will be sent to not-started Service  
   Contributor(s): Alexander Peshkov
