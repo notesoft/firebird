@@ -2877,6 +2877,29 @@ RecordSource* Optimizer::generateOuterJoin(RiverList& rivers,
 			stream_o.stream_rsb =
 				generateRetrieval(stream_o.stream_num, sortClause, true, false, &boolean);
 		}
+		else
+		{
+			// Ensure the inner streams are inactive
+			StreamList streams;
+
+			if (stream_i.stream_rsb)
+				stream_i.stream_rsb->findUsedStreams(streams);
+
+			StreamStateHolder stateHolder(csb, streams);
+			stateHolder.deactivate();
+
+			// Collect booleans computable for the outer sub-stream, it must be active now
+			for (auto iter = getBaseConjuncts(); iter.hasData(); ++iter)
+			{
+				if (!(iter & CONJUNCT_USED) &&
+					!(iter->nodFlags & ExprNode::FLAG_RESIDUAL) &&
+					iter->computable(csb, INVALID_STREAM, false))
+				{
+					compose(getPool(), &boolean, iter);
+					iter |= CONJUNCT_USED;
+				}
+			}
+		}
 
 		if (!stream_i.stream_rsb)
 		{
