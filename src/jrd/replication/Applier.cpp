@@ -933,7 +933,7 @@ void Applier::deleteRecord(thread_db* tdbb, TraNumber traNum,
 void Applier::setSequence(thread_db* tdbb, const QualifiedName& genName, SINT64 value)
 {
 	const auto dbb = tdbb->getDatabase();
-	const auto attachment = tdbb->getAttachment();		// ??????????????//
+	const auto attachment = tdbb->getAttachment();
 
 	QualifiedName qualifiedGenName(genName);
 	attachment->qualifyExistingName(tdbb, qualifiedGenName, {obj_generator});
@@ -1164,7 +1164,7 @@ bool Applier::lookupRecord(thread_db* tdbb,
 	if (haveIdx)
 	{
 		IndexKey key(tdbb, relation, &idx);
-		if (const auto result = key.compose(record))
+		if (const auto result = key.composeIKey(record))
 		{
 			IndexErrorContext context(relation, &idx);
 			context.raise(tdbb, result, record);

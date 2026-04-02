@@ -334,7 +334,7 @@ bool IndexTableScan::internalGetRecord(thread_db* tdbb) const
 
 			if (VIO_get(tdbb, rpb, request->req_transaction, request->req_pool))
 			{
-				if (const auto result = recordKey.compose(rpb->rpb_record))
+				if (const auto result = recordKey.composeIKey(rpb->rpb_record))
 				{
 					IndexErrorContext context(m_relation(tdbb), idx);
 					context.raise(tdbb, result, rpb->rpb_record);

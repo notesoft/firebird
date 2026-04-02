@@ -5383,6 +5383,7 @@ void AlterDomainNode::modifyLocalFieldIndex(thread_db* tdbb, jrd_tra* transactio
 			INEW IN RDB$INDICES
 		{
 			INEW.RDB$INDEX_ID.NULL = TRUE;
+			INEW.RDB$FORMAT.NULL = TRUE;		// Leave it till DFW_update_index()
 
             if (IDX.RDB$INDEX_NAME.NULL) INEW.RDB$INDEX_NAME.NULL = TRUE;
             else {INEW.RDB$INDEX_NAME.NULL = FALSE; strcpy(INEW.RDB$INDEX_NAME, IDX.RDB$INDEX_NAME);};
@@ -12659,12 +12660,11 @@ MetaId StoreIndexNode::create(thread_db* tdbb, jrd_tra* transaction)
 			&idxId, transaction, selectivity);
 		fb_assert(idxId == idx.idx_id);
 		if (!tempConn)
-			DFW_update_index(indexName, idxId, selectivity, transaction);
+			DFW_update_index(indexName, idxId, selectivity, transaction, relation);
 	}
 	else
 		fb_assert(idxId == dbb->dbb_max_idx);
 
-	// Memleak when IDX_create_index() throws ????????????
 	if (idx.idx_condition_statement)
 		idx.idx_condition_statement->release(tdbb);
 
@@ -12883,6 +12883,7 @@ ModifyIndexNode* CreateIndexNode::store(thread_db* tdbb, MemoryPool& p, jrd_tra*
 		IDX IN RDB$INDICES
 	{
 		IDX.RDB$INDEX_ID.NULL = TRUE;
+		IDX.RDB$FORMAT.NULL = TRUE;			// will be set in DFW_update_index
 		IDX.RDB$UNIQUE_FLAG.NULL = TRUE;
 		IDX.RDB$INDEX_INACTIVE.NULL = TRUE;
 		IDX.RDB$INDEX_TYPE.NULL = TRUE;

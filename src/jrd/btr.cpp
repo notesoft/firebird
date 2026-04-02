@@ -462,6 +462,11 @@ void IndexErrorContext::raise(thread_db* tdbb, idx_e result, Record* record)
 			ERR_post_nothrow(Arg::Gds(isc_no_dup) << indexName.toQuotedString());
 		break;
 
+	case idx_e_skip:
+		fb_assert(false);
+		fatal_exception::raise("Sorry, such error should not take place");
+		break;
+
 	default:
 		fb_assert(false);
 	}
@@ -665,7 +670,7 @@ dsc* IndexExpression::evaluate(Record* record) const
 
 // IndexKey class
 
-idx_e IndexKey::compose(Record* record)
+idx_e IndexKey::composeIKey(Record* record, bool skipNewFormat)
 {
 	// Compute a key from a record and an index descriptor.
 	// Note that compound keys are expanded by 25%.
@@ -686,6 +691,14 @@ idx_e IndexKey::compose(Record* record)
 	m_key.key_nulls = 0;
 
 	const bool descending = (m_index->idx_flags & idx_descending);
+
+	auto* idp = m_relation->getPermanent()->lookupIndex(m_tdbb, m_index->idx_id, CacheFlag::AUTOCREATE);
+	if (skipNewFormat && idp && (idp->getState() == Ods::irt_drop) && idp->getFormat() &&
+		(record->getFormat()->fmt_version > idp->getFormat()))
+	{
+		// tried to insert fresh formatted record into old index - skip this
+		return idx_e_skip;
+	}
 
 	try
 	{
@@ -1401,6 +1414,12 @@ bool BTR_description(thread_db* tdbb, Cached::Relation* relation, const index_ro
 			// Definition of index condition is not found for index @1
 			error = isc_idx_cond_not_found;
 		}
+	}
+	else if (irt_desc->getState() == Ods::irt_drop)
+	{
+		auto* idp = relation->ensureIndex(tdbb, idx->idx_id);
+		if (idp)
+			idp->setState(Ods::irt_drop);
 	}
 
 	if (error)
