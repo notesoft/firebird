@@ -75,6 +75,9 @@
 * [#8871](https://github.com/FirebirdSQL/firebird/pull/8871): Fix locking error if `IN/EXISTS` is converted into a semi-join  
   Contributor(s): Dmitry Yemanov
 
+* [#8857](https://github.com/FirebirdSQL/firebird/issues/8857): Replication stops if `GRANT` was issued by non-DBA user who has the `RDB$ADMIN` role and appropriate object (table, etc) belongs to another user  
+  Contributor(s): Dmitry Yemanov
+
 * [#8851](https://github.com/FirebirdSQL/firebird/issues/8851): 'Internal error' when calling outer procedure after deleting unused result variable from inner procedure  
   Contributor(s): Vlad Khorsun
 
@@ -168,7 +171,7 @@
 * [#7916](https://github.com/FirebirdSQL/firebird/issues/7916): Query issue conversion error from string  
   Contributor(s): Dmitry Yemanov
 
-* [GHSA-g99w-prq5-29c6](https://github.com/FirebirdSQL/firebird/security/advisories/GHSA-g99w-prq5-29c6): DoS via malicious slice descriptor in the slice packet  
+* [GHSA-g99w-prq5-29c6](https://github.com/FirebirdSQL/firebird/security/advisories/GHSA-g99w-prq5-29c6): DoS via malicious slice descriptor in the slice packet (CVE-2026-35215)  
   Contributor(s): Artyom Ivanov, Alexander Peshkov
 
 * [GHSA-7jq3-6j3c-5cm2](https://github.com/FirebirdSQL/firebird/security/advisories/GHSA-7jq3-6j3c-5cm2): DoS via `op_response` packet from client (CVE-2026-34232)  
