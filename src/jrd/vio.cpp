@@ -174,7 +174,7 @@ static void protect_system_table_delupd(thread_db* tdbb, const jrd_rel* relation
 	bool force_flag = false);
 static void purge(thread_db*, record_param*);
 static void replace_record(thread_db*, record_param*, PageStack*, const jrd_tra*);
-static void refresh_fk_fields(thread_db*, Record*, record_param*, record_param*);
+static void refresh_changed_fields(thread_db*, Record*, record_param*, record_param*);
 static SSHORT set_metadata_id(thread_db*, Record*, USHORT, drq_type_t, const char*);
 static void set_nbackup_id(thread_db*, Record*, USHORT, drq_type_t, const char*);
 static void set_owner_name(thread_db*, Record*, USHORT);
@@ -3329,7 +3329,7 @@ bool VIO_modify(thread_db* tdbb, record_param* org_rpb, record_param* new_rpb, j
 		fb_assert(!(org_rpb->rpb_runtime_flags & RPB_undo_read));
 
 		if (undo_read)
-			refresh_fk_fields(tdbb, old_record, org_rpb, new_rpb);
+			refresh_changed_fields(tdbb, old_record, org_rpb, new_rpb);
 	}
 
 	// If we're the system transaction, modify stuff in place.  This saves
@@ -6605,20 +6605,20 @@ static void replace_record(thread_db*		tdbb,
 }
 
 
-static void refresh_fk_fields(thread_db* tdbb, Record* old_rec, record_param* cur_rpb,
+static void refresh_changed_fields(thread_db* tdbb, Record* old_rec, record_param* cur_rpb,
 	record_param* new_rpb)
 {
 /**************************************
  *
- *	r e f r e s h _ f k _ f i e l d s
+ *	r e f r e s h _ c h a n g e d _ f i e l d s
  *
  **************************************
  *
  * Functional description
  *	Update new_rpb with foreign key fields values changed by cascade triggers.
  *  Consider self-referenced foreign keys only.
- *  Also, if UpdateOverwriteMode is set to 1, raise error when foreign key fields
- *  were changed by user triggers.
+ *  Also, if UpdateOverwriteMode is set to 1, raise error when non self-referenced
+ *  foreign key fields were changed by user triggers.
  *
  *  old_rec - old record before modify
  *  cur_rpb - just read record with possibly changed fields
@@ -6667,13 +6667,13 @@ static void refresh_fk_fields(thread_db* tdbb, Record* old_rec, record_param* cu
 		if (overwriteMode == 0)
 			return;
 
-		if (cur_rpb->rpb_record->getFormat() == old_rec->getFormat())
+		if (cur_rpb->rpb_record->getFormat()->fmt_version == old_rec->getFormat()->fmt_version)
 		{
 			if (memcmp(cur_rpb->rpb_address, old_rec->getData(), cur_rpb->rpb_length) == 0)
 				return;
 
 			fb_assert(overwriteMode == 1);
-			ERR_post(Arg::Gds(isc_random) << "UPDATE will overwrite changes made by trigger");
+			ERR_post(Arg::Gds(isc_update_overwrite_trigger));		// UPDATE will overwrite changes made by trigger
 		}
 		// Else compare field-by-field
 	}
@@ -6698,7 +6698,7 @@ static void refresh_fk_fields(thread_db* tdbb, Record* old_rec, record_param* cu
 			{
 				// Record was modified by trigger.
 				fb_assert(overwriteMode == 1);
-				ERR_post(Arg::Gds(isc_random) << "UPDATE will overwrite changes made by trigger");
+				ERR_post(Arg::Gds(isc_update_overwrite_trigger));	// UPDATE will overwrite changes made by trigger
 			}
 		}
 		else
