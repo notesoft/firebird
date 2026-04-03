@@ -1164,7 +1164,7 @@ bool Applier::lookupRecord(thread_db* tdbb,
 	if (haveIdx)
 	{
 		IndexKey key(tdbb, relation, &idx);
-		if (const auto result = key.composeIKey(record))
+		if (const auto result = key.compose(record))
 		{
 			IndexErrorContext context(relation, &idx);
 			context.raise(tdbb, result, record);

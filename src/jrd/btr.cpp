@@ -670,7 +670,7 @@ dsc* IndexExpression::evaluate(Record* record) const
 
 // IndexKey class
 
-idx_e IndexKey::composeIKey(Record* record, bool skipNewFormat)
+idx_e IndexKey::compose(Record* record, bool skipNewFormat)
 {
 	// Compute a key from a record and an index descriptor.
 	// Note that compound keys are expanded by 25%.
