@@ -79,6 +79,24 @@ namespace
 		file += newExt;
 	}
 
+	// Reject path components in plugin/engine lookup names so DIR_PLUGINS/<name>
+	// cannot escape the plugins directory (path traversal to dlopen).
+	void validatePluginLookupName(const char* pluginName)
+	{
+		if (!pluginName)
+			return;
+
+		for (const char* p = pluginName; *p; ++p)
+		{
+			const unsigned char c = static_cast<unsigned char>(*p);
+			if (c == '/' || c == '\\')
+				(Arg::Gds(isc_random) << "Invalid characters in plugin name").raise();
+		}
+
+		if (strstr(pluginName, ".."))
+			(Arg::Gds(isc_random) << "Invalid characters in plugin name").raise();
+	}
+
 	// Holds a reference to plugins.conf file
 	class StaticConfHolder
 	{
@@ -780,6 +798,8 @@ namespace
 
 		explicit PluginLoadInfo(const char* pluginName)
 		{
+			validatePluginLookupName(pluginName);
+
 			// define default values for plugin ...
 			curModule = fb_utils::getPrefix(IConfigManager::DIR_PLUGINS, pluginName);
 			regName = pluginName;
