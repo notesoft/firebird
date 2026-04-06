@@ -5356,7 +5356,7 @@ void AlterDomainNode::modifyLocalFieldIndex(thread_db* tdbb, jrd_tra* transactio
 	const QualifiedName& relationName, const MetaName& fieldName, const MetaName& newFieldName,
 	ModifyIndexList& indexList)
 {
-	AutoRequest request, rq2;
+	AutoRequest request;
 
 	FOR(REQUEST_HANDLE request TRANSACTION_HANDLE transaction)
 		IDX IN RDB$INDICES
@@ -5378,60 +5378,142 @@ void AlterDomainNode::modifyLocalFieldIndex(thread_db* tdbb, jrd_tra* transactio
 		node->drop(tdbb, nullptr, transaction, indexList, false);	// keep segments
 		auto* rel = node->getRelation();
 
+		AutoRequest request2;
+
 		// Add record for new index
-		STORE(REQUEST_HANDLE rq2 TRANSACTION_HANDLE transaction)
+		STORE(REQUEST_HANDLE request2 TRANSACTION_HANDLE transaction)
 			INEW IN RDB$INDICES
 		{
 			INEW.RDB$INDEX_ID.NULL = TRUE;
 			INEW.RDB$FORMAT.NULL = TRUE;		// Leave it till DFW_update_index()
 
-            if (IDX.RDB$INDEX_NAME.NULL) INEW.RDB$INDEX_NAME.NULL = TRUE;
-            else {INEW.RDB$INDEX_NAME.NULL = FALSE; strcpy(INEW.RDB$INDEX_NAME, IDX.RDB$INDEX_NAME);};
+            if (IDX.RDB$INDEX_NAME.NULL)
+            	INEW.RDB$INDEX_NAME.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$INDEX_NAME.NULL = FALSE;
+            	strcpy(INEW.RDB$INDEX_NAME, IDX.RDB$INDEX_NAME);
+            }
 
-            if (IDX.RDB$RELATION_NAME.NULL) INEW.RDB$RELATION_NAME.NULL = TRUE;
-            else {INEW.RDB$RELATION_NAME.NULL = FALSE; strcpy(INEW.RDB$RELATION_NAME, IDX.RDB$RELATION_NAME);};
+            if (IDX.RDB$RELATION_NAME.NULL)
+            	INEW.RDB$RELATION_NAME.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$RELATION_NAME.NULL = FALSE;
+            	strcpy(INEW.RDB$RELATION_NAME, IDX.RDB$RELATION_NAME);
+            }
 
-            if (IDX.RDB$UNIQUE_FLAG.NULL) INEW.RDB$UNIQUE_FLAG.NULL = TRUE;
-            else {INEW.RDB$UNIQUE_FLAG.NULL = FALSE; INEW.RDB$UNIQUE_FLAG = IDX.RDB$UNIQUE_FLAG;};
+            if (IDX.RDB$UNIQUE_FLAG.NULL)
+            	INEW.RDB$UNIQUE_FLAG.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$UNIQUE_FLAG.NULL = FALSE;
+            	INEW.RDB$UNIQUE_FLAG = IDX.RDB$UNIQUE_FLAG;
+            }
 
-            if (IDX.RDB$DESCRIPTION.NULL) INEW.RDB$DESCRIPTION.NULL = TRUE;
-            else {INEW.RDB$DESCRIPTION.NULL = FALSE; INEW.RDB$DESCRIPTION = IDX.RDB$DESCRIPTION;};
+            if (IDX.RDB$DESCRIPTION.NULL)
+            	INEW.RDB$DESCRIPTION.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$DESCRIPTION.NULL = FALSE;
+            	INEW.RDB$DESCRIPTION = IDX.RDB$DESCRIPTION;
+            }
 
-            if (IDX.RDB$SEGMENT_COUNT.NULL) INEW.RDB$SEGMENT_COUNT.NULL = TRUE;
-            else {INEW.RDB$SEGMENT_COUNT.NULL = FALSE; INEW.RDB$SEGMENT_COUNT = IDX.RDB$SEGMENT_COUNT;};
+            if (IDX.RDB$SEGMENT_COUNT.NULL)
+            	INEW.RDB$SEGMENT_COUNT.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$SEGMENT_COUNT.NULL = FALSE;
+            	INEW.RDB$SEGMENT_COUNT = IDX.RDB$SEGMENT_COUNT;
+            }
 
-            if (IDX.RDB$INDEX_INACTIVE.NULL) INEW.RDB$INDEX_INACTIVE.NULL = TRUE;
-            else {INEW.RDB$INDEX_INACTIVE.NULL = FALSE; INEW.RDB$INDEX_INACTIVE = IDX.RDB$INDEX_INACTIVE;};
+            if (IDX.RDB$INDEX_INACTIVE.NULL)
+            	INEW.RDB$INDEX_INACTIVE.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$INDEX_INACTIVE.NULL = FALSE;
+            	INEW.RDB$INDEX_INACTIVE = IDX.RDB$INDEX_INACTIVE;
+            }
 
-            if (IDX.RDB$INDEX_TYPE.NULL) INEW.RDB$INDEX_TYPE.NULL = TRUE;
-            else {INEW.RDB$INDEX_TYPE.NULL = FALSE; INEW.RDB$INDEX_TYPE = IDX.RDB$INDEX_TYPE;};
+            if (IDX.RDB$INDEX_TYPE.NULL)
+            	INEW.RDB$INDEX_TYPE.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$INDEX_TYPE.NULL = FALSE;
+            	INEW.RDB$INDEX_TYPE = IDX.RDB$INDEX_TYPE;
+            }
 
-            if (IDX.RDB$FOREIGN_KEY.NULL) INEW.RDB$FOREIGN_KEY.NULL = TRUE;
-            else {INEW.RDB$FOREIGN_KEY.NULL = FALSE; strcpy(INEW.RDB$FOREIGN_KEY, IDX.RDB$FOREIGN_KEY);};
+            if (IDX.RDB$FOREIGN_KEY.NULL)
+            	INEW.RDB$FOREIGN_KEY.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$FOREIGN_KEY.NULL = FALSE;
+            	strcpy(INEW.RDB$FOREIGN_KEY, IDX.RDB$FOREIGN_KEY);
+            }
 
-            if (IDX.RDB$SYSTEM_FLAG.NULL) INEW.RDB$SYSTEM_FLAG.NULL = TRUE;
-            else {INEW.RDB$SYSTEM_FLAG.NULL = FALSE; INEW.RDB$SYSTEM_FLAG = IDX.RDB$SYSTEM_FLAG;};
+            if (IDX.RDB$SYSTEM_FLAG.NULL)
+            	INEW.RDB$SYSTEM_FLAG.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$SYSTEM_FLAG.NULL = FALSE;
+            	INEW.RDB$SYSTEM_FLAG = IDX.RDB$SYSTEM_FLAG;
+            }
 
-            if (IDX.RDB$EXPRESSION_BLR.NULL) INEW.RDB$EXPRESSION_BLR.NULL = TRUE;
-            else {INEW.RDB$EXPRESSION_BLR.NULL = FALSE; INEW.RDB$EXPRESSION_BLR = IDX.RDB$EXPRESSION_BLR;};
+            if (IDX.RDB$EXPRESSION_BLR.NULL)
+            	INEW.RDB$EXPRESSION_BLR.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$EXPRESSION_BLR.NULL = FALSE;
+            	INEW.RDB$EXPRESSION_BLR = IDX.RDB$EXPRESSION_BLR;
+            }
 
-            if (IDX.RDB$EXPRESSION_SOURCE.NULL) INEW.RDB$EXPRESSION_SOURCE.NULL = TRUE;
-            else {INEW.RDB$EXPRESSION_SOURCE.NULL = FALSE; INEW.RDB$EXPRESSION_SOURCE = IDX.RDB$EXPRESSION_SOURCE;};
+            if (IDX.RDB$EXPRESSION_SOURCE.NULL)
+            	INEW.RDB$EXPRESSION_SOURCE.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$EXPRESSION_SOURCE.NULL = FALSE;
+            	INEW.RDB$EXPRESSION_SOURCE = IDX.RDB$EXPRESSION_SOURCE;
+            }
 
-            if (IDX.RDB$STATISTICS.NULL) INEW.RDB$STATISTICS.NULL = TRUE;
-            else {INEW.RDB$STATISTICS.NULL = FALSE; INEW.RDB$STATISTICS = IDX.RDB$STATISTICS;};
+            if (IDX.RDB$STATISTICS.NULL)
+            	INEW.RDB$STATISTICS.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$STATISTICS.NULL = FALSE;
+            	INEW.RDB$STATISTICS = IDX.RDB$STATISTICS;
+            }
 
-            if (IDX.RDB$CONDITION_BLR.NULL) INEW.RDB$CONDITION_BLR.NULL = TRUE;
-            else {INEW.RDB$CONDITION_BLR.NULL = FALSE; INEW.RDB$CONDITION_BLR = IDX.RDB$CONDITION_BLR;};
+            if (IDX.RDB$CONDITION_BLR.NULL)
+            	INEW.RDB$CONDITION_BLR.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$CONDITION_BLR.NULL = FALSE;
+            	INEW.RDB$CONDITION_BLR = IDX.RDB$CONDITION_BLR;
+            }
 
-            if (IDX.RDB$CONDITION_SOURCE.NULL) INEW.RDB$CONDITION_SOURCE.NULL = TRUE;
-            else {INEW.RDB$CONDITION_SOURCE.NULL = FALSE; INEW.RDB$CONDITION_SOURCE = IDX.RDB$CONDITION_SOURCE;};
+            if (IDX.RDB$CONDITION_SOURCE.NULL)
+            	INEW.RDB$CONDITION_SOURCE.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$CONDITION_SOURCE.NULL = FALSE;
+            	INEW.RDB$CONDITION_SOURCE = IDX.RDB$CONDITION_SOURCE;
+            }
 
-            if (IDX.RDB$SCHEMA_NAME.NULL) INEW.RDB$SCHEMA_NAME.NULL = TRUE;
-            else {INEW.RDB$SCHEMA_NAME.NULL = FALSE; strcpy(INEW.RDB$SCHEMA_NAME, IDX.RDB$SCHEMA_NAME);};
+            if (IDX.RDB$SCHEMA_NAME.NULL)
+            	INEW.RDB$SCHEMA_NAME.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$SCHEMA_NAME.NULL = FALSE;
+            	strcpy(INEW.RDB$SCHEMA_NAME, IDX.RDB$SCHEMA_NAME);
+            }
 
-            if (IDX.RDB$FOREIGN_KEY_SCHEMA_NAME.NULL) INEW.RDB$FOREIGN_KEY_SCHEMA_NAME.NULL = TRUE;
-            else {INEW.RDB$FOREIGN_KEY_SCHEMA_NAME.NULL = FALSE; strcpy(INEW.RDB$FOREIGN_KEY_SCHEMA_NAME, IDX.RDB$FOREIGN_KEY_SCHEMA_NAME);};
+            if (IDX.RDB$FOREIGN_KEY_SCHEMA_NAME.NULL)
+            	INEW.RDB$FOREIGN_KEY_SCHEMA_NAME.NULL = TRUE;
+            else
+            {
+            	INEW.RDB$FOREIGN_KEY_SCHEMA_NAME.NULL = FALSE;
+            	strcpy(INEW.RDB$FOREIGN_KEY_SCHEMA_NAME, IDX.RDB$FOREIGN_KEY_SCHEMA_NAME);
+            }
 		}
 		END_STORE
 

@@ -464,7 +464,7 @@ void IndexErrorContext::raise(thread_db* tdbb, idx_e result, Record* record)
 
 	case idx_e_skip:
 		fb_assert(false);
-		fatal_exception::raise("Sorry, such error should not take place");
+		fatal_exception::raise("Internal error: idx_e_skip error is not expected");
 		break;
 
 	default:
