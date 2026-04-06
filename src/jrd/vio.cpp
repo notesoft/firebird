@@ -6617,8 +6617,8 @@ static void refresh_changed_fields(thread_db* tdbb, Record* old_rec, record_para
  * Functional description
  *	Update new_rpb with foreign key fields values changed by cascade triggers.
  *  Consider self-referenced foreign keys only.
- *  Also, if UpdateOverwriteMode is set to 1, raise error when non self-referenced
- *  foreign key fields were changed by user triggers.
+ *  Also, if AllowUpdateOverwrite is set to false, raise error when non
+ *  self-referenced foreign key fields were changed by user triggers.
  *
  *  old_rec - old record before modify
  *  cur_rpb - just read record with possibly changed fields
@@ -6626,7 +6626,7 @@ static void refresh_changed_fields(thread_db* tdbb, Record* old_rec, record_para
  *
  **************************************/
 	const Database* dbb = tdbb->getDatabase();
-	const auto overwriteMode = dbb->dbb_config->getUpdateOverwriteMode();
+	const auto allowOverwrite = dbb->dbb_config->getAllowUpdateOverwrite();
 
 	jrd_rel* relation = cur_rpb->rpb_relation;
 
@@ -6664,7 +6664,7 @@ static void refresh_changed_fields(thread_db* tdbb, Record* old_rec, record_para
 
 	if (fields.isEmpty())
 	{
-		if (overwriteMode == 0)
+		if (allowOverwrite)
 			return;
 
 		if (cur_rpb->rpb_record->getFormat()->fmt_version == old_rec->getFormat()->fmt_version)
@@ -6672,8 +6672,7 @@ static void refresh_changed_fields(thread_db* tdbb, Record* old_rec, record_para
 			if (memcmp(cur_rpb->rpb_address, old_rec->getData(), cur_rpb->rpb_length) == 0)
 				return;
 
-			fb_assert(overwriteMode == 1);
-			ERR_post(Arg::Gds(isc_update_overwrite_trigger));		// UPDATE will overwrite changes made by trigger
+			ERR_post(Arg::Gds(isc_update_overwrite));		// UPDATE will overwrite changes made by the trigger or by another UPDATE in the same cursor
 		}
 		// Else compare field-by-field
 	}
@@ -6686,7 +6685,7 @@ static void refresh_changed_fields(thread_db* tdbb, Record* old_rec, record_para
 		const bool is_fk = (frn < fields.getCount() && fields[frn] == fld);
 		if (!is_fk)
 		{
-			if (overwriteMode == 0)
+			if (allowOverwrite)
 				continue;
 
 			dsc dsc_cur;
@@ -6697,8 +6696,7 @@ static void refresh_changed_fields(thread_db* tdbb, Record* old_rec, record_para
 				(flag_cur && flag_old && MOV_compare(tdbb, &dsc_old, &dsc_cur) != 0))
 			{
 				// Record was modified by trigger.
-				fb_assert(overwriteMode == 1);
-				ERR_post(Arg::Gds(isc_update_overwrite_trigger));	// UPDATE will overwrite changes made by trigger
+				ERR_post(Arg::Gds(isc_update_overwrite));		// UPDATE will overwrite changes made by the trigger or by another UPDATE in the same cursor
 			}
 		}
 		else
