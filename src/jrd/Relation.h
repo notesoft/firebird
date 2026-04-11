@@ -206,7 +206,8 @@ public:
 	const QualifiedName& getName() const noexcept;
 
 	static bool destroy(thread_db* tdbb, DbTriggersHeader* trigs);
-	void releaseLock(thread_db*) { }
+	void releaseLock(thread_db* tdbb) { }
+	void reloadAst(thread_db* tdbb, bool erase) { }
 
 private:
 	MetaId type;
@@ -480,7 +481,8 @@ public:
 		return idp_id;
 	}
 
-	void releaseLock(thread_db*) { }
+	void releaseLock(thread_db* tdbb) { }
+	void reloadAst(thread_db* tdbb, bool erase) { }
 
 	RelationPermanent* getRelation() noexcept
 	{
@@ -834,6 +836,12 @@ public:
 	RelationPermanent(thread_db* tdbb, MemoryPool& p, MetaId id, NoData);
 	~RelationPermanent();
 	static bool destroy(thread_db* tdbb, RelationPermanent* rel);
+
+	void reloadAst(thread_db* tdbb, bool erase)
+	{
+		if (erase)
+			dropTempPages(tdbb);
+	}
 
 	void makeLocks(thread_db* tdbb, Cached::Relation* relation);
 	static constexpr USHORT getRelLockKeyLength() noexcept;
