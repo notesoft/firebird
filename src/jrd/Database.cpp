@@ -915,7 +915,7 @@ namespace Jrd
 
 	void Database::clearDeleteMark(RelationPermanent* relation)
 	{
-		MutexLockGuard g(dbb_del_pages_mutex, FB_FUNCTION);
+		MutexLockGuard guard(dbb_del_pages_mutex, FB_FUNCTION);
 
 		FB_SIZE_T pos;
 		bool found = dbb_del_pages.findEx([relation](const DelPagesMarker& item)->int
@@ -943,7 +943,6 @@ namespace Jrd
 			dbb_del_pages.remove(0u);
 
 			MutexUnlockGuard checkout(dbb_del_pages_mutex, FB_FUNCTION);
-			printf("deleteTempPages for relation %s\n", relation->getName().toQuotedString().c_str());
 			relation->freePages(tdbb);
 		}
 	}
