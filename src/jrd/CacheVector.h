@@ -881,7 +881,7 @@ private:
 	void reset(thread_db* tdbb, bool erase) override
 	{
 		storeObject(tdbb, nullptr, erase ? CacheFlag::ERASED : 0);
-		P::reloadAst(tdbb, erase);
+		Permanent::reloadAst(tdbb, erase);
 	}
 
 public:
