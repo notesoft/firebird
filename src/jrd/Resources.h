@@ -191,9 +191,6 @@ private:
 	FB_SIZE_T versionOffset;
 };
 
-template <>
-jrd_rel* CachedResource<jrd_rel, RelationPermanent>::operator()(thread_db* tdbb) const;
-
 
 class Resources final
 {
