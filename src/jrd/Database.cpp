@@ -902,11 +902,12 @@ namespace Jrd
 
 #ifdef DEV_BUILD
 		FB_SIZE_T dummy;
-		bool rc = dbb_del_pages.findEx([relation](const DelPagesMarker& item)->int
+		bool rc = dbb_del_pages.findEx(
+			[relation](const DelPagesMarker& item) -> int
 			{
 				return std::greater{}(item.relation, relation);
 			},
-		dummy);
+			dummy);
 		fb_assert(!rc);
 #endif
 
@@ -918,11 +919,12 @@ namespace Jrd
 		MutexLockGuard guard(dbb_del_pages_mutex, FB_FUNCTION);
 
 		FB_SIZE_T pos;
-		bool found = dbb_del_pages.findEx([relation](const DelPagesMarker& item)->int
+		bool found = dbb_del_pages.findEx(
+			[relation](const DelPagesMarker& item) -> int
 			{
 				return std::greater{}(item.relation, relation);
 			},
-		pos);
+			pos);
 		fb_assert(found);
 
 		if (found)
