@@ -191,6 +191,7 @@ private:
 	FB_SIZE_T versionOffset;
 };
 
+// This specialization is required for successful initialization of database
 template <>
 jrd_rel* CachedResource<jrd_rel, RelationPermanent>::operator()(thread_db* tdbb) const;
 
