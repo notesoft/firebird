@@ -2,6 +2,9 @@
 
 ## New features
 
+* [#8957](https://github.com/FirebirdSQL/firebird/pull/8957): Add new setting `AllowUpdateOverwrite` that defines how `UPDATE` operation should handle the case when a record was updated by trigger  
+  Contributor(s): Vlad Khorsun
+
 * [#8761](https://github.com/FirebirdSQL/firebird/issues/8761): Add API method `Util::convert`  
   Contributor(s): Adriano dos Santos Fernandes
 
@@ -35,6 +38,9 @@
   Contributor(s): Ilya Eremin
 
 ## Bugfixes
+
+* [#8988](https://github.com/FirebirdSQL/firebird/issues/8988): Parallel restore could use less active workers then it can  
+  Contributor(s): Vlad Khorsun
 
 * [#8965](https://github.com/FirebirdSQL/firebird/issues/8965): Wrong `PERCENT_RANK` computation  
   Contributor(s): Denis Simonov
@@ -170,6 +176,9 @@
 
 * [#7916](https://github.com/FirebirdSQL/firebird/issues/7916): Query issue conversion error from string  
   Contributor(s): Dmitry Yemanov
+
+* [GHSA-7pxc-h3rv-r257](https://github.com/FirebirdSQL/firebird/security/advisories/GHSA-7pxc-h3rv-r257): Path traversal when declaring external routine (CVE-2026-40342)  
+  Contributor(s): VladimirEliTokarev, Alexander Peshkov
 
 * [GHSA-g99w-prq5-29c6](https://github.com/FirebirdSQL/firebird/security/advisories/GHSA-g99w-prq5-29c6): DoS via malicious slice descriptor in the slice packet (CVE-2026-35215)  
   Contributor(s): Artyom Ivanov, Alexander Peshkov
