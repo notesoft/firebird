@@ -283,7 +283,7 @@ if (WIN32)
         set(CMAKE_RC_COMPILE_OBJECT "<CMAKE_RC_COMPILER> <DEFINES> -fo <OBJECT> <SOURCE>")
 
         if (CPU_IS_X86)
-           add_compile_options("-mcrc32")
+           add_compile_options("-mcrc32 -Winvalid-specialization")
         endif()
 
         link_libraries("Bcrypt") 
