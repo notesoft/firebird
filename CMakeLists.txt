@@ -286,7 +286,7 @@ if (WIN32)
            add_compile_options("-mcrc32")
         endif()
 
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-invalid-specialization")
+        # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-invalid-specialization")
         link_libraries("Bcrypt") 
     endif()
 
