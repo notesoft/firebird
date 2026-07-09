@@ -1083,8 +1083,8 @@ void DdlNode::executeDdlTrigger(thread_db* tdbb, jrd_tra* transaction, DdlTrigge
 {
 	Attachment* const attachment = transaction->tra_attachment;
 
- 	// do nothing if user doesn't want database triggers
-	if (attachment->att_flags & ATT_no_db_triggers)
+	// do nothing if user doesn't want database triggers or DROP SCHEMA CASCADE is running
+	if (attachment->att_flags & (ATT_no_db_triggers | ATT_schema_cascade_dropping))
 		return;
 
 	fb_assert(action > 0);	// first element is NULL
@@ -1531,7 +1531,7 @@ DdlNode* CommentOnNode::dsqlPass(DsqlCompilerScratch* dsqlScratch)
 			QualifiedName constantName(subName, name.schema, name.object); // name is a package
 			dsqlScratch->qualifyExistingName(constantName, obj_package_constant); // Search for a schema
 
-			if (!PackageReferenceNode::constantExists(tdbb, transaction, constantName))
+			if (!PackageReferenceNode::constantExists(tdbb, constantName))
 			{
 				status_exception::raise(Arg::Gds(isc_bad_constant_name) << constantName.toQuotedString());
 			}
@@ -9986,52 +9986,55 @@ void CreateRelationNode::defineQueryColumns(thread_db* tdbb, DsqlCompilerScratch
 	{
 		MetaName fieldName;
 
+		// Unwrap aliases/derived fields/union maps/package references to reach the underlying
+		// node. This is used to find the field name (when no explicit column list is given) and,
+		// in all cases, to detect a direct reference to a source table column so its exact
+		// datatype (and, for named domains, the domain itself) can be copied.
+		const ValueExprNode* nameNode = item;
+		const char* aliasName = nullptr;
+
+		while (nodeIs<DsqlAliasNode>(nameNode) || nodeIs<DerivedFieldNode>(nameNode) ||
+			nodeIs<DsqlMapNode>(nameNode) || nodeAs<PackageReferenceNode>(nameNode))
+		{
+			if (const auto aliasNode = nodeAs<DsqlAliasNode>(nameNode))
+			{
+				if (!aliasName)
+					aliasName = aliasNode->name.c_str();
+
+				nameNode = aliasNode->value;
+			}
+			else if (const auto mapNode = nodeAs<DsqlMapNode>(nameNode))
+				nameNode = mapNode->map->map_node;
+			else if (const auto derivedField = nodeAs<DerivedFieldNode>(nameNode))
+			{
+				if (!aliasName)
+					aliasName = derivedField->name.c_str();
+
+				nameNode = derivedField->value;
+			}
+			else if (const auto referenceNode = nodeAs<PackageReferenceNode>(nameNode))
+			{
+				if (!aliasName)
+					aliasName = referenceNode->getName();
+
+				nameNode = nullptr;
+			}
+		}
+
+		const auto sourceFieldNode = nodeAs<FieldNode>(nameNode);
+
 		if (queryColumns)
 			fieldName = nodeAs<FieldNode>(queryColumns->items[position])->dsqlName;
+		else if (aliasName)
+			fieldName = aliasName;
+		else if (sourceFieldNode)
+			fieldName = sourceFieldNode->dsqlField->fld_name;
 		else
 		{
-			const ValueExprNode* nameNode = item;
-			const char* aliasName = nullptr;
-
-			while (nodeIs<DsqlAliasNode>(nameNode) || nodeIs<DerivedFieldNode>(nameNode) ||
-				nodeIs<DsqlMapNode>(nameNode) || nodeAs<PackageReferenceNode>(nameNode))
-			{
-				if (const auto aliasNode = nodeAs<DsqlAliasNode>(nameNode))
-				{
-					if (!aliasName)
-						aliasName = aliasNode->name.c_str();
-
-					nameNode = aliasNode->value;
-				}
-				else if (const auto mapNode = nodeAs<DsqlMapNode>(nameNode))
-					nameNode = mapNode->map->map_node;
-				else if (const auto derivedField = nodeAs<DerivedFieldNode>(nameNode))
-				{
-					if (!aliasName)
-						aliasName = derivedField->name.c_str();
-
-					nameNode = derivedField->value;
-				}
-				else if (const auto referenceNode = nodeAs<PackageReferenceNode>(nameNode))
-				{
-					if (!aliasName)
-						aliasName = referenceNode->getName();
-
-					nameNode = nullptr;
-				}
-			}
-
-			if (aliasName)
-				fieldName = aliasName;
-			else if (const auto fieldNode = nodeAs<FieldNode>(nameNode))
-				fieldName = fieldNode->dsqlField->fld_name;
-			else
-			{
-				status_exception::raise(
-					Arg::Gds(isc_sqlerr) << Arg::Num(-607) <<
-					Arg::Gds(isc_dsql_command_err) <<
-					Arg::Gds(isc_specify_field_err));
-			}
+			status_exception::raise(
+				Arg::Gds(isc_sqlerr) << Arg::Num(-607) <<
+				Arg::Gds(isc_dsql_command_err) <<
+				Arg::Gds(isc_specify_field_err));
 		}
 
 		for (const auto& name : names)
@@ -10063,30 +10066,76 @@ void CreateRelationNode::defineQueryColumns(thread_db* tdbb, DsqlCompilerScratch
 
 		auto field = clause->field;
 		field->fld_name = fieldName;
-		field->dtype = desc.dsc_dtype;
-		field->length = desc.dsc_length;
-		field->scale = desc.dsc_scale;
-		field->subType = desc.dsc_sub_type;
 
-		if (desc.dsc_flags & DSC_nullable)
-			field->flags |= FLD_nullable;
+		// If the select item is a direct reference to a source table/view column, copy its
+		// exact datatype rather than relying only on the runtime descriptor. A column based on
+		// a named domain is copied as a full domain reference (inheriting its NOT NULL/DEFAULT/
+		// CHECK, like a hand-written column of that domain). A column based on an implicit
+		// (auto-generated) domain has its exact primitive type copied instead, since implicit
+		// domains must not be shared between tables (they are erased, unconditionally, when
+		// their owning column is dropped).
+		dsql_fld* sourceField = nullptr;
 
-		if (desc.isText() || (desc.isBlob() && desc.getBlobSubType() == isc_blob_text))
+		if (sourceFieldNode && sourceFieldNode->dsqlField &&
+			sourceFieldNode->dsqlField->fld_relation &&
+			!(sourceFieldNode->dsqlField->flags & FLD_computed) &&
+			sourceFieldNode->dsqlField->fieldSource.object.hasData())
 		{
-			field->charSetId = desc.getCharSet();
-			field->collationId = desc.getCollation();
+			sourceField = sourceFieldNode->dsqlField;
 		}
 
-		if (desc.isText())
+		if (sourceField && !fb_utils::implicit_domain(sourceField->fieldSource.object.c_str()))
 		{
-			const USHORT adjust = (desc.dsc_dtype == dtype_varying) ? sizeof(USHORT) : 0;
-			const USHORT bpc = METD_get_charset_bpc(dsqlScratch->getTransaction(), field->charSetId.value_or(CS_NONE));
-			field->charLength = (field->length - adjust) / bpc;
+			// Named domain: reference it directly, like "<field name> <domain name>".
+			field->typeOfName = sourceField->fieldSource;
+			field->fullDomain = true;
 		}
-		else if (desc.isBlob())
-			field->segLength = 80;
+		else
+		{
+			if (sourceField)
+			{
+				// Implicit domain: copy its exact stored type (precision, charset, collation,
+				// dimensions, etc.) instead of sharing the domain object itself.
+				METD_get_domain(dsqlScratch->getTransaction(), field, sourceField->fieldSource);
+				field->flags &= ~(FLD_computed | FLD_system);
+			}
+			else
+			{
+				field->dtype = desc.dsc_dtype;
+				field->length = desc.dsc_length;
+				field->scale = desc.dsc_scale;
+				field->subType = desc.dsc_sub_type;
 
-		field->setExactPrecision();
+				if (desc.isText() || (desc.isBlob() && desc.getBlobSubType() == isc_blob_text))
+				{
+					field->charSetId = desc.getCharSet();
+					field->collationId = desc.getCollation();
+				}
+
+				if (desc.isText())
+				{
+					const USHORT adjust = (desc.dsc_dtype == dtype_varying) ? sizeof(USHORT) : 0;
+					const USHORT bpc = METD_get_charset_bpc(dsqlScratch->getTransaction(), field->charSetId.value_or(CS_NONE));
+					field->charLength = (field->length - adjust) / bpc;
+				}
+				else if (desc.isBlob())
+					field->segLength = 80;
+
+				field->setExactPrecision();
+			}
+
+			field->flags &= ~FLD_nullable;
+			if (desc.dsc_flags & DSC_nullable)
+				field->flags |= FLD_nullable;
+			else
+			{
+				// A newly created (non-domain) column is nullable unless a NOT NULL constraint
+				// is explicitly added - field->flags alone does not drive this, see defineField().
+				auto& notNullConstraint = clause->constraints.add();
+				notNullConstraint.constraintType = AddConstraintClause::CTYPE_NOT_NULL;
+			}
+		}
+
 		clauses.add(clause);
 
 		++position;
@@ -14736,7 +14785,10 @@ void DropIndexNode::step2(thread_db* tdbb, jrd_tra* transaction)
 	fb_assert(idxId >= 0 && idxId < dbb->dbb_max_idx);
 
 	if (IDX_mark_index(tdbb, indexRelation, idxId))
-		indexRelation->eraseIndex(tdbb, idxId);
+	{
+		if (tdbb->tdbb_flags & TDBB_use_db_page_space)
+			indexRelation->eraseIndex(tdbb, idxId);
+	}
 }
 
 
@@ -18166,6 +18218,7 @@ string DropSchemaNode::internalPrint(NodePrinter& printer) const
 
 	NODE_PRINT(printer, name);
 	NODE_PRINT(printer, silent);
+	NODE_PRINT(printer, cascade);
 
 	return "DropSchemaNode";
 }
@@ -18199,7 +18252,11 @@ void DropSchemaNode::execute(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, 
 
 		executeDdlTrigger(tdbb, dsqlScratch, transaction, DTW_BEFORE, DDL_TRIGGER_DROP_SCHEMA, qualifiedName, {});
 
-		if (collectObjects(tdbb))
+		checkDependencies(tdbb);
+
+		if (cascade)
+			dropObjects(tdbb, dsqlScratch, transaction);
+		else if (collectObjects(tdbb))
 			status_exception::raise(Arg::Gds(isc_dyn_cannot_drop_non_emptyschema) << name.toQuotedString());
 
 		ERASE SCH;
@@ -18256,11 +18313,37 @@ void DropSchemaNode::execute(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, 
 	savePoint.release();	// everything is ok
 }
 
-bool DropSchemaNode::collectObjects(thread_db* tdbb,
-	Array<NonPooledPair<ObjectType, MetaName>>* objects)
+// Check if others schemas depends on our schema.
+void DropSchemaNode::checkDependencies(thread_db* tdbb)
+{
+	auto* metaTransaction = tdbb->getAttachment()->getMetaTransaction(tdbb);
+
+	static const CachedRequestId requestHandleId;
+	AutoCacheRequest requestHandle(tdbb, requestHandleId);
+
+	FOR (REQUEST_HANDLE requestHandle TRANSACTION_HANDLE metaTransaction)
+		FIRST 1
+		DEP IN RDB$DEPENDENCIES
+		WITH DEP.RDB$DEPENDED_ON_SCHEMA_NAME EQ name.c_str() AND
+			 DEP.RDB$DEPENDENT_SCHEMA_NAME NE name.c_str()
+	{
+		status_exception::raise(
+			Arg::Gds(isc_no_meta_update) <<
+			Arg::Gds(isc_no_delete) <<
+			Arg::Gds(isc_dependency) << Arg::Num(1));
+	}
+	END_FOR
+}
+
+bool DropSchemaNode::collectObjects(thread_db* tdbb, Array<CollectedObject>* objects)
 {
 	if (objects)
 		objects->clear();
+
+	const auto addObject = [&](ObjectType type, const MetaName& objName, bool isLTT = false)
+	{
+		objects->add({type, objName, isLTT});
+	};
 
 	const auto attachment = tdbb->getAttachment();
 	auto* metaTransaction = attachment->getMetaTransaction(tdbb);
@@ -18272,7 +18355,7 @@ bool DropSchemaNode::collectObjects(thread_db* tdbb,
 		if (lttName.schema == name)
 		{
 			if (objects)
-				objects->add({obj_relation, lttName.object});
+				addObject(obj_relation, lttName.object, true);
 			else
 				return true;
 		}
@@ -18287,10 +18370,13 @@ bool DropSchemaNode::collectObjects(thread_db* tdbb,
 			WITH FLD.RDB$SCHEMA_NAME EQ name.c_str()
 			SORTED BY FLD.RDB$FIELD_NAME
 		{
-			if (objects)
-				objects->add({obj_field, FLD.RDB$FIELD_NAME});
-			else
-				return true;
+			if (!fb_utils::implicit_domain(FLD.RDB$FIELD_NAME))
+			{
+				if (objects)
+					addObject(obj_field, FLD.RDB$FIELD_NAME);
+				else
+					return true;
+			}
 		}
 		END_FOR
 	}
@@ -18305,7 +18391,7 @@ bool DropSchemaNode::collectObjects(thread_db* tdbb,
 			SORTED BY REL.RDB$RELATION_NAME
 		{
 			if (objects)
-				objects->add({obj_relation, REL.RDB$RELATION_NAME});
+				addObject((REL.RDB$VIEW_BLR.NULL ? obj_relation : obj_view), REL.RDB$RELATION_NAME);
 			else
 				return true;
 		}
@@ -18323,7 +18409,7 @@ bool DropSchemaNode::collectObjects(thread_db* tdbb,
 			SORTED BY TRG.RDB$TRIGGER_NAME
 		{
 			if (objects)
-				objects->add({obj_trigger, TRG.RDB$TRIGGER_NAME});
+				addObject(obj_trigger, TRG.RDB$TRIGGER_NAME);
 			else
 				return true;
 		}
@@ -18341,7 +18427,7 @@ bool DropSchemaNode::collectObjects(thread_db* tdbb,
 			SORTED BY FUN.RDB$FUNCTION_NAME
 		{
 			if (objects)
-				objects->add({obj_udf, FUN.RDB$FUNCTION_NAME});
+				addObject(obj_udf, FUN.RDB$FUNCTION_NAME);
 			else
 				return true;
 		}
@@ -18358,7 +18444,7 @@ bool DropSchemaNode::collectObjects(thread_db* tdbb,
 			SORTED BY GEN.RDB$GENERATOR_NAME
 		{
 			if (objects)
-				objects->add({obj_generator, GEN.RDB$GENERATOR_NAME});
+				addObject(obj_generator, GEN.RDB$GENERATOR_NAME);
 			else
 				return true;
 		}
@@ -18376,7 +18462,7 @@ bool DropSchemaNode::collectObjects(thread_db* tdbb,
 			SORTED BY PRC.RDB$PROCEDURE_NAME
 		{
 			if (objects)
-				objects->add({obj_procedure, PRC.RDB$PROCEDURE_NAME});
+				addObject(obj_procedure, PRC.RDB$PROCEDURE_NAME);
 			else
 				return true;
 		}
@@ -18393,7 +18479,7 @@ bool DropSchemaNode::collectObjects(thread_db* tdbb,
 			SORTED BY CSC.RDB$CHARACTER_SET_NAME
 		{
 			if (objects)
-				objects->add({obj_charset, CSC.RDB$CHARACTER_SET_NAME});
+				addObject(obj_charset, CSC.RDB$CHARACTER_SET_NAME);
 			else
 				return true;
 		}
@@ -18410,7 +18496,7 @@ bool DropSchemaNode::collectObjects(thread_db* tdbb,
 			SORTED BY COL.RDB$COLLATION_NAME
 		{
 			if (objects)
-				objects->add({obj_collation, COL.RDB$COLLATION_NAME});
+				addObject(obj_collation, COL.RDB$COLLATION_NAME);
 			else
 				return true;
 		}
@@ -18427,7 +18513,7 @@ bool DropSchemaNode::collectObjects(thread_db* tdbb,
 			SORTED BY XCP.RDB$EXCEPTION_NAME
 		{
 			if (objects)
-				objects->add({obj_exception, XCP.RDB$EXCEPTION_NAME});
+				addObject(obj_exception, XCP.RDB$EXCEPTION_NAME);
 			else
 				return true;
 		}
@@ -18444,7 +18530,7 @@ bool DropSchemaNode::collectObjects(thread_db* tdbb,
 			SORTED BY PKG.RDB$PACKAGE_NAME
 		{
 			if (objects)
-				objects->add({obj_package_header, PKG.RDB$PACKAGE_NAME});
+				addObject(obj_package_header, PKG.RDB$PACKAGE_NAME);
 			else
 				return true;
 		}
@@ -18452,6 +18538,216 @@ bool DropSchemaNode::collectObjects(thread_db* tdbb,
 	}
 
 	return objects && objects->hasData();
+}
+
+// Drop every object contained in the schema (DROP SCHEMA ... CASCADE).
+// Cross-schema dependencies are rejected before this routine runs.
+void DropSchemaNode::dropObjects(thread_db* tdbb, DsqlCompilerScratch* dsqlScratch, jrd_tra* transaction)
+{
+	const auto attachment = tdbb->getAttachment();
+	const auto metaTransaction = attachment->getMetaTransaction(tdbb);
+
+	Array<CollectedObject> items;
+	collectObjects(tdbb, &items);
+
+	if (!items.hasData())
+		return;
+
+	AutoSetRestoreFlag<ULONG> autoSchemaCascadeDropping(&attachment->att_flags, ATT_schema_cascade_dropping, true);
+
+	MemoryPool& pool = *tdbb->getDefaultPool();
+
+	// Drop FK constraints first.
+	// This is important when there are cyclic FK dependencies between tables in the schema.
+	// Dropping the constraints first allows us to drop the tables in any order,
+	// without worrying about FK dependencies.
+
+	{	// scope
+		struct ForeignKey
+		{
+			QualifiedName relationName;
+			MetaName constraintName;
+		};
+
+		Array<ForeignKey> foreignKeys;
+
+		static const CachedRequestId requestHandleId;
+		AutoCacheRequest requestHandle(tdbb, requestHandleId);
+
+		FOR (REQUEST_HANDLE requestHandle TRANSACTION_HANDLE metaTransaction)
+			RCC IN RDB$RELATION_CONSTRAINTS
+			WITH RCC.RDB$SCHEMA_NAME EQ name.c_str() AND
+				 RCC.RDB$CONSTRAINT_TYPE EQ FOREIGN_KEY
+		{
+			foreignKeys.add({
+				QualifiedName(RCC.RDB$RELATION_NAME, RCC.RDB$SCHEMA_NAME),
+				MetaName(RCC.RDB$CONSTRAINT_NAME)
+			});
+		}
+		END_FOR
+
+		for (const auto& foreignKey : foreignKeys)
+		{
+			AutoSetRestoreFlag autoNoMetadataSaved(&dsqlScratch->flags,
+				DsqlCompilerScratch::FLAG_METADATA_SAVED, false);
+			AutoSetRestore<dsql_rel*> autoNullRelation(&dsqlScratch->relation, nullptr);
+
+			const auto sourceNode = FB_NEW_POOL(pool) RelationSourceNode(pool, foreignKey.relationName);
+			const auto alterNode = FB_NEW_POOL(pool) AlterRelationNode(pool, sourceNode);
+			auto clause = FB_NEW_POOL(pool) RelationNode::DropConstraintClause(pool);
+
+			clause->name = foreignKey.constraintName;
+			clause->silent = true;
+			alterNode->clauses.add(clause);
+			alterNode->execute(tdbb, dsqlScratch, transaction);
+		}
+	}
+
+	// Helper to create and execute the appropriate silent drop node for an object.
+	const auto dropObject = [&](const CollectedObject& item)
+	{
+		const QualifiedName qualifiedName(item.objName, name);
+		DdlNode* node = nullptr;
+
+		switch (item.type)
+		{
+			case obj_relation:
+			case obj_view:
+			{
+				const auto dropNode = FB_NEW_POOL(pool) DropRelationNode(pool, qualifiedName,
+					(item.type == obj_view));
+				dropNode->silent = true;
+				node = dropNode;
+				break;
+			}
+
+			case obj_trigger:
+			{
+				const auto dropNode = FB_NEW_POOL(pool) DropTriggerNode(pool, qualifiedName);
+				dropNode->silent = true;
+				node = dropNode;
+				break;
+			}
+
+			case obj_udf:
+			{
+				const auto dropNode = FB_NEW_POOL(pool) DropFunctionNode(pool, qualifiedName);
+				dropNode->silent = true;
+				node = dropNode;
+				break;
+			}
+
+			case obj_procedure:
+			{
+				const auto dropNode = FB_NEW_POOL(pool) DropProcedureNode(pool, qualifiedName);
+				dropNode->silent = true;
+				node = dropNode;
+				break;
+			}
+
+			case obj_generator:
+			{
+				const auto dropNode = FB_NEW_POOL(pool) DropSequenceNode(pool, qualifiedName);
+				dropNode->silent = true;
+				node = dropNode;
+				break;
+			}
+
+			case obj_exception:
+			{
+				const auto dropNode = FB_NEW_POOL(pool) DropExceptionNode(pool, qualifiedName);
+				dropNode->silent = true;
+				node = dropNode;
+				break;
+			}
+
+			case obj_collation:
+			{
+				const auto dropNode = FB_NEW_POOL(pool) DropCollationNode(pool, qualifiedName);
+				dropNode->silent = true;
+				node = dropNode;
+				break;
+			}
+
+			case obj_field:
+			{
+				const auto dropNode = FB_NEW_POOL(pool) DropDomainNode(pool, qualifiedName);
+				dropNode->silent = true;
+				node = dropNode;
+				break;
+			}
+
+			case obj_package_header:
+			{
+				const auto dropNode = FB_NEW_POOL(pool) DropPackageNode(pool, qualifiedName);
+				dropNode->silent = true;
+				node = dropNode;
+				break;
+			}
+
+			case obj_package_body:
+			{
+				const auto dropNode = FB_NEW_POOL(pool) DropPackageBodyNode(pool, qualifiedName);
+				dropNode->silent = true;
+				node = dropNode;
+				break;
+			}
+
+			default:
+				// No DDL drop node (e.g. character sets, which cannot exist in a user schema); nothing to do.
+				fb_assert(false);
+				break;
+		}
+
+		if (node)
+			node->execute(tdbb, dsqlScratch, transaction);
+	};
+
+	// Drop Created LTTs, triggers and package bodies.
+	// Stored objects cannot reference them.
+	for (const auto& item : items)
+	{
+		if (item.isLTT || item.type == obj_trigger)
+			dropObject(item);
+		else if (item.type == obj_package_header)
+		{
+			auto bodyItem = item;
+			bodyItem.type = obj_package_body;
+			dropObject(bodyItem);
+		}
+	}
+
+	// Drop functions, procedures, package headers, views and tables.
+	for (const auto& item : items)
+	{
+		if (!item.isLTT &&
+			(item.type == obj_udf ||
+			 item.type == obj_procedure ||
+			 item.type == obj_package_header ||
+			 item.type == obj_view ||
+			 item.type == obj_relation))
+		{
+			dropObject(item);
+		}
+	}
+
+	// Drop domains.
+	// This must be after tables, views, procedures, and functions, because drop domain check for
+	// dependencies in its execution (before DFW).
+	for (const auto& item : items)
+	{
+		if (item.type == obj_field)
+			dropObject(item);
+	}
+
+	// Drop generators, exceptions, collations.
+	// These are the last objects to be dropped, because they never have dependencies on other objects,
+	// and other objects can depend on them.
+	for (const auto& item : items)
+	{
+		if (item.type == obj_generator || item.type == obj_exception || item.type == obj_collation)
+			dropObject(item);
+	}
 }
 
 }	// namespace Jrd
