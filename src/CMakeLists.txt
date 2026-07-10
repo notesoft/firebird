@@ -181,6 +181,21 @@ add_custom_target(messages ALL DEPENDS firebird.msg)
 project_group(messages "Boot/Custom build steps")
 
 
+###############################################################################
+# BUILD STEP  boot_output_dir copy .conf files to boot dir
+###############################################################################
+
+set(boot_output_dir ${CMAKE_CURRENT_BINARY_DIR})
+
+add_custom_target(copy_boot_confs
+    # need for generate msg.fdb
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/builds/install/misc/fbintl.conf  ${boot_output_dir}/intl/fbintl.conf
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:intl>                                                        ${boot_output_dir}/intl/    
+    # need for generate employe2.fdb
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/builds/install/misc/fbintl.conf  ${output_dir}/intl/fbintl.conf
+)
+project_group(copy_boot_confs "Boot/Custom build steps")
+
 ########################################
 # BUILD STEP msg_fd
 ########################################
@@ -225,6 +240,7 @@ add_custom_command(
 )
 add_custom_target(msg_fdb
     DEPENDS
+        copy_boot_confs
         boot_engine
         msg.fdb
 )
