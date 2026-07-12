@@ -57,7 +57,7 @@ void	BTR_mark_index_for_delete(Jrd::thread_db*, Jrd::RelationPermanent*, MetaId,
 bool	BTR_next_index(Jrd::thread_db*, Jrd::Cached::Relation*, Jrd::jrd_tra*, Jrd::index_desc*, Jrd::win*,
 					   Jrd::RelationPages* = nullptr);
 void	BTR_remove(Jrd::thread_db*, Jrd::win*, Jrd::index_insertion*);
-void	BTR_reserve_slot(Jrd::thread_db*, Jrd::IndexCreation&, Jrd::IndexCreateLock&);
+void	BTR_reserve_slot(Jrd::thread_db*, Jrd::IndexCreation&);
 void	BTR_selectivity(Jrd::thread_db*, Jrd::Cached::Relation*, MetaId, Jrd::SelectivityList&);
 bool	BTR_types_comparable(const dsc& target, const dsc& source);
 Ods::index_root_page* BTR_fetch_root_for_update(const char* from, Jrd::thread_db* tdbb, Jrd::win* window);

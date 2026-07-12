@@ -904,9 +904,7 @@ void IDX_create_index(thread_db* tdbb,
 	creation.duplicates.setValue(0);
 	creation.forRollback = createMethod;
 
-	IndexCreateLock crtLock(tdbb, relation->getId());
-
-	BTR_reserve_slot(tdbb, creation, crtLock);
+	BTR_reserve_slot(tdbb, creation);
 
 	if (index_id)
 		*index_id = idx->idx_id;

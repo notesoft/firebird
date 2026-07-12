@@ -264,7 +264,14 @@ static void checkForLowerKeySkip(bool&, const bool, const IndexNode&, const temp
 								 const index_desc&, const IndexRetrieval*);
 
 namespace {
-enum class ModifyIrtRepeatValue { Skip, Modified, Relock, Deleted };
+
+enum class ModifyIrtRepeatValue
+{
+	Skip,		// index descriptor was not modified, page buffer remains locked, maybe it was refetched
+	Modified,	// index descriptor was modified, page buffer remains locked
+	Relock,		// index descriptor was modified, page lock was released
+	Deleted		// index was deleted, descriptor was modified, page lock was released
+};
 
 class Flags
 {
@@ -1211,6 +1218,9 @@ void BTR_mark_index_for_delete(thread_db* tdbb, RelationPermanent* rel, MetaId i
 			switch(modifyIrtRepeat(tdbb, irt_desc, rel, window, id))
 			{
 			case ModifyIrtRepeatValue::Skip:
+				// buffer could be released and refetched by modifyIrtRepeat
+				root = (index_root_page*) window->win_buffer;
+				irt_desc = root->irt_rpt + id;
 				break;
 
 			case ModifyIrtRepeatValue::Modified:
@@ -1288,8 +1298,6 @@ bool BTR_activate_index(thread_db* tdbb, Cached::Relation* relation, MetaId id)
 	{
 		auto* irt_desc = root->irt_rpt + id;
 
-		CCH_MARK(tdbb, &window);
-
 		jrd_tra* tra = tdbb->getTransaction();
 		fb_assert(tra);
 
@@ -1300,6 +1308,9 @@ bool BTR_activate_index(thread_db* tdbb, Cached::Relation* relation, MetaId id)
 			switch(modifyIrtRepeat(tdbb, irt_desc, relation, &window, id, true))
 			{
 			case ModifyIrtRepeatValue::Skip:
+				// buffer could be released and refetched by modifyIrtRepeat
+				root = (index_root_page*) window.win_buffer;
+				irt_desc = root->irt_rpt + id;
 				break;
 
 			case ModifyIrtRepeatValue::Modified:
@@ -2539,15 +2550,15 @@ static bool checkIrtRepeat(thread_db* tdbb, const index_root_page::irt_repeat* i
 		if (indexId == SKIP_IN_PROGRESS)
 			return false;
 
-		// index creation - should wait to know what to do
-		CCH_RELEASE(tdbb, window);
-
-		// Wait for completion
+		// index creation - check transaction state to know what to do
 		{
-			IndexCreateLock crtLock(tdbb, relation->getId());
-			crtLock.shared(indexId);
+			const auto state = TPC_cache_state(tdbb, irtTrans);
+			if (state == tra_active)
+				return false;
 		}
-		break;
+
+		CCH_RELEASE(tdbb, window);
+		return true;
 
 	case irt_rollback:
 	case irt_commit:
@@ -2600,16 +2611,28 @@ static ModifyIrtRepeatValue modifyIrtRepeat(thread_db* tdbb, index_root_page::ir
 		return ModifyIrtRepeatValue::Skip;
 
 	case irt_in_progress:
-		// index creation - should wait to know what to do
+		// index creation - check transaction state to know what to do
 		CCH_RELEASE(tdbb, window);
-
-		// Wait for completion
 		{
-			IndexCreateLock crtLock(tdbb, relation->getId());
-			crtLock.shared(indexId);
-		}
+			auto transaction = tdbb->getTransaction();
+			const auto state = transaction && (transaction->tra_number == irtTrans) ? tra_active :
+				TRA_wait(tdbb, transaction, irtTrans, tra_probe);
 
-		return ModifyIrtRepeatValue::Relock;
+			auto root = (index_root_page*) CCH_FETCH(tdbb, window, LCK_write, pag_root);
+
+			if (state == tra_active)
+				return ModifyIrtRepeatValue::Skip;
+
+			if (root->irt_rpt[indexId].getState() != irt_in_progress)
+			{
+				CCH_RELEASE(tdbb, window);
+				return ModifyIrtRepeatValue::Relock;
+			}
+
+			// drop index
+			BTR_delete_index(tdbb, window, indexId, false);
+			return ModifyIrtRepeatValue::Deleted;
+		}
 
 	case irt_rollback:
 		switch (transactionState(tdbb, irtTrans, relation, indexId, true))
@@ -2794,6 +2817,10 @@ bool BTR_cleanup_index(thread_db* tdbb, const QualifiedName& relName, jrd_tra* t
 		{
 		case ModifyIrtRepeatValue::Skip:
 		case ModifyIrtRepeatValue::Modified:
+			// buffer could be released and refetched by modifyIrtRepeat
+			root_write = (index_root_page*) window.win_buffer;
+			irt_write = root_write->irt_rpt + id;
+
 			if (irt_write->getState() == irt_drop)
 				rc = true;
 			CCH_RELEASE(tdbb, &window);
@@ -2899,7 +2926,7 @@ void BTR_remove(thread_db* tdbb, WIN* root_window, index_insertion* insertion)
 }
 
 
-void BTR_reserve_slot(thread_db* tdbb, IndexCreation& creation, IndexCreateLock& createLock)
+void BTR_reserve_slot(thread_db* tdbb, IndexCreation& creation)
 {
 /**************************************
  *
@@ -2985,6 +3012,9 @@ void BTR_reserve_slot(thread_db* tdbb, IndexCreation& creation, IndexCreateLock&
 					case ModifyIrtRepeatValue::Skip:
 					case ModifyIrtRepeatValue::Modified:
 						fb_assert(window.win_bdb);
+						// buffer could be released and refetched by modifyIrtRepeat
+						root = (index_root_page*) window.win_buffer;
+						root_idx = root->irt_rpt + id;
 						break;
 
 					case ModifyIrtRepeatValue::Relock:
@@ -3047,10 +3077,6 @@ void BTR_reserve_slot(thread_db* tdbb, IndexCreation& creation, IndexCreateLock&
 
 	// Exploit the fact idx_repeat structure matches ODS IRTD one
 	memcpy(desc, idx->idx_rpt, len);
-
-	// Take creation lock on new index before releasing a window
-	// Will be always taken cause nobody except us knows about this index ID
-	createLock.exclusive(idx->idx_id);
 	CCH_RELEASE(tdbb, &window);
 }
 
@@ -7640,41 +7666,3 @@ void update_selectivity(index_root_page* root, MetaId id, const SelectivityList&
 	for (int i = 0; i < idx_count; i++, key_descriptor++)
 		key_descriptor->irtd_selectivity = selectivity[i];
 }
-
-
-IndexCreateLock::IndexCreateLock(thread_db* tdbb, MetaId relId)
-	: tdbb(tdbb), relId(relId)
-{ }
-
-IndexCreateLock::~IndexCreateLock()
-{
-	if (lck)
-	{
-		LCK_release(tdbb, lck);
-		delete lck;
-	}
-}
-
-void IndexCreateLock::exclusive(MetaId indexId)
-{
-	makeLock(indexId);
-	bool rc = LCK_lock(tdbb, lck, LCK_EX, LCK_NO_WAIT);
-	fb_assert(rc);
-}
-
-void IndexCreateLock::shared(MetaId indexId)
-{
-	makeLock(indexId);
-	auto* tra = tdbb->getTransaction();
-	auto wait = tra ? tra->getLockWait() : LCK_WAIT;
-	if (!LCK_lock(tdbb, lck, LCK_SR, wait))
-		fatal_exception::raise("Timeout waiting for index to be created");
-}
-
-void IndexCreateLock::makeLock(MetaId indexId)
-{
-	fb_assert(!lck);
-	lck = FB_NEW_RPT(getPool(), 0) Lock(tdbb, 0, LCK_idx_create);
-	lck->setKey(IndexPermanent::makeLockId(relId, indexId));
-}
-

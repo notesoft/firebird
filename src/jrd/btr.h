@@ -380,26 +380,6 @@ private:
 };
 
 
-// Index construction lock holder
-
-class IndexCreateLock : public Firebird::AutoStorage
-{
-public:
-	IndexCreateLock(thread_db* tdbb, MetaId relId);
-	~IndexCreateLock();
-
-	void exclusive(MetaId indexId);
-	void shared(MetaId indexId);
-
-private:
-	thread_db* tdbb;	// may be stored here cause IndexCreateLock is always on stack
-	MetaId relId;
-	Lock* lck = nullptr;
-
-	void makeLock(MetaId indexId);
-};
-
-
 // Helper classes to allow efficient evaluation of index conditions/expressions
 
 class IndexCondition
