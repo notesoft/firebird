@@ -7560,7 +7560,7 @@ StmtNode* MergeNode::dsqlPass(DsqlCompilerScratch* dsqlScratch)
 	auto& pool = dsqlScratch->getPool();
 
 	RecordSourceNode* source = usingClause;		// USING
-	RelationSourceNode* target = relation;		// INTO
+	RecordSourceNode* target = relation;		// INTO
 
 	// Build a join between USING and INTO tables.
 	const auto join = FB_NEW_POOL(pool) RseNode(pool);
@@ -7599,7 +7599,7 @@ StmtNode* MergeNode::dsqlPass(DsqlCompilerScratch* dsqlScratch)
 	// Get the already processed relations.
 	const auto processedRse = nodeAs<RseNode>(mergeNode->rse->dsqlStreams->items[0]);
 	source = processedRse->dsqlStreams->items[0];
-	target = nodeAs<RelationSourceNode>(processedRse->dsqlStreams->items[1]);
+	target = processedRse->dsqlStreams->items[1];
 
 	mergeNode->oldContext = dsqlGetContext(target);
 
