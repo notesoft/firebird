@@ -3009,7 +3009,6 @@ StmtNode* EraseNode::dsqlPass(DsqlCompilerScratch* dsqlScratch)
 
 	if (relation->dsqlName.schema.hasData() ||
 		relation->dsqlName.package.hasData() ||
-		!dsqlScratch->getLocalTable(relation->dsqlName.object) ||
 		dsqlCursorName.hasData())
 	{
 		dsqlScratch->qualifyExistingName(relation->dsqlName, obj_relation);
@@ -8575,7 +8574,6 @@ StmtNode* ModifyNode::internalDsqlPass(DsqlCompilerScratch* dsqlScratch, bool up
 
 	if (relation->dsqlName.schema.hasData() ||
 		relation->dsqlName.package.hasData() ||
-		!dsqlScratch->getLocalTable(relation->dsqlName.object) ||
 		dsqlCursorName.hasData())
 	{
 		dsqlScratch->qualifyExistingName(relation->dsqlName, obj_relation);
