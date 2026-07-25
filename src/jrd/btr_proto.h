@@ -36,6 +36,7 @@ bool	BTR_cleanup_index(Jrd::thread_db*, const Jrd::QualifiedName&, Jrd::jrd_tra*
 void	BTR_complement_key(Jrd::temporary_key*);
 void	BTR_create(Jrd::thread_db*, Jrd::IndexCreation&, Jrd::SelectivityList&);
 bool	BTR_delete_index(Jrd::thread_db*, Jrd::win*, MetaId, bool);
+void	BTR_delete_tree(Jrd::thread_db*, USHORT, USHORT, Jrd::PageNumber);
 bool	BTR_description(Jrd::thread_db*, Jrd::Cached::Relation*, const Ods::index_root_page*, Jrd::index_desc*,
 						MetaId, USHORT flags = 0);
 DSC*	BTR_eval_expression(Jrd::thread_db*, Jrd::index_desc*, Jrd::Record*);
@@ -54,6 +55,8 @@ Jrd::idx_e	BTR_make_key(Jrd::thread_db*, USHORT, const Jrd::ValueExprNode* const
 void	BTR_make_null_key(Jrd::thread_db*, const Jrd::index_desc*, Jrd::temporary_key*);
 void	BTR_mark_index_for_delete(Jrd::thread_db*, Jrd::RelationPermanent*, MetaId, Jrd::win*, Ods::index_root_page*,
 								  TraNumber tran);
+void	BTR_merge_index(Jrd::thread_db* tdbb, Jrd::jrd_tra* transaction, Jrd::jrd_rel* relation,
+	Jrd::index_desc* idx, Jrd::PageNumber srcRootPage);
 bool	BTR_next_index(Jrd::thread_db*, Jrd::Cached::Relation*, Jrd::jrd_tra*, Jrd::index_desc*, Jrd::win*,
 					   Jrd::RelationPages* = nullptr);
 void	BTR_remove(Jrd::thread_db*, Jrd::win*, Jrd::index_insertion*);
