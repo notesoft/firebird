@@ -694,19 +694,24 @@ PageNumber RelationPermanent::getIndexRootPage(thread_db* tdbb)
 
 Cached::Relation* RelationPermanent::newVersion(thread_db* tdbb, const QualifiedName& name)
 {
-	auto id = jrd_rel::getIdByName(tdbb, name);
-	if (id.has_value())
+	auto* relation = MetadataCache::getPerm<Cached::Relation>(tdbb, name, CacheFlag::MINISCAN);
+
+	if (relation)
+		relation->newVersion(tdbb);
+	else
 	{
-		auto* relation = MetadataCache::newVersion<Cached::Relation>(tdbb, id.value());
-		fb_assert(relation);
-
-		if (relation)
-			DFW_post_work(tdbb->getTransaction(), dfw_commit_relation, nullptr, nullptr, id.value());
-
-		return relation;
+		auto id = jrd_rel::getIdByName(tdbb, name);
+		if (id.has_value())
+		{
+			relation = MetadataCache::newVersion<Cached::Relation>(tdbb, id.value());
+			fb_assert(relation);
+		}
 	}
 
-	return nullptr;
+	if (relation)
+		DFW_post_work(tdbb->getTransaction(), dfw_commit_relation, nullptr, nullptr, relation->getId());
+
+	return relation;
 }
 
 
