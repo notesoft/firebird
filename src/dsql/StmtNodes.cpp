@@ -2160,7 +2160,38 @@ void DeclareLocalTableNode::reset(thread_db* tdbb, Request* request) const
 	if (relation)
 	{
 		const auto permanent = relation->getPermanent();
-		permanent->delPages(tdbb, request->getLocalTableInstanceId(tdbb));
+		const auto tempInstanceId = request->getLocalTableInstanceId(tdbb);
+		const auto transaction = request->req_transaction;
+
+		try
+		{
+			permanent->delPages(tdbb, tempInstanceId);
+
+			if (transaction)
+				transaction->discardTempFrameActions(relation, tempInstanceId);
+		}
+		catch (const Exception&)
+		{
+			fb_assert(false);
+
+			if (transaction)
+			{
+				try
+				{
+					transaction->discardTempFrameActions(relation, tempInstanceId);
+				}
+				catch (const Exception&)
+				{
+					// Preserve the original frame teardown error.
+					fb_assert(false);
+				}
+			}
+
+			for (auto current = transaction; current; current = current->tra_outer)
+				current->tra_flags |= TRA_invalidated;
+
+			throw;
+		}
 	}
 }
 
@@ -3009,7 +3040,6 @@ StmtNode* EraseNode::dsqlPass(DsqlCompilerScratch* dsqlScratch)
 
 	if (relation->dsqlName.schema.hasData() ||
 		relation->dsqlName.package.hasData() ||
-		!dsqlScratch->getLocalTable(relation->dsqlName.object) ||
 		dsqlCursorName.hasData())
 	{
 		dsqlScratch->qualifyExistingName(relation->dsqlName, obj_relation);
@@ -7561,7 +7591,7 @@ StmtNode* MergeNode::dsqlPass(DsqlCompilerScratch* dsqlScratch)
 	auto& pool = dsqlScratch->getPool();
 
 	RecordSourceNode* source = usingClause;		// USING
-	RelationSourceNode* target = relation;		// INTO
+	RecordSourceNode* target = relation;		// INTO
 
 	// Build a join between USING and INTO tables.
 	const auto join = FB_NEW_POOL(pool) RseNode(pool);
@@ -7600,7 +7630,7 @@ StmtNode* MergeNode::dsqlPass(DsqlCompilerScratch* dsqlScratch)
 	// Get the already processed relations.
 	const auto processedRse = nodeAs<RseNode>(mergeNode->rse->dsqlStreams->items[0]);
 	source = processedRse->dsqlStreams->items[0];
-	target = nodeAs<RelationSourceNode>(processedRse->dsqlStreams->items[1]);
+	target = processedRse->dsqlStreams->items[1];
 
 	mergeNode->oldContext = dsqlGetContext(target);
 
@@ -8575,7 +8605,6 @@ StmtNode* ModifyNode::internalDsqlPass(DsqlCompilerScratch* dsqlScratch, bool up
 
 	if (relation->dsqlName.schema.hasData() ||
 		relation->dsqlName.package.hasData() ||
-		!dsqlScratch->getLocalTable(relation->dsqlName.object) ||
 		dsqlCursorName.hasData())
 	{
 		dsqlScratch->qualifyExistingName(relation->dsqlName, obj_relation);
