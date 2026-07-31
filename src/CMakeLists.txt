@@ -986,9 +986,12 @@ add_custom_target(copy_files
     # docs
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/CHANGELOG.md ${output_dir}/doc/CHANGELOG.md
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/README.md ${output_dir}/doc/README.md
+    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/doc ${output_dir}/doc
+
     # examples
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/examples/api ${output_dir}/examples/api
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/examples/dbcrypt ${output_dir}/examples/dbcrypt
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/examples/dbcrypt ${output_dir}/examples/extauth    
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/examples/empbuild/employe2.sql ${output_dir}/examples/empbuild/employe2.sql
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${NATIVE_BUILD_DIR}/examples/employe2.fdb ${output_dir}/examples/empbuild/employee.fdb
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/examples/include ${output_dir}/examples/include
@@ -1000,18 +1003,27 @@ add_custom_target(copy_files
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/examples/stat ${output_dir}/examples/stat
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/examples/functions.c ${output_dir}/examples/functions.c
     # headers
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/include/iberror.h ${output_dir}/include/iberror.h
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/include/ibase.h          ${output_dir}/include/ibase.h
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/include/iberror.h        ${output_dir}/include/iberror.h
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/misc/pascal/ib_util.pas  ${output_dir}/include/ib_util.pas    
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/include/gen/Firebird.pas ${output_dir}/include/firebird/Firebird.pas    
+    COMMAND ${CMAKE_COMMAND} -E copy_directory    ${CMAKE_CURRENT_SOURCE_DIR}/include/firebird        ${output_dir}/include/firebird
+    # misc
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/misc/intl.sql  ${output_dir}/misc/intl.sql    
+    COMMAND ${CMAKE_COMMAND} -E copy_directory    ${CMAKE_CURRENT_SOURCE_DIR}/misc/upgrade/v3.0    ${output_dir}/misc/upgrade/v3.0
+    COMMAND ${CMAKE_COMMAND} -E copy_directory    ${CMAKE_CURRENT_SOURCE_DIR}/misc/upgrade/v4.0    ${output_dir}/misc/upgrade/v4.0
+    # tzdata
 )
 add_dependencies_cc     (copy_files databases employee_db) 
 project_group(copy_files "Custom build steps")
 
-# headers
-file(GLOB files "${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/include/firebird/*.h")
-foreach(F ${files})
-    get_filename_component(name ${F} NAME)
-    add_custom_command(TARGET copy_files POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${F} ${output_dir}/include/firebird/${name})
-endforeach()
+# # headers
+# file(GLOB files "${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/include/firebird/*.h")
+# foreach(F ${files})
+#     get_filename_component(name ${F} NAME)
+#     add_custom_command(TARGET copy_files POST_BUILD
+#         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${F} ${output_dir}/include/firebird/${name})
+# endforeach()
 
 # docs
 file(GLOB files "${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/doc/README.*")
@@ -1053,8 +1065,8 @@ if (WIN32)
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/examples/build_win32 ${output_dir}/examples/build_win32
         COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/../examples/readme ${output_dir}/examples/readme.txt
         # headers
-        COMMAND echo "#pragma message(\"Non-production version of ibase.h.\")" > ${output_dir}/include/ibase.tmp
-        COMMAND echo "#pragma message(\"Using raw, unprocessed concatenation of header files.\")" >> ${output_dir}/include/ibase.tmp
+        # COMMAND echo "#pragma message(\"Non-production version of ibase.h.\")" > ${output_dir}/include/ibase.tmp
+        # COMMAND echo "#pragma message(\"Using raw, unprocessed concatenation of header files.\")" >> ${output_dir}/include/ibase.tmp
     )
     set(files
         ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/misc/ibase_header.txt
@@ -1067,10 +1079,10 @@ if (WIN32)
         ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/jrd/blr.h
         ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/include/gen/iberror.h
     )
-    foreach(F ${files})
-        add_custom_command(TARGET copy_files POST_BUILD
-            COMMAND type ${f} >> ${output_dir}/include/ibase.tmp)
-    endforeach()
+    # foreach(F ${files})
+    #     add_custom_command(TARGET copy_files POST_BUILD
+    #         COMMAND type ${f} >> ${output_dir}/include/ibase.tmp)
+    # endforeach()
 endif()
 
 
@@ -1165,4 +1177,21 @@ add_custom_target(run_tests
 project_group        (run_tests  Tests)
 add_dependencies     (run_tests common_test libEngine14_test isql_test)
 add_dependencies     (run_tests copy_files) 
+
+
+################################################################################
+# distribytive
+################################################################################
+
+
+make_directory( "${CMAKE_BINARY_DIR}/distr")
+
+add_custom_target(make_distribytive
+    ALL
+    COMMAND ${CMAKE_COMMAND} -E remove cloop.*  WORKING_DIRECTORY "${output_dir}"
+    COMMAND ${CMAKE_COMMAND} -E tar "cf" "${CMAKE_BINARY_DIR}/distr/${PROJECT_NAME}-${PROJECT_VERSION_FULL}-${platform_ID}.zip" --format=zip -- . WORKING_DIRECTORY "${output_dir}"
+)
+project_group        (make_distribytive distribytive)
+add_dependencies     (make_distribytive copy_files) 
+
 

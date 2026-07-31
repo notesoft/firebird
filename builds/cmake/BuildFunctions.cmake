@@ -383,16 +383,18 @@ endfunction(create_master_commands)
 ################################################################################
 
 function(display_inventory)
+
     message(STATUS "|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
     message(STATUS "|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
     message(STATUS "       project : ${CMAKE_PROJECT_NAME}")    
-    message(STATUS "       version : major ${PROJECT_VERSION_MAJOR} minor ${PROJECT_VERSION_MINOR} patch ${PROJECT_VERSION_PATCH}")
+    message(STATUS "       version : major ${PROJECT_VERSION_MAJOR} minor ${PROJECT_VERSION_MINOR} patch ${PROJECT_VERSION_PATCH} build ${PROJECT_VERSION_BUILD}")
     message(STATUS "      IPC name : ${FB_IPC_NAME}")
     message(STATUS "      log name : ${FB_LOGFILENAME}")
     message(STATUS "     conf name : ${FB_CONFILENAME}")
     message(STATUS "  service name : ${FB_SERVICE_NAME}")
     message(STATUS "  service port : ${FB_SERVICE_PORT}")
-
+    message(STATUS "|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
+    message(STATUS "   platform ID : ${platform_ID}")    
     message(STATUS "|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||")
 #    message(STATUS "toolchain file : ${CMAKE_TOOLCHAIN_FILE}")
     message(STATUS "           CPU : ${CMAKE_SYSTEM_PROCESSOR}")

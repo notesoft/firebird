@@ -27,11 +27,28 @@ option(WITH_LIBTOM_STATIC   "on Linux build and link libtommath and libtomcript 
 option(USE_TTMATH_MASM      "use assemler func in libtommath on win-arm-64 (need add ml64.exe in PATH)" OFF)
 option(REBUILD_ICU          "download from git and rebuild ICU library (on win need add MSBuild.exe in PATH)"  OFF)
 
+
+if (WIN32)
+    set(os_type_ID win)
+elseif(APPLE)
+    set(os_type_ID osx)
+elseif(LINUX)
+    set(os_type_ID lin)
+elseif(ANDROID)
+    set(os_type_ID and)
+elseif(UNIX)
+    set(os_type_ID nix)
+else()
+    set(os_type_ID non)
+endif()
+
 if (${CMAKE_SIZEOF_VOID_P} EQUAL 8)
     set(CPU_IS_64 ON) 
+    set(cpu_bits_ID 64)
     message("== CPU is 64 bit")
 else(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
     set(CPU_IS_32 ON) 
+    set(cpu_bits_ID 32)
     message("== CPU is 32 bit")
 endif()
 
@@ -51,9 +68,13 @@ if (${CMAKE_SYSTEM_PROCESSOR} MATCHES "AMD" OR ${CMAKE_SYSTEM_PROCESSOR} MATCHES
         message("== build for x86-32 system" )
     endif()
 
+    set(cpu_type_ID x86)
+
 elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "ARM" OR ${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm" OR ${CMAKE_SYSTEM_PROCESSOR} MATCHES "aarch")
 
     set(CPU_IS_ARM ON) 
+
+    set(cpu_type_ID arm)
 
     if (${CMAKE_SIZEOF_VOID_P} EQUAL 8)
         set(ARM64 1)
@@ -71,6 +92,8 @@ elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "ARM" OR ${CMAKE_SYSTEM_PROCESSOR} MAT
     endif()
 
 endif()
+
+set(platform_ID "${os_type_ID}-${cpu_type_ID}-${cpu_bits_ID}")
 
 
 # In-source builds are not possible and so disabled.
@@ -251,6 +274,30 @@ if (WIN32)
     endif()                             
 
 endif()
+
+
+################################################################################
+#
+# version
+#
+################################################################################
+
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/src/jrd/build_no.h  build_no_h_content)
+    string(REPLACE "\"" "" build_no_h_content ${build_no_h_content} )  
+    string(REGEX MATCH "FB_MAJOR_VER ([0-9]*)" ver_major ${build_no_h_content})  
+    string(REGEX MATCH "([0-9]+)" ver_major ${ver_major})  
+    string(REGEX MATCH "FB_MINOR_VER ([0-9]*)" ver_minor ${build_no_h_content})
+    string(REGEX MATCH "([0-9]+)" ver_minor ${ver_minor})  
+    string(REGEX MATCH    "FB_REV_NO ([0-9]*)" ver_patch ${build_no_h_content})
+    string(REGEX MATCH "([0-9]+)" ver_patch ${ver_patch})  
+    string(REGEX MATCH  "FB_BUILD_NO ([0-9]*)" ver_build ${build_no_h_content})
+    string(REGEX MATCH "([0-9]+)" ver_build ${ver_build})  
+
+    set(PROJECT_VERSION_MAJOR ${ver_major})
+    set(PROJECT_VERSION_MINOR ${ver_minor})
+    set(PROJECT_VERSION_PATCH ${ver_patch})
+    set(PROJECT_VERSION_BUILD ${ver_build})
+    set(PROJECT_VERSION_FULL "${ver_major}.${ver_minor}.${ver_patch}.${ver_build}")
 
 ################################################################################
 #
