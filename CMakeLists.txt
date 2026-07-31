@@ -55,8 +55,6 @@ elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "ARM" OR ${CMAKE_SYSTEM_PROCESSOR} MAT
 
     set(CPU_IS_ARM ON) 
 
-    # add_definitions(-D__arm__)
-
     if (${CMAKE_SIZEOF_VOID_P} EQUAL 8)
         set(ARM64 1)
         unset(ARM)
@@ -66,7 +64,6 @@ elseif (${CMAKE_SYSTEM_PROCESSOR} MATCHES "ARM" OR ${CMAKE_SYSTEM_PROCESSOR} MAT
         message("== build for  arm64 system" )
     elseif(${CMAKE_SIZEOF_VOID_P} EQUAL 4)
         set(ARM 1) 
-        # set(ARM64 0) 
         add_definitions(-DRC_ARH_arm32)   
         add_definitions(-DARM)   
         add_definitions(-DCPU_TYPE=arm)   
@@ -261,9 +258,6 @@ endif()
 #
 ################################################################################
 
-# add_definitions(-DDEV_BUILD)
-
-
 if (WIN32)
     set(OS_DIR win32)
     set(VERSION_RC ${CMAKE_CURRENT_SOURCE_DIR}/src/jrd/version.rc)
@@ -332,9 +326,6 @@ if (UNIX)
     if (NOT FREEBSD)
         set(LIB_dl dl)
     endif()
-    # if (LINUX)
-    #     set(LIB_atomic_ID    atomic) 
-    # endif()
 
 endif()
 
@@ -343,9 +334,6 @@ if (NOT LINUX AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR IOS))
         set(LIB_iconv iconv)
     endif()
 endif()
-
-
-
 
 if (FREEBSD OR APPLE)
     include_directories(/usr/local/include)
@@ -374,7 +362,6 @@ if (UNIX)
 
     add_compile_options("-fvisibility=hidden") 
     set(COMMON_FLAGS "${COMMON_FLAGS} -fPIC -fsigned-char")
-
 
     if (APPLE)
         set(LIB_readline edit)
@@ -525,9 +512,6 @@ link_directories   ("${output_dir}")
 ########################################
 
 add_subdirectory(extern)
-
-# message("======  ICU_DIR_include ${ICU_DIR_include}")
-# message("======  ICU_DIR_distr   ${ICU_DIR_distr}")
 
 include_directories(${ICU_DIR_include})
    link_directories(${ICU_DIR_distr})

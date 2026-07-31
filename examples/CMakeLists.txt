@@ -1,4 +1,3 @@
-# include(SourceGroups.cmake)
 
 ###############################################################################
 #
@@ -38,8 +37,6 @@ target_link_libraries   (empbuild yvalve  yvalve_common srp ${cds} ${LIB_atomic_
 set_output_directory    (empbuild . CURRENT_DIR)
 add_dependencies_cc     (empbuild engine)
 project_group           (empbuild Examples)
-
-# set(EMPBUILD_CMD  ./bin/empbuild)
 
 file(GLOB files
     "${CMAKE_CURRENT_SOURCE_DIR}/empbuild/*.sql"

@@ -11,8 +11,6 @@
 #  7. copy other files to output dir (docs, includes, ...)
 #
 
-# include(SourceGroups)
-
 set_generated_directory()
 
 ################################################################################
@@ -62,8 +60,6 @@ set(epp_boot_gds_files
 )
 set(epp_master_files
     auth/SecurityDatabase/LegacyManagement.epp
-    # msgs/build_file.epp
-    # misc/codes.epp
 )
 
 if (NOT CMAKE_CROSSCOMPILING)
@@ -91,16 +87,7 @@ epp_process(master  epp_master_files        ${BOOT_GPRE_CMD} -n -m)
 ########################################
 
 set(msgs_src
-    # ${CMAKE_CURRENT_SOURCE_DIR}/msgs/facilities2.sql
-    # ${CMAKE_CURRENT_SOURCE_DIR}/msgs/history2.sql
-    # ${CMAKE_CURRENT_SOURCE_DIR}/msgs/locales.sql
-    # ${CMAKE_CURRENT_SOURCE_DIR}/msgs/messages2.sql
-    # ${CMAKE_CURRENT_SOURCE_DIR}/msgs/msg.sql
     ${CMAKE_CURRENT_SOURCE_DIR}/msgs/sqlstates.sql
-    # ${CMAKE_CURRENT_SOURCE_DIR}/msgs/symbols2.sql
-    # ${CMAKE_CURRENT_SOURCE_DIR}/msgs/system_errors2.sql
-    # ${CMAKE_CURRENT_SOURCE_DIR}/msgs/transmsgs.de_DE2.sql
-    # ${CMAKE_CURRENT_SOURCE_DIR}/msgs/transmsgs.fr_FR2.sql
 )
 set(databases_src
     ${CMAKE_CURRENT_SOURCE_DIR}/dbs/security.sql
@@ -162,9 +149,9 @@ add_custom_command(
     #
     COMMAND ${CMAKE_COMMAND} -E remove firebird.msg
     COMMAND ${BUILD_MSG_CMD} -F ${CMAKE_CURRENT_BINARY_DIR}/firebird.msg 
-    # COMMAND ${BUILD_MSG_CMD} -D msg.fdb -P ${CMAKE_CURRENT_BINARY_DIR}/ -F firebird.msg
     COMMAND ${CMAKE_COMMAND} -E copy_if_different firebird.msg ${output_dir}/firebird.msg
 )
+# ???
 # add_custom_command(
 #     OUTPUT codes_headers.dummy
 #     DEPENDS
@@ -215,27 +202,6 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E echo "create database 'msg_.fdb';" > create_db_msg.sql
     COMMAND ${BOOT_ISQL_CMD} -q -i create_db_msg.sql
     COMMAND ${BOOT_GFIX_CMD} -write async msg_.fdb
-    # COMMAND ${isql_exec_msg}/msg.sql
-    
-    # COMMAND echo loading facilities
-    # COMMAND ${isql_exec_msg}/facilities2.sql
-    # COMMAND echo loading sql states
-    # COMMAND ${isql_exec_msg}/sqlstates.sql
-    # COMMAND echo loading locales
-    # COMMAND ${isql_exec_msg}/locales.sql
-    # COMMAND echo loading history
-    # COMMAND ${isql_exec_msg}/history2.sql
-    # COMMAND echo loading messages
-    # COMMAND ${isql_exec_msg}/messages2.sql
-    # COMMAND echo loading symbols
-    # COMMAND ${isql_exec_msg}/symbols2.sql
-    # COMMAND echo loading system errors
-    # COMMAND ${isql_exec_msg}/system_errors2.sql
-    # COMMAND echo loading French translation
-    # COMMAND ${isql_exec_msg}/transmsgs.fr_FR2.sql
-    # COMMAND echo loading German translation
-    # COMMAND ${isql_exec_msg}/transmsgs.de_DE2.sql
-    #
     COMMAND ${CMAKE_COMMAND} -E copy_if_different msg_.fdb msg.fdb
 )
 add_custom_target(msg_fdb
@@ -408,10 +374,9 @@ endif()
 add_library                 (common ${common_src} ${common_os_src} ${common_include})
 target_link_libraries       (common ${LIB_mpr} ${LIB_tommath} ${LIB_tomcrypt} decNumber   re2)
 add_dependencies_cc         (common UpdateCloopInterfaces)
-# add_dependencies            (common icu_build)
 
 if (UNIX)
-target_link_libraries       (common dl)
+    target_link_libraries       (common dl)
 endif()
 
 ################################################################################
@@ -438,8 +403,6 @@ add_src_win32(yvalve_src
     jrd/os/win32/ibinitdll.cpp
 )
 set(yvalve_generated_src
-    # yvalve/array.epp
-    # yvalve/blob.epp
 )
 add_epp_suffix(yvalve_generated_src boot)
 add_epp_suffix(yvalve_generated_src master)
@@ -574,10 +537,6 @@ set_exported_symbols        (boot_engine fbplugin)
 copy_and_rename_lib         (boot_engine Engine14)
 project_group               (boot_engine Boot)
 add_dependencies            (boot_engine srp)
-if (USE_CDS)
-    # add_dependencies            (boot_engine cds-s)
-    # add_dependencies            (boot_engine cds)
-endif()
 
 endif() # if (NOT CMAKE_CROSSCOMPILING)
 
@@ -663,7 +622,6 @@ set_exported_symbols        (srp fbplugin)
 ########################################
 
 set(legacy_auth_src
-    # auth/SecureRemotePassword/srp.cpp
     auth/SecurityDatabase/LegacyServer.cpp
     auth/SecDbCache.cpp
 )
@@ -746,14 +704,8 @@ set(build_msg_src
     msgs/build_file.cpp
 )
 
-# set(build_msg_generated_src
-#     msgs/build_file.epp
-# )
-# add_epp_suffix(build_msg_generated_src master)
-
 if (NOT CMAKE_CROSSCOMPILING)
 
-# add_executable              (build_msg ${build_msg_generated_src_master} ${VERSION_RC})
 add_executable              (build_msg ${build_msg_src} ${VERSION_RC})
 target_link_libraries       (build_msg boot_yvalve)
 set_output_directory        (build_msg . CURRENT_DIR)
@@ -765,20 +717,6 @@ endif() # if (NOT CMAKE_CROSSCOMPILING)
 ########################################
 # EXECUTABLE codes
 ########################################
-
-# set(codes_generated_src
-#     misc/codes.epp
-# )
-# add_epp_suffix(codes_generated_src master)
-
-if (NOT CMAKE_CROSSCOMPILING)
-
-# add_executable              (codes ${codes_generated_src_master} ${VERSION_RC})
-# target_link_libraries       (codes boot_yvalve)
-# set_output_directory        (codes . CURRENT_DIR)
-# project_group               (codes Boot)
-
-endif() # if (NOT CMAKE_CROSSCOMPILING)
 
 
 ########################################
@@ -1065,7 +1003,6 @@ add_custom_target(copy_files
     COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/include/iberror.h ${output_dir}/include/iberror.h
 )
 add_dependencies_cc     (copy_files databases employee_db) 
-# add_dependencies_unix_cc(copy_files makeHeader)
 project_group(copy_files "Custom build steps")
 
 # headers
@@ -1131,16 +1068,9 @@ if (WIN32)
         ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/include/gen/iberror.h
     )
     foreach(F ${files})
-        # string(REPLACE "/" "\\" f ${F})
         add_custom_command(TARGET copy_files POST_BUILD
             COMMAND type ${f} >> ${output_dir}/include/ibase.tmp)
     endforeach()
-    add_custom_command(
-        TARGET copy_files
-        POST_BUILD
-        # COMMAND sed -f ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/misc/headers.sed < ${output_dir}/include/ibase.tmp > ${output_dir}/include/ibase.h
-        COMMAND ${CMAKE_COMMAND} -E remove ${output_dir}/include/ibase.tmp
-    )
 endif()
 
 
@@ -1152,16 +1082,10 @@ if (UNIX)
 
     if (NOT CMAKE_CROSSCOMPILING)
 
-    # add_executable          (makeHeader misc/makeHeader.cpp)
-    # set_output_directory    (makeHeader . CURRENT_DIR)
     set(files
         ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/include/fb_types.h
         ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/include/dyn_consts.h
-        # ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/dsql/sqlda_pub.h
-        # ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/common/dsc_pub.h
         ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/include/ibase.h
-        # ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/jrd/inf_pub.h
-        # ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/jrd/blr.h
         ${CMAKE_SOURCE_DIR}${OWNER_RROJECTS_TREE}/src/include/iberror.h
     )
     foreach(F ${files})
@@ -1169,11 +1093,6 @@ if (UNIX)
         add_custom_command(TARGET copy_files POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different ${F} ${name})
     endforeach()
-    add_custom_command(TARGET copy_files POST_BUILD
-        # include
-        # COMMAND makeHeader < ibase.h > ${output_dir}/include/ibase.h
-        COMMAND ${CMAKE_COMMAND} -E remove ${output_dir}/include/ibase.tmp
-    )
 
     endif() # if (NOT CMAKE_CROSSCOMPILING)
 endif()
