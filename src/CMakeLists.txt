@@ -1184,12 +1184,12 @@ add_dependencies     (run_tests copy_files)
 ################################################################################
 
 
-make_directory( "${CMAKE_BINARY_DIR}/distr")
+make_directory( "${CMAKE_BINARY_DIR}/../distr")
 
 add_custom_target(make_distribytive
     ALL
     COMMAND ${CMAKE_COMMAND} -E remove cloop.*  WORKING_DIRECTORY "${output_dir}"
-    COMMAND ${CMAKE_COMMAND} -E tar "cf" "${CMAKE_BINARY_DIR}/distr/${PROJECT_NAME}-${PROJECT_VERSION_FULL}-${platform_ID}.zip" --format=zip -- . WORKING_DIRECTORY "${output_dir}"
+    COMMAND ${CMAKE_COMMAND} -E tar "cf" "${CMAKE_BINARY_DIR}/../distr/${PROJECT_NAME}-${PROJECT_VERSION_FULL}-${platform_ID}.zip" --format=zip -- . WORKING_DIRECTORY "${output_dir}"
 )
 project_group        (make_distribytive distribytive)
 add_dependencies     (make_distribytive copy_files) 
