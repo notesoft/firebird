@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build:
-  
+    if: ${{ true && github.ref_type != 'tag' }} # set !true for disable
     runs-on: ${{ matrix.os }}
 
     strategy:
