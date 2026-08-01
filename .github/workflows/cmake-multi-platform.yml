@@ -2,15 +2,9 @@ name: CMake on multiple platforms
 
 on: [push, pull_request]
 
-# on:
-#   push:
-#     branches: [ "work-SQLfb-CMake-LLVM" ]
-#   pull_request:
-#     branches: [ "work-SQLfb-CMake-LLVM" ]
-
 jobs:
   build:
-  
+    if: github.ref_type != 'tag'
     runs-on: ${{ matrix.os }}
 
     strategy:
