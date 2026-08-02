@@ -525,6 +525,7 @@ client_static_process:
 	$(MAKE) updateCloopInterfaces
 	$(MAKE) rest
 	$(MAKE) $(LIBFIREBIRD_STATIC)
+	$(MAKE) include_generic
 
 STATIC_CLIENT_SLIM_STAGE = $(ROOT)/temp/static_client_stage
 STATIC_CLIENT_SLIM_CREF  = $(ROOT)/temp/static_client_cref.txt
