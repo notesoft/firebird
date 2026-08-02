@@ -523,6 +523,7 @@ client_static_process:
 	$(MAKE) export_lists
 	$(MAKE) external
 	$(MAKE) updateCloopInterfaces
+	$(MAKE) rest
 	$(MAKE) $(LIBFIREBIRD_STATIC)
 
 STATIC_CLIENT_SLIM_STAGE = $(ROOT)/temp/static_client_stage
