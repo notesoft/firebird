@@ -954,6 +954,9 @@ else
 		XE_RESTORE_ENV()
 	fi
 fi
+if test "$WITH_TOMCRYPT" = "Y"; then
+	AC_DEFINE(HAVE_TOMCRYPT, 1, [Define this if libtomcrypt is in use])
+fi
 AC_SUBST(CRYPTLIB)
 
 dnl Check for termcap support

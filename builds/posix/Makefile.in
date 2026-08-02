@@ -525,6 +525,9 @@ client_static_process:
 	$(MAKE) updateCloopInterfaces
 	$(MAKE) rest
 	$(MAKE) $(LIBFIREBIRD_STATIC)
+ifeq ($(WITH_TOMCRYPT),Y)
+	$(MAKE) chacha
+endif
 	$(MAKE) include_generic
 
 STATIC_CLIENT_SLIM_STAGE = $(ROOT)/temp/static_client_stage
