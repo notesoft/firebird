@@ -472,15 +472,16 @@ file(GLOB engine_src
     "jrd/replication/*.cpp"
     "jrd/trace/*.cpp"
     "jrd/Package.h"
-
     "jrd/os/${OS_DIR}/*.cpp"
-
     "jrd/sys-packages/*.cpp"
+
     "yvalve/*.cpp"
     "yvalve/config/os/${OS_DIR}/*.c*"
+    
     "remote/os/${OS_DIR}/*.cpp"
     "remote/*.cpp"
     "remote/client/*.cpp"
+    "common/classes/ThreadCleanup.cpp"
 )
 set(engine_src ${engine_src}
     lock/lock.cpp
