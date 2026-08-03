@@ -356,10 +356,10 @@ add_library                 (burp ${burp_src} ${burp_generated_src_master})
 # LIBRARY common
 ########################################
 
-file(GLOB common_src 
+file(GLOB_RECURSE common_src 
 "common/*.cpp" 
-"common/classes/*.cpp" 
-"common/config/*.cpp" 
+# "common/classes/*.cpp" 
+# "common/config/*.cpp" 
 "common/os/${OS_DIR}/*.cpp" 
 "common/os/${OS_DIR}/*.m" 
 "common/sha2/*.cpp")
