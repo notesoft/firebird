@@ -37,6 +37,10 @@ mismatched paths.
 This produces `<firebird>/lib/libfbclient.a`, built from the same object set as the shared `libfbclient` (yValve +
 remote client + common).
 
+When TomCrypt support is enabled, the static-client build also creates `libChaCha.so`. It is linked with the complete
+static archive so weak C++ template references used by plugin static initializers are resolved inside the plugin before
+it is loaded with `dlopen()`.
+
 Link your application against it, along with the same system libraries the shared library depends on transitively
 (pthread, dl, crypt, rt, etc. as applicable to your platform). Most third-party dependencies (tommath, tomcrypt) are
 **not** bundled - link those directly if your final binary needs symbols from them.
@@ -59,16 +63,18 @@ To prevent this, both ELF and Darwin builds use the same two-step post-processin
    output (GNU `--cref` on ELF, Apple `-map` on Darwin) identifies which members were pulled in, and only those
    members are repacked into the archive.
 2. **Dynamic symbol renaming**: every defined global symbol NOT in the exported API list is renamed with a `__fbclient_`
-   prefix using `objcopy --redefine-syms` (GNU `objcopy` on ELF, `llvm-objcopy` on Darwin). The rename map is generated
-   automatically at build time:
+   prefix using `objcopy --redefine-syms` (GNU `objcopy` on ELF, `llvm-objcopy` on Darwin). ELF COMDAT group signatures
+   are included as well; they are local symbols and are not reported by `nm -g`, but must be renamed with their sections.
+   The rename map is generated automatically at build time:
 
    ```
    nm --defined-only -g libfbclient.a  |  extract symbol names  |  filter out API list  |  awk '{print $1, "__fbclient_" $1}'
+   readelf --section-groups libfbclient.a  |  extract COMDAT group signatures  |  add to symbol list (ELF)
    ```
 
    This covers every internal symbol automatically (decNumber, global operators, C++ vtables, typeinfo, guard
-   variables, etc.) without any hand-maintained lists. The multi-member archive structure is preserved, so COMDAT
-   groups and cross-member references work correctly at final link time.
+   variables, COMDAT group signatures, etc.) without any hand-maintained lists. The multi-member archive structure is
+   preserved, so COMDAT groups and cross-member references work correctly at final link time with both GCC and Clang.
 
 ### Post-archive processing
 

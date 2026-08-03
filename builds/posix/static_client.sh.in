@@ -59,6 +59,7 @@
 NM=@NM@
 LD=@CXX@
 AR=@AR@
+READELF=@READELF@
 
 ARCHIVE=
 SEEDS_FILE=
@@ -151,9 +152,11 @@ rm -rf "$STAGE" "$CREF" "$PROBE"
 
 # Step 3: Generate a comprehensive rename map for every defined
 # global symbol in the slimmed archive that is NOT in the exported
-# API. Each such symbol gets a "__fbclient_" prefix so it won't
-# collide with the host application's own symbols (e.g. global
-# operator new/delete, decNumber symbols, internal C++ symbols).
+# API. On ELF, also include COMDAT group signatures, which are local
+# symbols and therefore not reported by nm -g. Each such symbol gets
+# a "__fbclient_" prefix so it won't collide with the host application's
+# own symbols (e.g. global operator new/delete, decNumber symbols,
+# internal C++ symbols).
 #
 # On ELF, nm emits bare C names (gds__alloc); on Mach-O it emits
 # leading-underscore names (_gds__alloc). Both conventions are
@@ -161,9 +164,18 @@ rm -rf "$STAGE" "$CREF" "$PROBE"
 # parsed above matches the nm output convention on each platform.
 API_SYMS=$(mktemp)
 REDEFINE=$(mktemp)
+DEFINED_SYMS=$(mktemp)
 printf '%s\n' $SEEDS > "$API_SYMS"
 $NM --defined-only -g "$ARCHIVE" \
-	| awk 'NF==3 {print $3}' | sort -u \
+	| awk 'NF==3 {print $3}' | sort -u > "$DEFINED_SYMS"
+
+if test "$SLIM_MODE" = elf; then
+	$READELF --section-groups "$ARCHIVE" \
+		| sed -nE "s/.*\.group' \[([^]]+)\].*/\1/p" \
+		| sort -u >> "$DEFINED_SYMS"
+fi
+
+sort -u "$DEFINED_SYMS" \
 	| grep -F -v -x -f "$API_SYMS" \
 	| awk '{print $1, "__fbclient_" $1}' \
 	> "$REDEFINE"
@@ -172,4 +184,4 @@ if test -s "$REDEFINE"; then
 	$OBJCOPY_BIN --redefine-syms="$REDEFINE" "$ARCHIVE"
 fi
 
-rm -f "$REDEFINE" "$API_SYMS"
+rm -f "$REDEFINE" "$API_SYMS" "$DEFINED_SYMS"
