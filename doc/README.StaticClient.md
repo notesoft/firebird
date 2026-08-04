@@ -34,16 +34,16 @@ make -C temp/debug TARGET=Debug client_static
 explicitly - an empty/undefined `TARGET` elsewhere in a partial build (e.g. after only some sub-targets ran) can lead to
 mismatched paths.
 
-This produces `<firebird>/lib/libfbclient.a`, built from the same object set as the shared `libfbclient` (yValve +
-remote client + common).
+This produces `<firebird>/lib/libfbclient.a`, built from the shared client object set (yValve + remote client + common)
+with the static client's built-in plugin registrations.
 
-When TomCrypt support is enabled, the static-client build also creates `libChaCha.so`. It is linked with the complete
-static archive so weak C++ template references used by plugin static initializers are resolved inside the plugin before
-it is loaded with `dlopen()`.
+When TomCrypt support is enabled, ChaCha and ChaCha64 are included and registered as built-in wire crypt plugins in
+`libfbclient.a`. The standalone `libChaCha.so` plugin is not needed by applications using the static client.
 
 Link your application against it, along with the same system libraries the shared library depends on transitively
 (pthread, dl, crypt, rt, etc. as applicable to your platform). Most third-party dependencies (tommath, tomcrypt) are
-**not** bundled - link those directly if your final binary needs symbols from them.
+**not** bundled - link those directly. In particular, applications using the static client must link `-ltomcrypt`
+when TomCrypt support is enabled.
 
 **`decNumber`/`libdecFloat` is the one exception**: it is small, vendored in-tree, and has no external system-library
 equivalent to conflict with, so its objects are merged directly into `libfbclient.a`/`fbclient_static.lib` - you do not

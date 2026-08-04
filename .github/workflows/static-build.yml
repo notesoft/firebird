@@ -52,7 +52,7 @@ jobs:
             -I/home/ctng/firebird-build/gen/Release/firebird/include \
             -L/home/ctng/firebird-build/gen/Release/firebird/lib \
             -L/home/ctng/firebird-build/temp/Release \
-            -lfbclient -ltommath -lz -ldl -pthread \
+            -lfbclient -ltommath -ltomcrypt -lz -ldl -pthread \
             -o /tmp/01.create
           EOF
           chmod +x /tmp/build-static-client.sh
@@ -105,7 +105,7 @@ jobs:
             -Igen/Release/firebird/include \
             -Lgen/Release/firebird/lib \
             -Ltemp/Release \
-            -lfbclient -ltommath -lz -ldl -pthread \
+            -lfbclient -ltommath -ltomcrypt -lz -ldl -pthread \
             -o /tmp/01.create
 
       - name: Upload static library
@@ -159,7 +159,7 @@ jobs:
             -Igen/Release/firebird/include \
             -Lgen/Release/firebird/lib \
             -Ltemp/Release \
-            -lfbclient -ltommath -lz \
+            -lfbclient -ltommath -ltomcrypt -lz \
             -liconv -lobjc -framework CoreFoundation -framework Foundation -framework Security \
             -o /tmp/01.create
 
