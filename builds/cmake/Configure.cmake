@@ -187,6 +187,7 @@ set(include_files_list
     vfork.h
     winsock2.h
     zlib.h
+    tomcrypt.h
 )
 check_includes(include_files_list)
 

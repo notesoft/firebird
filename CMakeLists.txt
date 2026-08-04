@@ -238,6 +238,10 @@ else()
     add_definitions("-DCDS_UNAVAILABLE")
 endif()
 
+if (HAVE_TOMCRYPT_H)
+    add_definitions("-DHAVE_TOMCRYPT")
+endif()
+
 if (NOT REQUIRED_ICU_VER)
     set(REQUIRED_ICU_VER "77.1") 
 endif()
