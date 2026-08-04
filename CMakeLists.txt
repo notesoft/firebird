@@ -200,6 +200,27 @@ endif()
 
 ################################################################################
 #
+# include
+#
+################################################################################
+
+include_directories("src/include")
+include_directories("src/include/gen")
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/src/include")
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/src/include/gen")
+include_directories("extern/editline/src/editline")
+include_directories("extern/re2")
+include_directories("extern/boost")
+include_directories("extern/libtommath")
+include_directories("extern/libtomcrypt/src/headers")
+include_directories("extern/decNumber")
+include_directories("extern/icu/include")
+include_directories("extern/zlib")
+include_directories("extern/libcds")
+
+
+################################################################################
+#
 # configure
 #
 ################################################################################
@@ -230,6 +251,10 @@ set(AUTOCONFIG_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/include/gen/autoconfig.h.in)
 set(AUTOCONFIG ${CMAKE_CURRENT_BINARY_DIR}/src/include/gen/autoconfig.h)
 configure_file(${AUTOCONFIG_SRC} ${AUTOCONFIG} @ONLY)
 
+if (WIN32 OR APPLE)
+    set(WITH_LIBTOM_STATIC ON)    
+endif()
+
 set(USE_CDS 1)
 
 if (USE_CDS)
@@ -238,14 +263,14 @@ else()
     add_definitions("-DCDS_UNAVAILABLE")
 endif()
 
+if (HAVE_TOMCRYPT_H OR WITH_LIBTOM_STATIC)
+    add_definitions("-DHAVE_TOMCRYPT")
+endif()
+
 if (NOT REQUIRED_ICU_VER)
     set(REQUIRED_ICU_VER "77.1") 
 endif()
 
-
-if (WIN32 OR APPLE)
-    set(WITH_LIBTOM_STATIC ON)    
-endif()
 
 if (WIN32)
 
@@ -535,20 +560,20 @@ endif() # if (NOT CMAKE_CROSSCOMPILING)
 
 crosscompile_prebuild_steps()
 
-include_directories("src/include")
-include_directories("src/include/gen")
-include_directories("${CMAKE_CURRENT_BINARY_DIR}/src/include")
-include_directories("${CMAKE_CURRENT_BINARY_DIR}/src/include/gen")
+# include_directories("src/include")
+# include_directories("src/include/gen")
+# include_directories("${CMAKE_CURRENT_BINARY_DIR}/src/include")
+# include_directories("${CMAKE_CURRENT_BINARY_DIR}/src/include/gen")
 
-include_directories("extern/editline/src/editline")
-include_directories("extern/re2")
-include_directories("extern/boost")
-include_directories("extern/libtommath")
-include_directories("extern/libtomcrypt/src/headers")
-include_directories("extern/decNumber")
-include_directories("extern/icu/include")
-include_directories("extern/zlib")
-include_directories("extern/libcds")
+# include_directories("extern/editline/src/editline")
+# include_directories("extern/re2")
+# include_directories("extern/boost")
+# include_directories("extern/libtommath")
+# include_directories("extern/libtomcrypt/src/headers")
+# include_directories("extern/decNumber")
+# include_directories("extern/icu/include")
+# include_directories("extern/zlib")
+# include_directories("extern/libcds")
 
 link_directories   ("${CMAKE_CURRENT_BINARY_DIR}/extern")
 link_directories   ("${output_dir}")
