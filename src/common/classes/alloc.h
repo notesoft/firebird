@@ -401,10 +401,8 @@ inline void operator delete[](void* mem, Firebird::MemoryPool& pool ALLOC_PARAMS
 extern void operator delete(void* mem) noexcept;
 extern void operator delete[](void* mem) noexcept;
 
-#if __cplusplus >= 201402L
 extern void operator delete(void* mem, std::size_t s) noexcept;
 extern void operator delete[](void* mem, std::size_t s) noexcept;
-#endif
 
 #endif // DEBUG_GDS_ALLOC
 
