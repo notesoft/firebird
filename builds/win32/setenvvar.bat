@@ -26,6 +26,11 @@ if /I "%~1"=="DEBUG" (
   shift /1
   goto :parse_args
 )
+if /I "%~1"=="WITHOUT_TOMCRYPT" (
+  set FBBUILD_WITHOUT_TOMCRYPT=1
+  shift /1
+  goto :parse_args
+)
 if /I "%~1"=="CLEAN" (
   set FB_CLEAN=:rebuild
   shift /1
@@ -85,6 +90,8 @@ shift /1
 goto :parse_args
 
 :parse_args_done
+
+@if /I not "%FB_CLIENT_ONLY%"=="STATIC" set FBBUILD_WITHOUT_TOMCRYPT=
 
 @if not defined FB_CONFIG (
   set FB_DBG=
@@ -283,6 +290,7 @@ goto :END
 @echo    platform=%FB_TARGET_PLATFORM%
 @if /I "%FB_CLIENT_ONLY%"=="STATIC" (
   @echo    fbclient_static_config=%FB_STATIC_CONFIG%
+  @if defined FBBUILD_WITHOUT_TOMCRYPT echo    without_tomcrypt=yes
 )
 @echo    msvc_version=%MSVC_VERSION%
 @echo    db_path=%FB_DB_PATH%

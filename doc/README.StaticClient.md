@@ -91,6 +91,16 @@ Build the static client via the usual Windows scripts with `CLIENT_ONLY=STATIC`:
 builds\win32\make_all.bat CLIENT_ONLY=STATIC
 ```
 
+TomCrypt support is enabled by default. ChaCha and ChaCha64 are then included and registered as built-in wire crypt
+plugins in `fbclient_static.lib`; applications must link `tomcrypt.lib` in addition to the existing static-client
+dependencies. To omit TomCrypt and ChaCha from a static client build, use:
+
+```bat
+builds\win32\run_all.bat CLIENT_ONLY=STATIC WITHOUT_TOMCRYPT
+```
+
+`WITHOUT_TOMCRYPT` is valid only with `CLIENT_ONLY=STATIC`.
+
 That builds `yvalve` as a static library (`fbclient_static.lib`) under `temp\<platform>\ReleaseStatic` (or
 `DebugStatic`), then runs `builds/win32/fix_fbclient_static.bat` to rename symbols with
 `llvm-objcopy --redefine-syms`. The rename map is generated automatically — no hand-maintained lists needed:
