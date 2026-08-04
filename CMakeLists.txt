@@ -243,7 +243,7 @@ set(FB_SERVICE_NAME "gds_db")
 set(FB_SERVICE_PORT  3050)
 
 if (WIN32)
-    set(FB_PREFIX "c:\\\\Program iles\\\\Firebird\\\\")
+    set(FB_PREFIX "c:\\\\Program Files\\\\Firebird\\\\")
     set(FB_IPC_NAME "FIREBIRD")
 endif()
 
