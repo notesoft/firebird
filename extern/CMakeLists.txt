@@ -25,6 +25,7 @@ if (UNIX)
             PATHS
                 /usr/include
                 /usr/include/x86_64-linux-gnu
+                /usr/include/aarch64-linux-gnu
                 /usr/local/include
                 /opt/local/include
                 /usr/local/opt/icu4c/include

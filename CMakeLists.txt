@@ -484,11 +484,11 @@ if (WIN32)
         message("== Extracting pre-built ICU")
         set(ICU_EXTRACT ${CMAKE_CURRENT_SOURCE_DIR}/extern/icu/icu_windows.zip CACHE STRING "ICU extraction variable")
 
-        set(ISU_LIB_ARHIV ${CMAKE_CURRENT_SOURCE_DIR}/extern/icu/icu_windows.zip)
-        set(ISU_DAT_ARHIV ${CMAKE_CURRENT_SOURCE_DIR}/extern/icu/icudt.zip)
+        set(ICU_LIB_ARHIV ${CMAKE_CURRENT_SOURCE_DIR}/extern/icu/icu_windows.zip)
+        set(ICU_DAT_ARHIV ${CMAKE_CURRENT_SOURCE_DIR}/extern/icu/icudt.zip)
 
-        file(ARCHIVE_EXTRACT INPUT ${ISU_LIB_ARHIV} DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/extern/icu") 
-        file(ARCHIVE_EXTRACT INPUT ${ISU_DAT_ARHIV} DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/extern/icu") 
+        file(ARCHIVE_EXTRACT INPUT ${ICU_LIB_ARHIV} DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/extern/icu") 
+        file(ARCHIVE_EXTRACT INPUT ${ICU_DAT_ARHIV} DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/extern/icu") 
     endif()
 
 	# determine icu version
@@ -559,21 +559,6 @@ create_master_commands()
 endif() # if (NOT CMAKE_CROSSCOMPILING)
 
 crosscompile_prebuild_steps()
-
-# include_directories("src/include")
-# include_directories("src/include/gen")
-# include_directories("${CMAKE_CURRENT_BINARY_DIR}/src/include")
-# include_directories("${CMAKE_CURRENT_BINARY_DIR}/src/include/gen")
-
-# include_directories("extern/editline/src/editline")
-# include_directories("extern/re2")
-# include_directories("extern/boost")
-# include_directories("extern/libtommath")
-# include_directories("extern/libtomcrypt/src/headers")
-# include_directories("extern/decNumber")
-# include_directories("extern/icu/include")
-# include_directories("extern/zlib")
-# include_directories("extern/libcds")
 
 link_directories   ("${CMAKE_CURRENT_BINARY_DIR}/extern")
 link_directories   ("${output_dir}")
