@@ -1,7 +1,8 @@
 name: CMake on multiple platforms
 
 on:
-    workflow_dispatch:
+    # workflow_dispatch:
+    [push, pull_request]
 
 jobs:
   build:
