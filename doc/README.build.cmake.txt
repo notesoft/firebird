@@ -1,6 +1,9 @@
+# Building Firebird under CMake+Clang 
+
 
 Windows:
 
+install CMake and Clang (inside of MS Visual Studio or separately)
 
 replace to Your paths:
 
@@ -19,6 +22,10 @@ rmdir /S /Q  %SOURCE%\build
 
 
 UNIX:
+
+install CMake and Clang (from the standard repository or separately)
+
+
 replace to Your paths:
 
 Linux:
@@ -30,8 +37,9 @@ CPU_COUNT=8
 
 macos:
 
-   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   install CMake (from brew)
 
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
    brew install cmake
 
    SOURCE="path/to/firebirdSourceFolder"
