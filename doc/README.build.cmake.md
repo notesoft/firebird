@@ -35,6 +35,15 @@ replace to Your paths:
       CXX="/usr/bin/clang++"
 CPU_COUNT=8
 ```
+
+build:
+```
+echo "build filder is ${SOURCE}/build"
+rm -R ${SOURCE}/build 
+${CMAKE} -DCMAKE_C_COMPILER=${CC} -DCMAKE_CXX_COMPILER=${CXX} -G "Unix Makefiles" -S ${SOURCE} -B ${SOURCE}/build 
+${CMAKE} --build ${SOURCE}/build --config Debug --target all -j ${CPU_COUNT} --
+```
+
 ##  MacOS:
 
 install CMake (from brew)
