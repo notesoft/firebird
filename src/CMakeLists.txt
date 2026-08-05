@@ -888,9 +888,9 @@ endif() # if (NOT CMAKE_CROSSCOMPILING)
 
 if (WIN32)
 
-    set(ZLIB_BUNARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../extern/zlib/${arch}")
+    set(ZLIB_BINARY_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../extern/zlib/${arch}")
 
-    set(ICU_BUNARY_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/../extern/icu/${arch}/Release/bin")
+    set(ICU_BINARY_DIR  "${CMAKE_CURRENT_SOURCE_DIR}/../extern/icu/${arch}/Release/bin")
     set(ICU_DATA_DIR    "${CMAKE_CURRENT_SOURCE_DIR}/../extern/icu")
 
     if (EXISTS "${ICU_DATA_DIR}/icudt${ICU_VERSION}l.dat")
@@ -917,19 +917,19 @@ if (WIN32)
         TARGET boot_isql
         POST_BUILD
         # icu
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ICU_BUNARY_DIR}/icudt${ICU_VERSION}.dll ${output_dir}/icudt${ICU_VERSION}.dll
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ICU_BUNARY_DIR}/icuin${ICU_VERSION}.dll ${output_dir}/icuin${ICU_VERSION}.dll
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ICU_BUNARY_DIR}/icuuc${ICU_VERSION}.dll ${output_dir}/icuuc${ICU_VERSION}.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ICU_BINARY_DIR}/icudt${ICU_VERSION}.dll ${output_dir}/icudt${ICU_VERSION}.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ICU_BINARY_DIR}/icuin${ICU_VERSION}.dll ${output_dir}/icuin${ICU_VERSION}.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ICU_BINARY_DIR}/icuuc${ICU_VERSION}.dll ${output_dir}/icuuc${ICU_VERSION}.dll
         # zlib
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ZLIB_BUNARY_DIR}/zlib1.dll ${output_dir}/zlib1.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ZLIB_BINARY_DIR}/zlib1.dll ${output_dir}/zlib1.dll
         #
         # one copy to boot directory
         # icu
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ICU_BUNARY_DIR}/icudt${ICU_VERSION}.dll $<TARGET_FILE_DIR:boot_isql>/icudt${ICU_VERSION}.dll
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ICU_BUNARY_DIR}/icuin${ICU_VERSION}.dll $<TARGET_FILE_DIR:boot_isql>/icuin${ICU_VERSION}.dll
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ICU_BUNARY_DIR}/icuuc${ICU_VERSION}.dll $<TARGET_FILE_DIR:boot_isql>/icuuc${ICU_VERSION}.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ICU_BINARY_DIR}/icudt${ICU_VERSION}.dll $<TARGET_FILE_DIR:boot_isql>/icudt${ICU_VERSION}.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ICU_BINARY_DIR}/icuin${ICU_VERSION}.dll $<TARGET_FILE_DIR:boot_isql>/icuin${ICU_VERSION}.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ICU_BINARY_DIR}/icuuc${ICU_VERSION}.dll $<TARGET_FILE_DIR:boot_isql>/icuuc${ICU_VERSION}.dll
         # zlib
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ZLIB_BUNARY_DIR}/zlib1.dll $<TARGET_FILE_DIR:boot_isql>/zlib1.dll
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${ZLIB_BINARY_DIR}/zlib1.dll $<TARGET_FILE_DIR:boot_isql>/zlib1.dll
     )
 else()
 
