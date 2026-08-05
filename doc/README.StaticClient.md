@@ -14,12 +14,13 @@ linking against `libfbclient.so`/`fbclient.dll` keeps its own global operators u
 
 A *static* archive has no such boundary: its object files are merged directly into the host application, and the linker
 would resolve the host's own bare `new`/`delete` to Firebird's definitions - silently hijacking all of the host
-application's allocations. To avoid this, the static build renames every internal global symbol — not just the global
-operators, but also decNumber symbols, C++ mangled names, internal helpers, etc. — to `__fbclient_*` names as a
-post-processing step on the archive, using `objcopy --redefine-syms` (GNU `objcopy` on Linux, `llvm-objcopy` on macOS).
-This frees the standard global operator names for the host application while keeping Firebird internally self-consistent
-(its own pool-routing logic in `MemoryPool::globalFree` still works, since foreign/system allocations of Firebird's own
-instances still flow through the renamed operators).
+application's allocations. To avoid this, the static build isolates every internal global symbol — not just the global
+operators, but also decNumber symbols, C++ mangled names, internal helpers, etc. On ELF, these symbols are renamed to
+`__fbclient_*` names with `objcopy --redefine-syms`. On Darwin, native `ld` localizes every non-API symbol while
+producing the relocatable object stored in the archive. This frees the standard global operator names for the host
+application while keeping Firebird internally self-consistent (its own pool-routing logic in
+`MemoryPool::globalFree` still works, since foreign/system allocations of Firebird's own instances still flow through
+the isolated operators).
 
 Regular pool-based allocation via `FB_NEW`/`FB_NEW_POOL` (the idiomatic path used throughout the codebase) is unaffected
 - it never used the global operators to begin with.
@@ -56,16 +57,17 @@ Firebird overrides the global C++ operators `operator new`, `operator new[]`, `o
 conflict with the host application. In a static archive, all of Firebird's internal symbols — not just the global
 operators, but also decNumber symbols, C++ mangled names, internal helpers, etc. — would collide if they remain global.
 
-To prevent this, both ELF and Darwin builds use the same two-step post-processing pipeline:
+The post-processing pipeline differs by object format.
 
-1. **Archive slimming** via `ld -r` with `-u` flags for every exported symbol from `builds/posix/firebird.vers`. The
-   linker pulls in only archive members transitively reachable from those seeds; a platform-specific cross-reference
-   output (GNU `--cref` on ELF, Apple `-map` on Darwin) identifies which members were pulled in, and only those
-   members are repacked into the archive.
-2. **Dynamic symbol renaming**: every defined global symbol NOT in the exported API list is renamed with a `__fbclient_`
-   prefix using `objcopy --redefine-syms` (GNU `objcopy` on ELF, `llvm-objcopy` on Darwin). ELF COMDAT group signatures
-   are included as well; they are local symbols and are not reported by `nm -g`, but must be renamed with their sections.
-   The rename map is generated automatically at build time:
+On ELF:
+
+1. **Archive slimming** uses `ld -r` with `-u` flags for every exported symbol from `builds/posix/firebird.vers`. The
+   linker pulls in only archive members transitively reachable from those seeds; GNU `--cref` identifies the members
+   that were pulled in, and only those members are repacked into the archive.
+2. **Dynamic symbol renaming** renames every defined global symbol not in the exported API list with a `__fbclient_`
+   prefix using `objcopy --redefine-syms`. ELF COMDAT group signatures are included as well; they are local symbols
+   and are not reported by `nm -g`, but must be renamed with their sections. The rename map is generated
+   automatically at build time:
 
    ```
    nm --defined-only -g libfbclient.a  |  extract symbol names  |  filter out API list  |  awk '{print $1, "__fbclient_" $1}'
@@ -74,14 +76,25 @@ To prevent this, both ELF and Darwin builds use the same two-step post-processin
 
    This covers every internal symbol automatically (decNumber, global operators, C++ vtables, typeinfo, guard
    variables, COMDAT group signatures, etc.) without any hand-maintained lists. The multi-member archive structure is
-   preserved, so COMDAT groups and cross-member references work correctly at final link time with both GCC and Clang.
+   preserved, so COMDAT groups and cross-member references work correctly at final link time.
+
+On Darwin:
+
+1. **Archive slimming and symbol localization** use native `ld -r` with `-u` flags and `-exported_symbols_list`. The
+   linker pulls in only archive members transitively reachable from the exported API seeds, keeps those API symbols
+   global, and localizes every other definition. Apple `-map` output is written to the temporary map file for
+   diagnostics. The resulting relocatable object is stored as the sole archive member.
+2. No `objcopy` step is needed. Internal symbol names remain unchanged, but they are local to the relocatable object
+   and therefore cannot collide with symbols in the host application. This also means Darwin archives do not contain
+   `__fbclient_*` prefixes. Because this relocatable object is the sole archive member, applications that need to
+   discard unused client code should link with the Darwin linker's `-dead_strip` option.
 
 ### Post-archive processing
 
-All of the post-archive processing (slimming, symbol rename, archive rebuild) is done by the unified helper script
-`static_client.sh` (autoconf-generated from `builds/posix/static_client.sh.in`). A single code path handles both
-ELF and Darwin, differing only in the `ld -r` cross-reference flag (selected by the make variable
-`STATIC_CLIENT_SLIM_MODE`).
+All of the post-archive processing (slimming, symbol isolation, and archive rebuild) is done by the unified helper
+script `static_client.sh` (autoconf-generated from `builds/posix/static_client.sh.in`). A single code path handles
+both ELF and Darwin, with `STATIC_CLIENT_SLIM_MODE` selecting the linker output format and platform-specific symbol
+isolation behavior.
 
 ## Building on Windows
 
@@ -116,9 +129,9 @@ etc.) without any hand-maintained symbol lists or separate scripts. The script r
 to be available on `PATH`. `decnumber.lib` is merged into the static archive via `<Lib><AdditionalDependencies>`
 (MSVC's librarian merges a referenced `.lib`'s members into a new static-library archive when specified this way).
 
-## Verifying the symbol rename worked
+## Verifying symbol isolation
 
-The public API should remain global under original names:
+On ELF, the public API should remain global under original names:
 
 ```sh
 nm libfbclient.a | grep ' T isc_'
@@ -134,7 +147,7 @@ nm libfbclient.a | grep ' T __fbclient_' | wc -l
 
 should show a large number of renamed symbols (thousands).
 
-Global operators should no longer exist under their original names:
+ELF global operators should no longer exist under their original names:
 
 ```sh
 nm libfbclient.a | grep -E ' _Znwm| _Znam| _ZdlPv| _ZdaPv' | grep -c ' T '
@@ -149,6 +162,20 @@ nm libfbclient.a | grep ' T decNumberFromString'
 ```
 
 should show nothing — it's now `__fbclient_decNumberFromString`.
+
+On Darwin, the public API should remain externally visible:
+
+```sh
+nm -g libfbclient.a | grep ' _isc_'
+```
+
+Internal symbols are local rather than prefixed. They should not appear in the external-symbol listing:
+
+```sh
+nm -g libfbclient.a | grep -E '(_Znwm|_Znam|_ZdlPv|_ZdaPv|decNumberFromString)'
+```
+
+should show nothing. The same names may appear without `-g`, with local symbol types.
 
 ## Windows-specific behavior: no `DllMain`
 

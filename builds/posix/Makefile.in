@@ -553,7 +553,7 @@ $(LIBFIREBIRD_STATIC):	$(YValve_Objects) $(Static_Client_Remote_Client_Objects) 
 		--stage $(STATIC_CLIENT_SLIM_STAGE) \
 		--cref $(STATIC_CLIENT_SLIM_CREF) \
 		--probe $(STATIC_CLIENT_SLIM_PROBE) \
-		--objcopy $(OBJCOPY) \
+		--objcopy "$(OBJCOPY)" \
 		--slim-mode $(STATIC_CLIENT_SLIM_MODE)
 
 

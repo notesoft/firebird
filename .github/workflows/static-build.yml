@@ -132,8 +132,7 @@ jobs:
 
       - name: Prepare - Install tools
         run: |
-          brew install --quiet automake autoconf-archive libtool ninja llvm
-          echo "${{ (matrix.arch == 'arm64' && '/opt/homebrew/opt/llvm/bin') || '/usr/local/opt/llvm/bin' }}" >> $GITHUB_PATH
+          brew install --quiet automake autoconf-archive libtool ninja python-setuptools
 
       - name: Restore vcpkg cache
         uses: actions/cache/restore@v4
@@ -161,6 +160,7 @@ jobs:
             -Ltemp/Release \
             -lfbclient -ltommath -ltomcrypt -lz \
             -liconv -lobjc -framework CoreFoundation -framework Foundation -framework Security \
+            -dead_strip \
             -o /tmp/01.create
 
       - name: Upload static library
