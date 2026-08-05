@@ -117,14 +117,18 @@ project_group               (re2 Extern)
 set(LIB_tommath  "tommath")
 set(LIB_tommath  ${LIB_tommath} PARENT_SCOPE)
 
-if (WITH_LIBTOM_STATIC)
-
     file(GLOB libtommath_src 
     libtommath/*.c 
     libtommath/*.h
+  # libtommath/tommath.def
     )
 
+if (WITH_LIBTOM_STATIC)
     add_library                   (${LIB_tommath} ${libtommath_src})
+else()    
+    add_library                   (${LIB_tommath} SHARED ${libtommath_src})
+    target_compile_options        (${LIB_tommath} PRIVATE "-fvisibility=default") 
+endif()    
     set_target_properties         (${LIB_tommath} PROPERTIES CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${output_dir})
     project_group                 (${LIB_tommath} Extern)
 
@@ -147,7 +151,6 @@ if (WITH_LIBTOM_STATIC)
         message("use TTMATH MASM")
 
     endif()                             
-endif()
 
 ########################################
 # LIBRARY libtomcrypt
@@ -156,7 +159,7 @@ endif()
 set(LIB_tomcrypt "tomcrypt")
 set(LIB_tomcrypt ${LIB_tomcrypt} PARENT_SCOPE)
 
-if (WITH_LIBTOM_STATIC)
+# if (WITH_LIBTOM_STATIC)
 
     file(GLOB_RECURSE libtomcrypt_src 
     "libtomcrypt/src/*"
@@ -166,13 +169,18 @@ if (WITH_LIBTOM_STATIC)
     list(FILTER libtomcrypt_src EXCLUDE REGEX ".*whirltab.c")
     list(FILTER libtomcrypt_src EXCLUDE REGEX ".*sober128tab.c")
 
+if (WITH_LIBTOM_STATIC)
     add_library                 (${LIB_tomcrypt} ${libtomcrypt_src})
+else()    
+    add_library                 (${LIB_tomcrypt} SHARED ${libtomcrypt_src})
+    target_compile_options      (${LIB_tomcrypt} PRIVATE "-fvisibility=default") 
+endif()    
     set_target_properties       (${LIB_tomcrypt} PROPERTIES CMAKE_ARHIVE_OUTPUT_DIRECTORY ${output_dir})
     target_compile_definitions  (${LIB_tomcrypt} PRIVATE LTC_NO_ROLC LTC_SOURCE)
     target_link_libraries       (${LIB_tomcrypt} ${LIB_tommath})
     project_group               (${LIB_tomcrypt} Extern)
 
-endif()
+# endif()
 
 ########################################
 # LIBRARY decNumber

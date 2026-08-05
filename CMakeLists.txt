@@ -186,7 +186,7 @@ if (XCODE)
         set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${conf2} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${conf}/bin)
     endforeach()
 elseif (UNIX)
-    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${output_dir}/bin)
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${output_dir}/lib)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${output_dir}/bin)
 endif()
 
