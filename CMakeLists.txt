@@ -23,7 +23,7 @@ set(CMAKE_CXX_STANDARD 20)
 cmake_policy(SET CMP0077 NEW)
 
 
-option(WITH_LIBTOM_STATIC   "on Linux build and link libtommath and libtomcript as static"  ON)
+option(WITH_LIBTOM_STATIC   "on POSIX build and link libtommath and libtomcript as static"  OFF)
 option(USE_TTMATH_MASM      "use assemler func in libtommath on win-arm-64 (need add ml64.exe in PATH)" OFF)
 option(REBUILD_ICU          "download from git and rebuild ICU library (on win need add MSBuild.exe in PATH)"  OFF)
 
@@ -251,7 +251,7 @@ set(AUTOCONFIG_SRC ${CMAKE_CURRENT_SOURCE_DIR}/src/include/gen/autoconfig.h.in)
 set(AUTOCONFIG ${CMAKE_CURRENT_BINARY_DIR}/src/include/gen/autoconfig.h)
 configure_file(${AUTOCONFIG_SRC} ${AUTOCONFIG} @ONLY)
 
-if (WIN32 OR APPLE)
+if (WIN32) # OR APPLE
     set(WITH_LIBTOM_STATIC ON)    
 endif()
 
