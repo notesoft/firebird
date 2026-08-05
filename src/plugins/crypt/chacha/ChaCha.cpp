@@ -199,9 +199,11 @@ namespace Crypt
 	}
 } // namespace Crypt
 
+#ifndef STATIC_CLIENT
 extern "C" FB_DLL_EXPORT void FB_PLUGIN_ENTRY_POINT(Firebird::IMaster* master)
 {
 	CachedMasterInterface::set(master);
 	Crypt::registerChaCha(PluginManagerInterfacePtr());
 	getUnloadDetector()->registerMe();
 }
+#endif
