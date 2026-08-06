@@ -85,7 +85,7 @@ jobs:
             -L/home/ctng/firebird-build/gen/Release/firebird/lib \
             -L/home/ctng/firebird-build/temp/Release \
             -lfbclient -ltommath -ltomcrypt -lz -ldl -pthread \
-            -o /firebird/01.create
+            -o /home/ctng/firebird-build/gen/01.create
           EOF
           chmod +x /tmp/build-static-client.sh
 
@@ -101,7 +101,7 @@ jobs:
       - name: Run interface example
         run: |
           mkdir -p static-client
-          cp -a 01.create /opt/firebird/lib/libtom* static-client/
+          cp -a gen/01.create /opt/firebird/lib/libtom* static-client/
           LD_LIBRARY_PATH="$PWD/static-client" \
             ISC_PATH=localhost:/tmp/firebird-static static-client/01.create
 
