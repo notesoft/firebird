@@ -401,10 +401,10 @@ inline void operator delete[](void* mem, Firebird::MemoryPool& pool ALLOC_PARAMS
 extern void operator delete(void* mem) noexcept;
 extern void operator delete[](void* mem) noexcept;
 
+#endif // DEBUG_GDS_ALLOC
+
 extern void operator delete(void* mem, std::size_t s) noexcept;
 extern void operator delete[](void* mem, std::size_t s) noexcept;
-
-#endif // DEBUG_GDS_ALLOC
 
 namespace Firebird
 {
