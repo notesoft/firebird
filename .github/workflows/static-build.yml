@@ -292,25 +292,26 @@ jobs:
           echo FB_PROCESSOR_ARCHITECTURE=%FB_PROCESSOR_ARCHITECTURE%>>%GITHUB_ENV%
           echo FB_LIBRARY_PLATFORM=%FB_LIBRARY_PLATFORM%>>%GITHUB_ENV%
 
-      - name: Firebird install
-        shell: cmd
-        env:
-          PLATFORM: ${{ matrix.platform }}
-        run: |
-          set FB_ZIP=Firebird-5.0.4.1812-0-windows-%PLATFORM%.zip
-          powershell Invoke-WebRequest "https://github.com/FirebirdSQL/firebird/releases/download/v5.0.4/$env:FB_ZIP" -OutFile "$env:FB_ZIP"
-          7z x -oC:\Firebird %FB_ZIP%
-          echo C:\Firebird>>%GITHUB_PATH%
-          set "PATH=C:\Firebird;%PATH%"
-          cd /d C:\Firebird
-          instreg install -z
-          > init-security.sql echo create user SYSDBA password 'masterkey';
-          >> init-security.sql echo quit;
-          isql -user sysdba employee -i init-security.sql
-          del init-security.sql
-          instsvc install -z
-          instsvc start
-          powershell -NoProfile -Command "Start-Sleep -Seconds 2"
+      # No 5.0.4 for ARM64 in Windows yet
+      #- name: Firebird install
+      #  shell: cmd
+      #  env:
+      #    PLATFORM: ${{ matrix.platform }}
+      #  run: |
+      #    set FB_ZIP=Firebird-5.0.4.1812-0-windows-%PLATFORM%.zip
+      #    powershell Invoke-WebRequest "https://github.com/FirebirdSQL/firebird/releases/download/v5.0.4/$env:FB_ZIP" -OutFile "$env:FB_ZIP"
+      #    7z x -oC:\Firebird %FB_ZIP%
+      #    echo C:\Firebird>>%GITHUB_PATH%
+      #    set "PATH=C:\Firebird;%PATH%"
+      #    cd /d C:\Firebird
+      #    instreg install -z
+      #    > init-security.sql echo create user SYSDBA password 'masterkey';
+      #    >> init-security.sql echo quit;
+      #    isql -user sysdba employee -i init-security.sql
+      #    del init-security.sql
+      #    instsvc install -z
+      #    instsvc start
+      #    powershell -NoProfile -Command "Start-Sleep -Seconds 2"
 
       - name: Build
         shell: cmd
@@ -332,13 +333,14 @@ jobs:
           call "%VS_SCRIPT%" -arch=%FB_VS_ARCH%
           cl /nologo /EHsc /MD /Isrc\include /Ioutput_%FB_LIBRARY_PLATFORM%_release\include examples\interfaces\01.create.cpp output_%FB_LIBRARY_PLATFORM%_release\lib\fbclient_static_ms.lib extern\libtommath\lib\%FB_LIBRARY_PLATFORM%\Release\tommath.lib extern\libtomcrypt\lib\%FB_LIBRARY_PLATFORM%\Release\tomcrypt.lib advapi32.lib bcrypt.lib legacy_stdio_definitions.lib mpr.lib ole32.lib psapi.lib shell32.lib user32.lib ws2_32.lib /Fe:%TEMP%\01.create.exe
 
-      - name: Run interface example
-        shell: cmd
-        run: |
-          set "PATH=C:\Firebird;%PATH%"
-          if not exist C:\Windows\Temp\firebird-static mkdir C:\Windows\Temp\firebird-static
-          set ISC_PATH=localhost:C:/Windows/Temp/firebird-static
-          "%TEMP%\01.create.exe"
+      # No 5.0.4 for ARM64 in Windows yet
+      #- name: Run interface example
+      #  shell: cmd
+      #  run: |
+      #    set "PATH=C:\Firebird;%PATH%"
+      #    if not exist C:\Windows\Temp\firebird-static mkdir C:\Windows\Temp\firebird-static
+      #    set ISC_PATH=localhost:C:/Windows/Temp/firebird-static
+      #    "%TEMP%\01.create.exe"
 
       - name: Upload static library
         uses: actions/upload-artifact@v4
