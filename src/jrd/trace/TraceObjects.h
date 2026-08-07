@@ -853,6 +853,7 @@ public:
 
 	const char* getFirebirdRootDirectory();
 	const char* getDatabaseName()		{ return m_filename; }
+	unsigned getTraceSessionFlags()			{ return m_session.ses_flags; }
 
 	Firebird::ITraceDatabaseConnection* getConnection()
 	{
