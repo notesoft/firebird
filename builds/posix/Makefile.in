@@ -525,16 +525,25 @@ client_static_process:
 	$(MAKE) updateCloopInterfaces
 	$(MAKE) rest
 	$(MAKE) $(LIBFIREBIRD_STATIC)
-ifeq ($(WITH_TOMCRYPT),Y)
-	$(MAKE) chacha
-endif
 	$(MAKE) include_generic
+
+$(Static_Client_Interface_Object): $(SRC_ROOT)/remote/client/interface.cpp
+	mkdir -p $(@D)
+	$(CXX) $(WCXXFLAGS) -DSTATIC_CLIENT -c $(firstword $<) -o $@
+	@sed $(INLINE_EDIT_SED) -e "1,2s/:/: \$$(wildcard/" -e "\$$s/\(.*\)/\\1)/" $(patsubst %.o,%.d,$@)
+
+STATIC_CLIENT_PLUGIN_OBJECTS=
+ifeq ($(WITH_TOMCRYPT),Y)
+STATIC_CLIENT_PLUGIN_OBJECTS += $(Chacha_Objects)
+endif
 
 STATIC_CLIENT_SLIM_STAGE = $(ROOT)/temp/static_client_stage
 STATIC_CLIENT_SLIM_CREF  = $(ROOT)/temp/static_client_cref.txt
 STATIC_CLIENT_SLIM_PROBE = $(ROOT)/temp/static_client_probe.o
 
-$(LIBFIREBIRD_STATIC):	$(YValve_Objects) $(Remote_Client_Objects) $(Common_Objects) \
+
+$(LIBFIREBIRD_STATIC):	$(YValve_Objects) $(Static_Client_Remote_Client_Objects) $(Common_Objects) \
+			$(STATIC_CLIENT_PLUGIN_OBJECTS) \
 			| $(GEN_ROOT)/$(FIREBIRD_VERS)
 	-$(RM) $@
 	$(STATICLIB_LINK) $@ $^ $(ROOT)/temp/extern/decNumber/*.o
@@ -544,7 +553,7 @@ $(LIBFIREBIRD_STATIC):	$(YValve_Objects) $(Remote_Client_Objects) $(Common_Objec
 		--stage $(STATIC_CLIENT_SLIM_STAGE) \
 		--cref $(STATIC_CLIENT_SLIM_CREF) \
 		--probe $(STATIC_CLIENT_SLIM_PROBE) \
-		--objcopy $(OBJCOPY) \
+		--objcopy "$(OBJCOPY)" \
 		--slim-mode $(STATIC_CLIENT_SLIM_MODE)
 
 
