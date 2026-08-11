@@ -40,7 +40,7 @@ inline constexpr int trs_admin		= Firebird::ITraceInitInfo::SESSION_FLAG_ADMIN;	
 inline constexpr int trs_active		= Firebird::ITraceInitInfo::SESSION_FLAG_ACTIVE;	// session is active
 inline constexpr int trs_system		= Firebird::ITraceInitInfo::SESSION_FLAG_SYSTEM;	// session created by engine itself
 inline constexpr int trs_log_full	= Firebird::ITraceInitInfo::SESSION_FLAG_LOG_FULL;	// session trace log is full
-inline constexpr int trs_local		= Firebird::ITraceInitInfo::SESSION_FLAG_LOCAL;	// session trace log is full
+inline constexpr int trs_local		= Firebird::ITraceInitInfo::SESSION_FLAG_LOCAL;	// session is running on the same machine as the server
 
 class TraceSession
 {
