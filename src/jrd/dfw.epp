@@ -547,7 +547,7 @@ void Jrd::ProtectRelations::relLock::releaseLock(thread_db* tdbb, jrd_tra* trans
 		m_lock->lck_logical = m_level;
 		LCK_downgrade(tdbb, m_lock);
 	}
-	else
+	else if (m_lock)
 		LCK_release(tdbb, m_lock);
 }
 

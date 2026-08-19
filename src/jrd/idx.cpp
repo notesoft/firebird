@@ -1993,7 +1993,7 @@ bool IDX_validate_unique(thread_db* tdbb, jrd_rel* relation, MetaId id)
 				for (RecordStack::iterator rec(stack); rec.hasData(); ++rec)
 				{
 					if (cmpRecordKeys(tdbb, rec.object(), relation, index,
-						rpb.rpb_record, relation, index))
+									  rpb.rpb_record, relation, index))
 					{
 						IndexErrorContext context(relation, index);
 						context.raise(tdbb, idx_e_duplicate, rpb.rpb_record);

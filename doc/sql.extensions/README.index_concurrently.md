@@ -83,7 +83,7 @@ create unique index on column with duplicates
 
 	create unique index idx_tab_id on tab(id);
 
-it trows an error:
+it throws an error:
 
 	Statement failed, SQLSTATE = 23000
 	attempt to store duplicate value (visible to active transactions) in unique index "IDX_TAB_ID"

@@ -13069,15 +13069,18 @@ void ModifyIndexNode::validateUniqueIndex(thread_db* tdbb, jrd_tra* transaction,
 				IDX.RDB$INDEX_NAME EQ indexName.object.c_str()
 		{
 			if (IDX.RDB$INDEX_INACTIVE != 0)
-				status_exception::raise(Arg::Gds(isc_random) << "Can't validate inactive index");
+				status_exception::raise(Arg::Gds(isc_dyn_index_cant_validate_inactive));
+				// msg 328: "Can't validate inactive index"
 
 			if (IDX.RDB$UNIQUE_FLAG.NULL || !(IDX.RDB$UNIQUE_FLAG & IDX_UNIQUE))
-				status_exception::raise(Arg::Gds(isc_random) << "Can't validate non-unique index");
+				status_exception::raise(Arg::Gds(isc_dyn_index_cant_validate_non_unique));
+				// msg 329: "Can't validate non-unique index"
 
 			fb_assert(IDX.RDB$UNIQUE_FLAG & IDX_UNIQUE);
 
 			if (!(IDX.RDB$UNIQUE_FLAG & IDX_NOT_VALIDATED))
-				status_exception::raise(Arg::Gds(isc_random) << "Index uniqueness already validated");
+				status_exception::raise(Arg::Gds(isc_dyn_index_already_validated));
+				// msg 330: "Index uniqueness already validated"
 
 			const MetaId idxId = IDX.RDB$INDEX_ID - 1;
 
@@ -13098,16 +13101,15 @@ void ModifyIndexNode::validateUniqueIndex(thread_db* tdbb, jrd_tra* transaction,
 	{
 		Arg::StatusVector err(ex);
 
-		string msg;
-		msg.printf("Validation of unique index %s failed.", indexName.toQuotedString().c_str());
-
 		if (!silent)
 		{
-			err.prepend(Arg::Gds(isc_no_meta_update) << Arg::Gds(isc_random) << msg);
+			err.prepend(Arg::Gds(isc_no_meta_update) << Arg::Gds(isc_dyn_index_validation_failed) <<
+				indexName.toQuotedString());
 			ERR_post(err);
 		}
 
-		err.prepend(Arg::Warning(isc_random) << msg);
+		// msg 331: "Uniqueness validation of the index @1 failed"
+		err.prepend(Arg::Warning(isc_dyn_index_validation_failed) << indexName.toQuotedString());
 		ERR_post_warning(err);
 	}
 }
