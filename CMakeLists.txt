@@ -323,7 +323,8 @@ endif()
     set(PROJECT_VERSION_PATCH ${ver_patch})
     set(PROJECT_VERSION_BUILD ${ver_build})
     set(PROJECT_VERSION_FULL "${ver_major}.${ver_minor}.${ver_patch}.${ver_build}")
-
+    set(PROJECT_VERSION_SNAPSHOT "${ver_major}.${ver_minor}.${ver_patch}.snapshot")
+                        
 ################################################################################
 #
 # compiler & linker settings
