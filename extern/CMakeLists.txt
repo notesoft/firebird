@@ -20,12 +20,17 @@ include(../builds/cmake/BuildICU.cmake)
 if (UNIX)
       set(ICU_INCLUDE_DIR "${ICU_DIR_include}")
 
+    if (CPU_IS_ARM)
+        set(USR_INCLUDE_PER_ARH "aarch64-linux-gnu")
+    else()
+        set(USR_INCLUDE_PER_ARH "x86_64-linux-gnu")
+    endif()
+
     if (NOT ICU_INCLUDE_DIR)
         find_path(ICU_INCLUDE_DIR unicode/ucnv.h
             PATHS
                 /usr/include
-                /usr/include/x86_64-linux-gnu
-                /usr/include/aarch64-linux-gnu
+                /usr/include/${USR_INCLUDE_PER_ARH}
                 /usr/local/include
                 /opt/local/include
                 /usr/local/opt/icu4c/include
@@ -120,6 +125,7 @@ set(LIB_tommath  ${LIB_tommath} PARENT_SCOPE)
     file(GLOB libtommath_src 
     libtommath/*.c 
     libtommath/*.h
+  # libtommath/tommath.def
     )
 
 if (WITH_LIBTOM_STATIC)
